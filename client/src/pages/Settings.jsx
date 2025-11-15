@@ -505,6 +505,9 @@ const Settings = ({ section = 'all' }) => {
     return section === sectionId;
   };
 
+  const canManageSettings = ['admin', 'desarrollador'].includes(user?.role);
+  const isDeveloper = user?.role === 'desarrollador';
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -515,7 +518,7 @@ const Settings = ({ section = 'all' }) => {
             Administra la configuración general del sistema
           </p>
         </div>
-        {user?.role === 'admin' && (
+        {canManageSettings && (
           <div className="flex items-center gap-3">
             {/* Auto-save indicator */}
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
@@ -571,12 +574,12 @@ const Settings = ({ section = 'all' }) => {
       )}
 
       {/* Alert for non-admin users */}
-      {user?.role !== 'admin' && (
+      {!canManageSettings && (
         <div className="card-glass p-4 border-l-4 border-yellow-500">
           <div className="flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
             <p className="text-gray-700 dark:text-gray-300">
-              Solo los administradores pueden modificar la configuración del sistema.
+              Solo administradores o desarrolladores pueden modificar la configuración del sistema.
             </p>
           </div>
         </div>
@@ -610,7 +613,7 @@ const Settings = ({ section = 'all' }) => {
                 type="text"
                 value={formData.businessName}
                 onChange={(e) => handleChange('businessName', e.target.value)}
-                disabled={user?.role !== 'admin'}
+                disabled={!canManageSettings}
                 className="input"
                 placeholder="AutoParts Manager"
                 required
@@ -627,7 +630,7 @@ const Settings = ({ section = 'all' }) => {
                   type="text"
                   value={formData.businessLogoUrl}
                   onChange={(e) => handleChange('businessLogoUrl', e.target.value)}
-                  disabled={user?.role !== 'admin'}
+                  disabled={!canManageSettings}
                   className="input flex-1"
                   placeholder="/logo.png"
                 />
@@ -657,7 +660,7 @@ const Settings = ({ section = 'all' }) => {
                   type="text"
                   value={formData.businessPhone}
                   onChange={(e) => handleChange('businessPhone', formatPhone(e.target.value))}
-                  disabled={user?.role !== 'admin'}
+                  disabled={!canManageSettings}
                   className="input pl-10"
                   placeholder="809-555-1234"
                   maxLength={12}
@@ -676,7 +679,7 @@ const Settings = ({ section = 'all' }) => {
                   type="email"
                   value={formData.businessEmail}
                   onChange={(e) => handleChange('businessEmail', e.target.value)}
-                  disabled={user?.role !== 'admin'}
+                  disabled={!canManageSettings}
                   className="input pl-10"
                   placeholder="contacto@autoparts.com"
                 />
@@ -693,7 +696,7 @@ const Settings = ({ section = 'all' }) => {
                 <textarea
                   value={formData.businessAddress}
                   onChange={(e) => handleChange('businessAddress', e.target.value)}
-                  disabled={user?.role !== 'admin'}
+                  disabled={!canManageSettings}
                   className="input pl-10 min-h-[80px]"
                   placeholder="Calle Principal #123, Santo Domingo, República Dominicana"
                   rows={3}
@@ -723,7 +726,7 @@ const Settings = ({ section = 'all' }) => {
             </div>
             <button
               onClick={handleTestEmail}
-              disabled={testingEmail || user?.role !== 'admin'}
+              disabled={testingEmail || !canManageSettings}
               className="btn btn-secondary flex items-center gap-2"
             >
               {testingEmail ? (
@@ -750,7 +753,7 @@ const Settings = ({ section = 'all' }) => {
                 type="text"
                 value={formData.smtp?.host || ''}
                 onChange={(e) => handleSmtpChange('host', e.target.value)}
-                disabled={user?.role !== 'admin'}
+                disabled={!canManageSettings}
                 className="input"
                 placeholder="smtp.gmail.com"
               />
@@ -768,7 +771,7 @@ const Settings = ({ section = 'all' }) => {
                 type="number"
                 value={formData.smtp?.port || 587}
                 onChange={(e) => handleSmtpChange('port', parseInt(e.target.value))}
-                disabled={user?.role !== 'admin'}
+                disabled={!canManageSettings}
                 className="input"
                 placeholder="587"
               />
@@ -786,7 +789,7 @@ const Settings = ({ section = 'all' }) => {
                 type="email"
                 value={formData.smtp?.user || ''}
                 onChange={(e) => handleSmtpChange('user', e.target.value)}
-                disabled={user?.role !== 'admin'}
+                disabled={!canManageSettings}
                 className="input"
                 placeholder="tu-email@gmail.com"
               />
@@ -802,7 +805,7 @@ const Settings = ({ section = 'all' }) => {
                   type={showSmtpPassword ? "text" : "password"}
                   value={formData.smtp?.password || ''}
                   onChange={(e) => handleSmtpChange('password', e.target.value)}
-                  disabled={user?.role !== 'admin'}
+                  disabled={!canManageSettings}
                   className="input pr-10"
                   placeholder="Escribe aquí la contraseña de 16 caracteres"
                 />
@@ -828,7 +831,7 @@ const Settings = ({ section = 'all' }) => {
                 type="text"
                 value={formData.smtp?.fromName || ''}
                 onChange={(e) => handleSmtpChange('fromName', e.target.value)}
-                disabled={user?.role !== 'admin'}
+                disabled={!canManageSettings}
                 className="input"
                 placeholder="Mi Negocio"
               />
@@ -843,7 +846,7 @@ const Settings = ({ section = 'all' }) => {
                 type="email"
                 value={formData.smtp?.fromEmail || ''}
                 onChange={(e) => handleSmtpChange('fromEmail', e.target.value)}
-                disabled={user?.role !== 'admin'}
+                disabled={!canManageSettings}
                 className="input"
                 placeholder="noreply@minegocio.com"
               />
@@ -896,7 +899,7 @@ const Settings = ({ section = 'all' }) => {
                   type="number"
                   value={formData.taxRate}
                   onChange={(e) => handleChange('taxRate', parseFloat(e.target.value) || 0)}
-                  disabled={user?.role !== 'admin'}
+                  disabled={!canManageSettings}
                   className="input"
                   placeholder="0"
                   min="0"
@@ -929,7 +932,7 @@ const Settings = ({ section = 'all' }) => {
               <select
                 value={formData.currency}
                 onChange={(e) => handleChange('currency', e.target.value)}
-                disabled={user?.role !== 'admin'}
+                disabled={!canManageSettings}
                 className="input"
               >
                 <option value="DOP">Peso Dominicano (DOP)</option>
@@ -967,7 +970,7 @@ const Settings = ({ section = 'all' }) => {
               <textarea
                 value={formData.receiptFooter}
                 onChange={(e) => handleChange('receiptFooter', e.target.value)}
-                disabled={user?.role !== 'admin'}
+                disabled={!canManageSettings}
                 className="input pl-10 min-h-[100px]"
                 placeholder="¡Gracias por su compra! Esperamos verle pronto."
                 rows={4}
@@ -1137,7 +1140,7 @@ const Settings = ({ section = 'all' }) => {
                   type="checkbox"
                   checked={formData.autoCreatePurchaseOrders}
                   onChange={(e) => handleChange('autoCreatePurchaseOrders', e.target.checked)}
-                  disabled={user?.role !== 'admin'}
+                  disabled={!canManageSettings}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
@@ -1154,7 +1157,7 @@ const Settings = ({ section = 'all' }) => {
                   type="number"
                   value={formData.autoOrderThreshold}
                   onChange={(e) => handleChange('autoOrderThreshold', parseInt(e.target.value) || 0)}
-                  disabled={user?.role !== 'admin'}
+                  disabled={!canManageSettings}
                   className="input"
                   placeholder="5"
                   min="0"
@@ -1220,7 +1223,7 @@ const Settings = ({ section = 'all' }) => {
                   type="checkbox"
                   checked={formData.showWeather}
                   onChange={(e) => handleChange('showWeather', e.target.checked)}
-                  disabled={user?.role !== 'admin'}
+                  disabled={!canManageSettings}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
@@ -1236,7 +1239,7 @@ const Settings = ({ section = 'all' }) => {
                 type="text"
                 value={formData.weatherLocation}
                 onChange={(e) => handleChange('weatherLocation', e.target.value)}
-                disabled={user?.role !== 'admin'}
+                disabled={!canManageSettings}
                 className="input"
                 placeholder="Santo Domingo,DO"
               />
@@ -1255,7 +1258,7 @@ const Settings = ({ section = 'all' }) => {
                   type={showApiKey ? "text" : "password"}
                   value={formData.weatherApiKey}
                   onChange={(e) => handleChange('weatherApiKey', e.target.value)}
-                  disabled={user?.role !== 'admin'}
+                  disabled={!canManageSettings}
                   className="input pr-12"
                   placeholder="Ingresa tu API key"
                 />
@@ -1374,14 +1377,14 @@ const Settings = ({ section = 'all' }) => {
                     key={position.value}
                     type="button"
                     onClick={() => handleChange('toastPosition', position.value)}
-                    disabled={user?.role !== 'admin'}
+                    disabled={!canManageSettings}
                     className={`
                       relative p-4 rounded-xl border-2 transition-all duration-200
                       ${formData.toastPosition === position.value
                         ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg'
                         : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700'
                       }
-                      ${user?.role !== 'admin' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                      ${!canManageSettings ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                     `}
                   >
                     <div className="text-center">
@@ -1418,7 +1421,7 @@ const Settings = ({ section = 'all' }) => {
         )}
 
         {/* Data Management Section - Export/Import/Clean */}
-        {(section === 'all' || section === 'system') && user?.role === 'admin' && (
+        {(section === 'all' || section === 'system') && isDeveloper && (
         <div className="card-glass p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">

@@ -73,11 +73,12 @@ export const protect = async (req, res, next) => {
  * Uso: router.delete('/usuarios/:id', protect, admin, deleteUsuario)
  */
 export const admin = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
+  const privilegedRoles = ['admin', 'desarrollador'];
+  if (req.user && privilegedRoles.includes(req.user.role)) {
     next(); // Es admin, permitir acceso
   } else {
     // No es admin o no hay usuario
-    res.status(403).json({ message: 'Acceso denegado. Se requiere rol de administrador' });
+    res.status(403).json({ message: 'Acceso denegado. Se requiere rol autorizado' });
   }
 };
 

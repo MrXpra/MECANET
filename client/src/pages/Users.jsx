@@ -1,12 +1,12 @@
 /**
  * @file Users.jsx
- * @description Gestión de usuarios del sistema (CRUD completo, solo admin)
+ * @description Gestión de usuarios del sistema (CRUD completo, solo admin/desarrollador)
  * 
  * Responsabilidades:
  * - Listar usuarios con búsqueda y filtro por rol
- * - Crear nuevo usuario (modal, solo admin)
- * - Editar usuario existente (modal, solo admin)
- * - Eliminar usuario (con confirmación, solo admin)
+ * - Crear nuevo usuario (modal, solo admin/desarrollador)
+ * - Editar usuario existente (modal, solo admin/desarrollador)
+ * - Eliminar usuario (con confirmación, solo admin/desarrollador)
  * - Toggle de estado activo/inactivo
  * - Prevenir que admin se elimine a sí mismo
  * 
@@ -14,7 +14,7 @@
  * - users: Array de usuarios desde backend
  * - filteredUsers: Array filtrado por searchTerm y filterRole
  * - searchTerm: Búsqueda por nombre, email
- * - filterRole: 'all', 'admin', 'cajero'
+ * - filterRole: 'all', 'admin', 'desarrollador', 'cajero'
  * - showUserModal: Boolean para modal crear/editar
  * - editingUser: Usuario en edición o null para crear
  * - showPassword: Boolean para toggle de visibilidad de password
@@ -23,14 +23,14 @@
  * - name: Nombre completo (requerido)
  * - email: Email único (requerido)
  * - password: Solo requerido al crear, opcional al editar
- * - role: 'admin' o 'cajero' (requerido)
+ * - role: 'admin', 'desarrollador' o 'cajero' (requerido)
  * - isActive: Boolean (por defecto true)
  * 
  * APIs:
- * - GET /api/users (solo admin)
- * - POST /api/users (solo admin)
- * - PUT /api/users/:id (solo admin)
- * - DELETE /api/users/:id (solo admin)
+ * - GET /api/users (solo admin/desarrollador)
+ * - POST /api/users (solo admin/desarrollador)
+ * - PUT /api/users/:id (solo admin/desarrollador)
+ * - DELETE /api/users/:id (solo admin/desarrollador)
  * 
  * Validaciones:
  * - Email único (backend valida)
@@ -82,6 +82,7 @@ const Users = () => {
   const [filterRole, setFilterRole] = useState('all');
   const [showTooltip, setShowTooltip] = useState(null);
   const { user: currentUser } = useAuthStore();
+  const canManageDevelopers = currentUser?.role === 'desarrollador';
 
   useEffect(() => {
     fetchUsers();
@@ -130,6 +131,10 @@ const Users = () => {
   };
 
   const handleEditUser = (user) => {
+    if (user.role === 'desarrollador' && !canManageDevelopers) {
+      toast.error('Solo un desarrollador puede editar este usuario');
+      return;
+    }
     setEditingUser(user);
     setShowUserModal(true);
   };
@@ -137,6 +142,12 @@ const Users = () => {
   const handleDeleteUser = async (userId) => {
     if (userId === currentUser._id) {
       toast.error('No puedes eliminar tu propia cuenta');
+      return;
+    }
+
+    const targetUser = users.find((u) => u._id === userId);
+    if (targetUser?.role === 'desarrollador' && !canManageDevelopers) {
+      toast.error('Solo un desarrollador puede eliminar a otro desarrollador');
       return;
     }
 
@@ -188,6 +199,16 @@ const Users = () => {
         </span>
       );
     }
+
+    if (role === 'desarrollador') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-300">
+          <ShieldCheck className="w-3 h-3" />
+          Desarrollador
+        </span>
+      );
+    }
+
     return (
       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
         <Shield className="w-3 h-3" />
@@ -197,6 +218,7 @@ const Users = () => {
   };
 
   const getAdminCount = () => users.filter(u => u.role === 'admin').length;
+  const getDeveloperCount = () => users.filter(u => u.role === 'desarrollador').length;
   const getCajeroCount = () => users.filter(u => u.role === 'cajero').length;
 
   // Mostrar skeleton mientras carga
@@ -221,7 +243,7 @@ const Users = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="card-glass p-4 relative">
           <div className="flex items-center justify-between">
             <div className="flex-1">
@@ -274,6 +296,30 @@ const Users = () => {
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Desarrolladores</p>
+                <div className="relative">
+                  <Info
+                    className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-help"
+                    onMouseEnter={() => setShowTooltip('desarrolladores')}
+                    onMouseLeave={() => setShowTooltip(null)}
+                  />
+                  {showTooltip === 'desarrolladores' && (
+                    <div className="absolute bottom-full left-0 mb-2 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-50">
+                      Usuarios con acceso total y herramientas técnicas
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{getDeveloperCount()}</p>
+            </div>
+            <ShieldCheck className="w-8 h-8 text-teal-500 dark:text-teal-300" />
+          </div>
+        </div>
+
+        <div className="card-glass p-4 relative">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Cajeros</p>
                 <div className="relative">
                   <Info
@@ -315,6 +361,7 @@ const Users = () => {
           >
             <option value="all">Todos los roles</option>
             <option value="admin">Administradores</option>
+            <option value="desarrollador">Desarrolladores</option>
             <option value="cajero">Cajeros</option>
           </select>
         </div>
@@ -394,21 +441,32 @@ const Users = () => {
                       {formatDate(user.createdAt)}
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
-                      <button
-                        onClick={() => handleEditUser(user)}
-                        className="text-primary-600 hover:text-primary-700 dark:text-primary-400"
-                        title="Editar"
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(user._id)}
-                        className="text-red-600 hover:text-red-700 dark:text-red-400"
-                        title="Eliminar"
-                        disabled={user._id === currentUser._id}
-                      >
-                        <Trash2 className={`w-5 h-5 ${user._id === currentUser._id ? 'opacity-30 cursor-not-allowed' : ''}`} />
-                      </button>
+                      {(() => {
+                        const isDeveloperRow = user.role === 'desarrollador';
+                        const canModifyRow = !isDeveloperRow || canManageDevelopers;
+                        const isSelf = user._id === currentUser._id;
+
+                        return (
+                          <>
+                            <button
+                              onClick={() => handleEditUser(user)}
+                              className={`text-primary-600 hover:text-primary-700 dark:text-primary-400 ${!canModifyRow ? 'opacity-30 cursor-not-allowed' : ''}`}
+                              title={canModifyRow ? 'Editar' : 'Solo un desarrollador puede editar'}
+                              disabled={!canModifyRow}
+                            >
+                              <Edit className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(user._id)}
+                              className={`text-red-600 hover:text-red-700 dark:text-red-400 ${!canModifyRow || isSelf ? 'opacity-30 cursor-not-allowed' : ''}`}
+                              title={canModifyRow ? 'Eliminar' : 'Solo un desarrollador puede eliminar'}
+                              disabled={!canModifyRow || isSelf}
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))
@@ -442,6 +500,11 @@ const UserModal = ({ user, onSave, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const roleDescriptions = {
+    admin: 'Acceso completo al sistema',
+    desarrollador: 'Acceso total + herramientas técnicas',
+    cajero: 'Acceso a facturación y cierre de caja',
+  };
 
   // Cerrar modal con tecla ESC
   useEffect(() => {
@@ -596,11 +659,10 @@ const UserModal = ({ user, onSave, onClose }) => {
             >
               <option value="cajero">Cajero</option>
               <option value="admin">Administrador</option>
+              <option value="desarrollador">Desarrollador</option>
             </select>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              {formData.role === 'admin' 
-                ? 'Acceso completo al sistema' 
-                : 'Acceso a facturación y cierre de caja'}
+              {roleDescriptions[formData.role] || roleDescriptions.cajero}
             </p>
           </div>
 

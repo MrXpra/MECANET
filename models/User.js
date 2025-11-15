@@ -6,6 +6,7 @@
  * 
  * Roles disponibles:
  * - admin: Acceso completo al sistema
+ * - desarrollador: Acceso completo + herramientas técnicas
  * - cajero: Acceso limitado a ventas y productos
  */
 
@@ -45,7 +46,7 @@ const userSchema = new mongoose.Schema({
   // Rol del usuario (determina permisos)
   role: {
     type: String,
-    enum: ['admin', 'cajero'], // Solo puede ser uno de estos valores
+    enum: ['admin', 'desarrollador', 'cajero'], // Solo puede ser uno de estos valores
     default: 'cajero' // Por defecto, los usuarios son cajeros
   },
   

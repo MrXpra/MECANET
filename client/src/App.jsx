@@ -16,7 +16,7 @@
  * 
  * ProtectedRoute:
  * - Verifica isAuthenticated, redirige a /login si no hay sesión
- * - adminOnly=true verifica role='admin', redirige a / si no es admin
+ * - adminOnly=true verifica roles privilegiados (admin/desarrollador), redirige a / si no tiene permisos
  */
 
 import { useEffect } from 'react';
@@ -63,7 +63,8 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (adminOnly && user?.role !== 'admin') {
+  const privilegedRoles = ['admin', 'desarrollador'];
+  if (adminOnly && !privilegedRoles.includes(user?.role)) {
     return <Navigate to="/" replace />;
   }
 

@@ -6,6 +6,7 @@ import CashWithdrawal from '../models/CashWithdrawal.js';
 export const createCashWithdrawal = async (req, res) => {
   try {
     const { amount, reason, category, notes, receiptAttached } = req.body;
+    const isPrivileged = ['admin', 'desarrollador'].includes(req.user.role);
 
     // Validar datos
     if (!amount || !reason) {
@@ -22,8 +23,8 @@ export const createCashWithdrawal = async (req, res) => {
       reason,
       category: category || 'other',
       withdrawnBy: req.user._id,
-      authorizedBy: req.user.role === 'admin' ? req.user._id : null,
-      status: req.user.role === 'admin' ? 'approved' : 'pending',
+      authorizedBy: isPrivileged ? req.user._id : null,
+      status: isPrivileged ? 'approved' : 'pending',
       receiptAttached: receiptAttached || false,
       notes: notes || ''
     });
@@ -71,8 +72,10 @@ export const getCashWithdrawals = async (req, res) => {
       query.category = category;
     }
 
-    // Si no es admin, solo ver sus propios retiros
-    if (req.user.role !== 'admin') {
+    const canManageWithdrawals = ['admin', 'desarrollador'].includes(req.user.role);
+
+    // Si no es admin/desarrollador, solo ver sus propios retiros
+    if (!canManageWithdrawals) {
       query.withdrawnBy = req.user._id;
     }
 
@@ -117,7 +120,8 @@ export const getCashWithdrawalById = async (req, res) => {
     }
 
     // Verificar permisos
-    if (req.user.role !== 'admin' && withdrawal.withdrawnBy._id.toString() !== req.user._id.toString()) {
+    const canManageWithdrawals = ['admin', 'desarrollador'].includes(req.user.role);
+    if (!canManageWithdrawals && withdrawal.withdrawnBy._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'No autorizado para ver este retiro' });
     }
 
@@ -135,8 +139,8 @@ export const updateCashWithdrawalStatus = async (req, res) => {
   try {
     const { status, notes } = req.body;
 
-    // Solo admin puede actualizar estados
-    if (req.user.role !== 'admin') {
+    // Solo admin/desarrollador puede actualizar estados
+    if (!['admin', 'desarrollador'].includes(req.user.role)) {
       return res.status(403).json({ message: 'No autorizado. Solo administradores pueden aprobar/rechazar retiros' });
     }
 
@@ -172,8 +176,8 @@ export const updateCashWithdrawalStatus = async (req, res) => {
 // @access  Private (Admin only)
 export const deleteCashWithdrawal = async (req, res) => {
   try {
-    // Solo admin puede eliminar
-    if (req.user.role !== 'admin') {
+    // Solo admin/desarrollador puede eliminar
+    if (!['admin', 'desarrollador'].includes(req.user.role)) {
       return res.status(403).json({ message: 'No autorizado. Solo administradores pueden eliminar retiros' });
     }
 

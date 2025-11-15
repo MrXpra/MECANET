@@ -77,8 +77,21 @@ export const updateUser = async (req, res) => {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
+    const targetIsDeveloper = user.role === 'desarrollador';
+    const requesterIsDeveloper = req.user.role === 'desarrollador';
+
+    if (targetIsDeveloper && !requesterIsDeveloper) {
+      return res.status(403).json({ message: 'No puedes modificar a un desarrollador' });
+    }
+
     // No permitir que el usuario se quite el rol de admin a sí mismo
-    if (req.user._id.toString() === user._id.toString() && req.body.role && req.body.role !== 'admin') {
+    const isSelfUpdate = req.user._id.toString() === user._id.toString();
+    if (
+      isSelfUpdate &&
+      req.body.role &&
+      user.role === 'admin' &&
+      req.body.role !== 'admin'
+    ) {
       return res.status(400).json({ message: 'No puedes cambiar tu propio rol de administrador' });
     }
 
@@ -121,6 +134,10 @@ export const deleteUser = async (req, res) => {
     // No permitir que el usuario se elimine a sí mismo
     if (req.user._id.toString() === user._id.toString()) {
       return res.status(400).json({ message: 'No puedes eliminar tu propia cuenta' });
+    }
+
+    if (user.role === 'desarrollador' && req.user.role !== 'desarrollador') {
+      return res.status(403).json({ message: 'No puedes eliminar a un desarrollador' });
     }
 
     await User.findByIdAndDelete(req.params.id);

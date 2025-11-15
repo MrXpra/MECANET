@@ -96,6 +96,12 @@ const CashRegister = () => {
   const [showClosingModal, setShowClosingModal] = useState(false);
   const [showTooltip, setShowTooltip] = useState(null);
   const { user, logout } = useAuthStore();
+  const roleLabels = {
+    admin: 'Administrador',
+    desarrollador: 'Desarrollador',
+    cajero: 'Cajero',
+  };
+  const currentRoleLabel = roleLabels[user?.role] || 'Usuario';
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -262,7 +268,7 @@ const CashRegister = () => {
               {user?.name}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              {user?.email} • {user?.role === 'admin' ? 'Administrador' : 'Cajero'}
+              {user?.email} • {currentRoleLabel}
             </p>
           </div>
         </div>

@@ -82,6 +82,7 @@ import { createPortal } from 'react-dom';
 
 const CashWithdrawals = () => {
   const { user } = useAuthStore();
+  const canAuthorizeWithdrawals = ['admin', 'desarrollador'].includes(user?.role);
   const [withdrawals, setWithdrawals] = useState([]);
   const [summary, setSummary] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -418,7 +419,7 @@ const CashWithdrawals = () => {
                           <Eye className="w-4 h-4" />
                         </button>
                         
-                        {user?.role === 'admin' && withdrawal.status === 'pending' && (
+                        {canAuthorizeWithdrawals && withdrawal.status === 'pending' && (
                           <>
                             <button
                               onClick={() => handleApprove(withdrawal._id)}
@@ -437,7 +438,7 @@ const CashWithdrawals = () => {
                           </>
                         )}
 
-                        {user?.role === 'admin' && (
+                        {canAuthorizeWithdrawals && (
                           <button
                             onClick={() => handleDelete(withdrawal._id)}
                             className="text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"

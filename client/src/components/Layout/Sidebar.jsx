@@ -60,7 +60,8 @@ const Sidebar = () => {
   const { user } = useAuthStore();
   const { settings } = useSettingsStore();
   const location = useLocation();
-  const isAdmin = user?.role === 'admin';
+  const privilegedRoles = ['admin', 'desarrollador'];
+  const isAdmin = privilegedRoles.includes(user?.role);
   
   // Estados para controlar expansión de secciones
   const [configExpanded, setConfigExpanded] = useState(location.pathname.startsWith('/configuracion'));
