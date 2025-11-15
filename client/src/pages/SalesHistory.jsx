@@ -1077,21 +1077,21 @@ const SaleDetailModal = ({ sale, onClose, formatCurrency, formatDate, getStatusB
                         {returnItem.returnNumber}
                       </p>
                       <p className="text-xs text-gray-600 dark:text-gray-400">
-                        {formatDate(returnItem.createdAt)} • {returnItem.items?.length || 0} producto(s)
+                        {formatDate(returnItem.createdAt)} • {returnItem.items?.length || 0} producto(s) devuelto(s)
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-orange-600 dark:text-orange-400">
-                        {formatCurrency(returnItem.total || 0)}
+                        Reembolso: -{formatCurrency(returnItem.totalAmount || 0)}
                       </p>
                       <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
-                        returnItem.status === 'Aprobada' 
+                        returnItem.status === 'Aprobada' || returnItem.status === 'Completada'
                           ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                           : returnItem.status === 'Rechazada'
                           ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
                           : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
                       }`}>
-                        {returnItem.status || 'Pendiente'}
+                        {returnItem.status === 'Completada' ? 'Aprobada' : returnItem.status || 'Pendiente'}
                       </span>
                     </div>
                   </div>
