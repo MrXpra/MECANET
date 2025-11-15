@@ -238,7 +238,7 @@ export const getSales = async (req, res) => {
     const Return = mongoose.model('Return');
     const saleIds = sales.map(s => s._id);
     const allReturns = await Return.find({ sale: { $in: saleIds } })
-      .select('sale returnNumber status total createdAt')
+      .select('sale returnNumber status totalAmount createdAt items')
       .lean();
 
     // Agrupar returns por sale
@@ -257,7 +257,7 @@ export const getSales = async (req, res) => {
         returns,
         hasReturns: returns.length > 0,
         returnsCount: returns.length,
-        totalReturned: returns.reduce((sum, ret) => sum + (ret.total || 0), 0)
+        totalReturned: returns.reduce((sum, ret) => sum + (ret.totalAmount || 0), 0)
       };
     });
 
