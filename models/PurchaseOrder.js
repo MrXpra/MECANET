@@ -31,6 +31,12 @@ const purchaseOrderSchema = new mongoose.Schema({
     ref: 'Supplier',
     required: false,
   },
+  
+  // Nombre del proveedor genérico (si no se selecciona uno del catálogo)
+  genericSupplierName: {
+    type: String,
+    trim: true,
+  },
   // Items incluidos en la orden
   items: [{
     // Producto a ordenar
@@ -45,36 +51,39 @@ const purchaseOrderSchema = new mongoose.Schema({
       required: true,
       min: 1,
     },
-    // Precio unitario de compra
+    // Precio unitario de compra (opcional - el proveedor puede definirlo después)
     unitPrice: {
       type: Number,
-      required: true,
+      required: false,
       min: 0,
+      default: 0,
     },
     // Subtotal del item (cantidad × precio)
     subtotal: {
       type: Number,
-      required: true,
+      required: false,
+      default: 0,
     },
   }],
   
-  // Subtotal de todos los items
+  // Subtotal de todos los items (opcional)
   subtotal: {
     type: Number,
-    required: true,
+    required: false,
     default: 0,
   },
   
-  // Impuesto aplicado
+  // Impuesto aplicado (opcional)
   tax: {
     type: Number,
+    required: false,
     default: 0,
   },
   
-  // Total a pagar (subtotal + tax)
+  // Total a pagar (subtotal + tax) - opcional si aún no se definen precios
   total: {
     type: Number,
-    required: true,
+    required: false,
     default: 0,
   },
   

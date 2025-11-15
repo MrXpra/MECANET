@@ -198,7 +198,8 @@ const PurchaseOrders = () => {
       filtered = filtered.filter(
         (order) =>
           order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          order.supplier?.name.toLowerCase().includes(searchTerm.toLowerCase())
+          order.supplier?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          order.genericSupplierName?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -413,7 +414,7 @@ const PurchaseOrders = () => {
           <div class="info-grid">
             <div class="info-box">
               <p><strong>Proveedor:</strong></p>
-              <p>${order.supplier?.name || 'N/A'}</p>
+              <p>${order.supplier?.name || order.genericSupplierName || 'Proveedor Genérico'}</p>
               ${order.supplier?.phone ? `<p><strong>Teléfono:</strong> ${order.supplier.phone}</p>` : ''}
               ${order.supplier?.email ? `<p><strong>Email:</strong> ${order.supplier.email}</p>` : ''}
             </div>
@@ -649,7 +650,7 @@ const PurchaseOrders = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                       <Truck className="w-4 h-4" />
-                      <span>{order.supplier?.name || 'Sin proveedor'}</span>
+                      <span>{order.supplier?.name || order.genericSupplierName || 'Proveedor Genérico'}</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                       <Package className="w-4 h-4" />
@@ -795,7 +796,7 @@ const PurchaseOrders = () => {
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                             <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                               <Truck className="w-4 h-4" />
-                              <span>{order.supplier?.name || 'Sin proveedor'}</span>
+                              <span>{order.supplier?.name || order.genericSupplierName || 'Proveedor Genérico'}</span>
                             </div>
                             <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                               <Package className="w-4 h-4" />
@@ -1236,6 +1237,7 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
 
   // Estado del formulario
   const [supplier, setSupplier] = useState(editingOrder?.supplier?._id || editingOrder?.supplier || '');
+  const [genericSupplierName, setGenericSupplierName] = useState(editingOrder?.genericSupplierName || '');
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(
     editingOrder?.expectedDeliveryDate 
       ? new Date(editingOrder.expectedDeliveryDate).toISOString().split('T')[0] 
@@ -1317,7 +1319,7 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
       product: product._id,
       productData: product,
       quantity: optimalQuantity,
-      unitPrice: product.purchasePrice || 0,
+      unitPrice: 0, // Precio opcional, el proveedor lo define
     };
 
     setCart([...cart, newItem]);
@@ -1370,27 +1372,36 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!supplier) {
-      toast.error('Debe seleccionar un proveedor');
+    if (!supplier && !genericSupplierName.trim()) {
+      toast.error('Debe especificar un proveedor o ingresar un nombre genérico');
       return;
     }
 
     if (cart.length === 0) {
-      toast.error('Debe agregar al menos un producto al carrito');
+      toast.error('Debe agregar al menos un producto');
       return;
     }
 
     try {
       const orderData = {
-        supplier,
         items: cart.map(item => ({
           product: item.product,
           quantity: parseInt(item.quantity),
-          unitPrice: parseFloat(item.unitPrice),
+          unitPrice: item.unitPrice !== '' ? parseFloat(item.unitPrice) : 0,
         })),
         notes,
         expectedDeliveryDate: expectedDeliveryDate || undefined,
       };
+
+      // Solo agregar supplier si se seleccionó uno
+      if (supplier) {
+        orderData.supplier = supplier;
+      }
+
+      // Agregar nombre de proveedor genérico si se escribió
+      if (!supplier && genericSupplierName.trim()) {
+        orderData.genericSupplierName = genericSupplierName.trim();
+      }
 
       if (editingOrder) {
         await updatePurchaseOrder(editingOrder._id, orderData);
@@ -1594,17 +1605,18 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Cantidad</label>
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Cantidad *</label>
                         <input
                           type="number"
                           min="1"
                           value={item.quantity}
                           onChange={(e) => updateQuantity(item.product, e.target.value)}
                           className="input w-full text-sm"
+                          required
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Precio Unit.</label>
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Precio (opcional)</label>
                         <input
                           type="number"
                           min="0"
@@ -1612,6 +1624,7 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
                           value={item.unitPrice}
                           onChange={(e) => updatePrice(item.product, e.target.value)}
                           className="input w-full text-sm"
+                          placeholder="0.00"
                         />
                       </div>
                     </div>
@@ -1631,10 +1644,13 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
                 </label>
                 <select
                   value={supplier}
-                  onChange={(e) => setSupplier(e.target.value)}
+                  onChange={(e) => {
+                    setSupplier(e.target.value);
+                    if (e.target.value) setGenericSupplierName('');
+                  }}
                   className="input w-full"
                 >
-                  <option value="">Proveedor Genérico</option>
+                  <option value="">Proveedor Genérico / Otro</option>
                   {suppliers.filter(s => s.isActive).map((sup) => (
                     <option key={sup._id} value={sup._id}>
                       {sup.name}
@@ -1642,6 +1658,22 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
                   ))}
                 </select>
               </div>
+
+              {!supplier && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nombre del Proveedor *
+                  </label>
+                  <input
+                    type="text"
+                    value={genericSupplierName}
+                    onChange={(e) => setGenericSupplierName(e.target.value)}
+                    className="input w-full"
+                    placeholder="Ej: Ferreteria Local, Vendedor Juan, etc."
+                    required={!supplier}
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1670,32 +1702,41 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
             </div>
 
             {/* Totals */}
-            <div className="glass-light rounded-lg p-3 mb-4">
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between text-gray-700 dark:text-gray-300">
-                  <span>Subtotal:</span>
-                  <span className="font-medium">${subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-gray-700 dark:text-gray-300">
-                  <span>ITBIS (18%):</span>
-                  <span className="font-medium">${tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-base font-bold text-gray-900 dark:text-white pt-2 border-t border-gray-300 dark:border-gray-600">
-                  <span>Total:</span>
-                  <span>${total.toFixed(2)}</span>
+            {subtotal > 0 && (
+              <div className="glass-light rounded-lg p-3 mb-4">
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>Subtotal:</span>
+                    <span className="font-medium">${subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>ITBIS (18%):</span>
+                    <span className="font-medium">${tax.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-bold text-gray-900 dark:text-white pt-2 border-t border-gray-300 dark:border-gray-600">
+                    <span>Total:</span>
+                    <span>${total.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+            {subtotal === 0 && cart.length > 0 && (
+              <div className="glass-light rounded-lg p-3 mb-4 text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  💡 Los precios se definirán con el proveedor
+                </p>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-2">
               <button 
                 type="submit" 
-                disabled={cart.length === 0 || !supplier}
+                disabled={cart.length === 0 || (!supplier && !genericSupplierName.trim())}
                 className="btn btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Check className="w-4 h-4" />
-                Generar Orden
+                {editingOrder ? 'Actualizar' : 'Crear'} Orden
               </button>
               <button 
                 type="button" 
@@ -1731,7 +1772,9 @@ const OrderDetailsModal = ({ order, onClose }) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Proveedor</p>
-              <p className="font-medium text-gray-900 dark:text-white">{order.supplier?.name}</p>
+              <p className="font-medium text-gray-900 dark:text-white">
+                {order.supplier?.name || order.genericSupplierName || 'Proveedor Genérico'}
+              </p>
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Estado</p>
@@ -1886,7 +1929,7 @@ const ReceiveOrderModal = ({ order, onClose, onConfirm }) => {
               Confirmar Recepción de Orden
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {order.orderNumber} - {order.supplier?.name}
+              {order.orderNumber} - {order.supplier?.name || order.genericSupplierName || 'Proveedor Genérico'}
             </p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">

@@ -39,7 +39,7 @@ export const getPurchaseOrderById = async (req, res) => {
 // Crear orden de compra
 export const createPurchaseOrder = async (req, res) => {
   try {
-    const { supplier, items, notes, expectedDeliveryDate } = req.body;
+    const { supplier, genericSupplierName, items, notes, expectedDeliveryDate } = req.body;
 
     // Verificar que el proveedor existe (solo si se proporciona)
     if (supplier && supplier.trim() !== '') {
@@ -49,8 +49,9 @@ export const createPurchaseOrder = async (req, res) => {
       }
     }
 
-    // Calcular totales
+    // Calcular totales (solo si los items tienen precio)
     let subtotal = 0;
+    let hasPrices = true;
     const processedItems = [];
 
     for (const item of items) {
@@ -59,19 +60,28 @@ export const createPurchaseOrder = async (req, res) => {
         return res.status(404).json({ message: `Producto ${item.product} no encontrado` });
       }
 
-      const itemSubtotal = item.quantity * item.unitPrice;
+      // Si no se proporciona precio, usar 0 y marcar que no hay precios
+      const unitPrice = item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '' 
+        ? parseFloat(item.unitPrice) 
+        : 0;
+      
+      if (unitPrice === 0) {
+        hasPrices = false;
+      }
+
+      const itemSubtotal = item.quantity * unitPrice;
       subtotal += itemSubtotal;
 
       processedItems.push({
         product: item.product,
         quantity: item.quantity,
-        unitPrice: item.unitPrice,
+        unitPrice: unitPrice,
         subtotal: itemSubtotal,
       });
     }
 
-    // Calcular impuesto (18% ITBIS)
-    const tax = subtotal * 0.18;
+    // Solo calcular impuesto y total si hay precios definidos
+    const tax = hasPrices ? subtotal * 0.18 : 0;
     const total = subtotal + tax;
 
     // Preparar datos de la orden
@@ -88,6 +98,11 @@ export const createPurchaseOrder = async (req, res) => {
     // Solo agregar supplier si se proporciona y no está vacío
     if (supplier && supplier.trim() !== '') {
       orderData.supplier = supplier;
+    }
+
+    // Agregar nombre de proveedor genérico si se proporciona
+    if (genericSupplierName && genericSupplierName.trim() !== '') {
+      orderData.genericSupplierName = genericSupplierName.trim();
     }
 
     const order = new PurchaseOrder(orderData);
