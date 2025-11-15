@@ -39,10 +39,32 @@ import {
   ShoppingCart,
   Calendar,
   User,
+  UserPlus,
+  Phone,
+  StickyNote,
   Package,
   DollarSign,
   AlertCircle,
 } from 'lucide-react';
+
+const addBusinessDaysClient = (startDate, days) => {
+  const date = new Date(startDate);
+  let added = 0;
+
+  while (added < days) {
+    date.setDate(date.getDate() + 1);
+    const day = date.getDay();
+    if (day !== 0 && day !== 6) {
+      added += 1;
+    }
+  }
+
+  return date;
+};
+
+const getDefaultValidDateString = () => {
+  return addBusinessDaysClient(new Date(), 5).toISOString().split('T')[0];
+};
 
 const Quotations = () => {
   const [quotations, setQuotations] = useState([]);
@@ -64,6 +86,14 @@ const Quotations = () => {
   useEffect(() => {
     filterQuotations();
   }, [quotations, searchTerm, statusFilter]);
+
+  const getCustomerDisplayName = (quotation) => (
+    quotation.customer?.fullName || quotation.genericCustomerName || 'Cliente Genérico'
+  );
+
+  const getCustomerDisplayContact = (quotation) => (
+    quotation.customer?.phone || quotation.genericCustomerContact || ''
+  );
 
   const fetchData = async () => {
     try {
@@ -92,11 +122,14 @@ const Quotations = () => {
     let filtered = quotations;
 
     if (searchTerm) {
-      filtered = filtered.filter(
-        (q) =>
-          q.quotationNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          q.customer?.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const normalizedTerm = searchTerm.toLowerCase();
+      filtered = filtered.filter((q) => {
+        const customerName = getCustomerDisplayName(q).toLowerCase();
+        return (
+          q.quotationNumber?.toLowerCase().includes(normalizedTerm) ||
+          customerName.includes(normalizedTerm)
+        );
+      });
     }
 
     if (statusFilter !== 'all') {
@@ -337,10 +370,10 @@ const Quotations = () => {
                     <td className="px-6 py-4">
                       <div>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {quotation.customer?.fullName || 'N/A'}
+                          {getCustomerDisplayName(quotation)}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {quotation.customer?.phone || ''}
+                          {getCustomerDisplayContact(quotation)}
                         </p>
                       </div>
                     </td>
@@ -441,53 +474,105 @@ const Quotations = () => {
 
 // Modal de creación/edición (simplificado por ahora)
 const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => {
+  const initialCustomerId = quotation?.customer?._id || quotation?.customer || '';
+  const [customerMode, setCustomerMode] = useState(initialCustomerId ? 'existing' : 'generic');
   const [formData, setFormData] = useState({
-    customer: quotation?.customer?._id || '',
-    items: quotation?.items?.map(item => ({
-      product: item.product._id || item.product,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      discount: item.discount || 0,
-    })) || [],
+    customer: initialCustomerId,
+    genericCustomerName: quotation?.genericCustomerName || '',
+    genericCustomerContact: quotation?.genericCustomerContact || '',
     validUntil: quotation?.validUntil ? new Date(quotation.validUntil).toISOString().split('T')[0] : '',
     notes: quotation?.notes || '',
     terms: quotation?.terms || '',
   });
 
-  const [cart, setCart] = useState(formData.items);
-  const [searchTerm, setSearchTerm] = useState('');
+  const buildInitialCart = () => {
+    if (!quotation?.items) return [];
+    return quotation.items.map((item) => {
+      const productObj = typeof item.product === 'object' && item.product !== null
+        ? item.product
+        : products.find((p) => p._id === item.product);
+      const productId = typeof item.product === 'object' && item.product !== null
+        ? item.product._id
+        : item.product;
+
+      return {
+        product: productId,
+        productData: productObj || null,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discount: item.discount || 0,
+      };
+    });
+  };
+
+  const [cart, setCart] = useState(() => buildInitialCart());
+  const [productSearch, setProductSearch] = useState('');
+
+  useEffect(() => {
+    if (!quotation) {
+      setFormData((prev) => {
+        if (prev.validUntil) return prev;
+        return { ...prev, validUntil: getDefaultValidDateString() };
+      });
+    }
+  }, [quotation]);
+
+  useEffect(() => {
+    if (!products.length) return;
+    setCart((prev) => prev.map((item) => {
+      if (item.productData) return item;
+      const productObj = products.find((p) => p._id === item.product);
+      return productObj ? { ...item, productData: productObj } : item;
+    }));
+  }, [products]);
 
   const addProduct = (product) => {
-    const exists = cart.find(item => item.product === product._id);
+    const exists = cart.find((item) => item.product === product._id);
     if (exists) {
       toast.error('Producto ya agregado');
       return;
     }
 
-    setCart([...cart, {
-      product: product._id,
-      productData: product,
-      quantity: 1,
-      unitPrice: product.sellingPrice,
-      discount: 0,
-    }]);
+    setCart([
+      ...cart,
+      {
+        product: product._id,
+        productData: product,
+        quantity: 1,
+        unitPrice: product.sellingPrice ?? 0,
+        discount: 0,
+      },
+    ]);
   };
 
   const removeProduct = (productId) => {
-    setCart(cart.filter(item => item.product !== productId));
+    setCart(cart.filter((item) => item.product !== productId));
   };
 
   const updateQuantity = (productId, quantity) => {
-    setCart(cart.map(item => 
-      item.product === productId ? { ...item, quantity: parseInt(quantity) || 1 } : item
-    ));
+    const parsed = Math.max(1, parseInt(quantity, 10) || 1);
+    setCart(cart.map((item) => (item.product === productId ? { ...item, quantity: parsed } : item)));
   };
+
+  const filteredProducts = products.filter((p) => {
+    const term = productSearch.toLowerCase();
+    const name = p.name?.toLowerCase() || '';
+    const sku = p.sku?.toLowerCase() || '';
+    return name.includes(term) || sku.includes(term);
+  });
+
+  const approximateTotal = cart.reduce((sum, item) => sum + item.quantity * (Number(item.unitPrice) || 0), 0);
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!formData.customer) {
-      toast.error('Selecciona un cliente');
+    if (customerMode === 'existing' && !formData.customer) {
+      toast.error('Selecciona un cliente registrado');
+      return;
+    }
+
+    if (customerMode === 'generic' && (!formData.genericCustomerName || formData.genericCustomerName.trim() === '')) {
+      toast.error('Ingresa un nombre para el cliente genérico');
       return;
     }
 
@@ -502,30 +587,32 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
     }
 
     onSave({
-      ...formData,
-      items: cart.map(item => ({
+      customer: customerMode === 'existing' ? formData.customer : null,
+      genericCustomerName: customerMode === 'generic' ? formData.genericCustomerName : undefined,
+      genericCustomerContact: customerMode === 'generic' ? formData.genericCustomerContact : undefined,
+      validUntil: formData.validUntil,
+      notes: formData.notes,
+      terms: formData.terms,
+      items: cart.map((item) => ({
         product: item.product,
         quantity: item.quantity,
-        unitPrice: item.unitPrice,
+        unitPrice: Number(item.unitPrice) || 0,
         discount: item.discount || 0,
       })),
     });
   };
 
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return createPortal(
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 100000 }}>
       <div className="glass-strong rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
-        {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {quotation ? 'Editar Cotización' : 'Nueva Cotización'}
-            </h2>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {quotation ? 'Editar Cotización' : 'Nueva Cotización'}
+              </h2>
+              <p className="text-sm text-gray-500">Completa los datos y selecciona productos</p>
+            </div>
             <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg">
               <X className="w-6 h-6" />
             </button>
@@ -533,88 +620,168 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex gap-4 p-6">
-          {/* Left: Products */}
           <div className="flex-1 flex flex-col">
-            <div className="mb-4">
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar productos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="input w-full"
+                placeholder="Buscar productos por nombre o SKU..."
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                className="input w-full pl-10"
               />
             </div>
             <div className="flex-1 overflow-auto border rounded-lg p-2 space-y-2">
-              {filteredProducts.map(product => (
-                <div
+              {filteredProducts.map((product) => (
+                <button
+                  type="button"
                   key={product._id}
-                  className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer flex justify-between items-center"
+                  className="w-full p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex justify-between items-center text-left"
                   onClick={() => addProduct(product)}
                 >
                   <div>
-                    <p className="font-medium text-sm">{product.name}</p>
+                    <p className="font-medium text-sm text-gray-900 dark:text-white">{product.name}</p>
                     <p className="text-xs text-gray-500">{product.sku}</p>
                   </div>
-                  <span className="text-sm font-bold">
-                    ${product.sellingPrice.toFixed(2)}
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    ${(product.sellingPrice ?? 0).toFixed(2)}
                   </span>
-                </div>
+                </button>
               ))}
+              {filteredProducts.length === 0 && (
+                <p className="text-center text-gray-500 py-8">No se encontraron productos</p>
+              )}
             </div>
           </div>
 
-          {/* Right: Form */}
           <div className="w-96 flex flex-col">
-            <div className="space-y-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Cliente *</label>
-                <select
-                  value={formData.customer}
-                  onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
-                  className="input w-full"
-                  required
+            <div className="mb-4 space-y-4">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCustomerMode('existing')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border ${
+                    customerMode === 'existing'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20'
+                      : 'border-gray-300 text-gray-600 hover:border-primary-200'
+                  }`}
                 >
-                  <option value="">Selecciona un cliente</option>
-                  {customers.map(c => (
-                    <option key={c._id} value={c._id}>{c.fullName}</option>
-                  ))}
-                </select>
+                  <User className="w-4 h-4" /> Cliente registrado
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomerMode('generic')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border ${
+                    customerMode === 'generic'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20'
+                      : 'border-gray-300 text-gray-600 hover:border-primary-200'
+                  }`}
+                >
+                  <UserPlus className="w-4 h-4" /> Cliente genérico
+                </button>
               </div>
+
+              {customerMode === 'existing' && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Cliente *</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <select
+                      value={formData.customer}
+                      onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
+                      className="input w-full pl-9"
+                    >
+                      <option value="">Selecciona un cliente</option>
+                      {customers.map((c) => (
+                        <option key={c._id} value={c._id}>{c.fullName}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {customerMode === 'generic' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Nombre del cliente *</label>
+                    <div className="relative">
+                      <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.genericCustomerName}
+                        onChange={(e) => setFormData({ ...formData, genericCustomerName: e.target.value })}
+                        className="input w-full pl-9"
+                        placeholder="Cliente mostrador"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Contacto</label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.genericCustomerContact}
+                        onChange={(e) => setFormData({ ...formData, genericCustomerContact: e.target.value })}
+                        className="input w-full pl-9"
+                        placeholder="Teléfono o email"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium mb-2">Válida hasta *</label>
-                <input
-                  type="date"
-                  value={formData.validUntil}
-                  onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
-                  className="input w-full"
-                  required
-                />
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="date"
+                    value={formData.validUntil}
+                    onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })}
+                    className="input w-full pl-9"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Se recomienda entregar antes de {formData.validUntil || 'la fecha indicada'}</p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2">Notas</label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  className="input w-full"
-                  rows="2"
-                />
+                <div className="relative">
+                  <StickyNote className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    className="input w-full pl-9"
+                    rows="2"
+                    placeholder="Detalles internos"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Cart */}
             <div className="flex-1 overflow-auto border rounded-lg p-2 mb-4">
-              <h3 className="font-semibold mb-2">Productos ({cart.length})</h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold">Productos ({cart.length})</h3>
+                {cart.length > 0 && (
+                  <p className="text-xs text-gray-500">
+                    Total aproximado: ${approximateTotal.toFixed(2)}
+                  </p>
+                )}
+              </div>
               {cart.length === 0 ? (
                 <p className="text-center text-gray-500 py-8">
                   Selecciona productos de la izquierda
                 </p>
               ) : (
-                cart.map(item => (
+                cart.map((item) => (
                   <div key={item.product} className="p-2 bg-gray-50 dark:bg-gray-800 rounded mb-2">
-                    <div className="flex justify-between items-start mb-2">
-                      <p className="text-sm font-medium">{item.productData?.name}</p>
+                    <div className="flex justify-between items-start mb-1">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{item.productData?.name || 'Producto'}</p>
+                        <p className="text-xs text-gray-500">{item.productData?.sku || ''}</p>
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeProduct(item.product)}
@@ -623,24 +790,26 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
                         <X className="w-4 h-4" />
                       </button>
                     </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => updateQuantity(item.product, e.target.value)}
-                        className="input text-sm w-20"
-                      />
-                      <span className="text-xs self-center">
-                        ${(item.quantity * item.unitPrice).toFixed(2)}
-                      </span>
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <label className="text-xs text-gray-500">Cantidad</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => updateQuantity(item.product, e.target.value)}
+                          className="input text-sm w-20"
+                        />
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-300 ml-auto">
+                        Subtotal: ${(item.quantity * (Number(item.unitPrice) || 0)).toFixed(2)}
+                      </div>
                     </div>
                   </div>
                 ))
               )}
             </div>
 
-            {/* Actions */}
             <div className="flex gap-2">
               <button type="button" onClick={onClose} className="btn-secondary flex-1">
                 Cancelar
@@ -666,6 +835,9 @@ const DetailModal = ({ quotation, onClose }) => {
     }).format(value);
   };
 
+  const customerName = quotation.customer?.fullName || quotation.genericCustomerName || 'Cliente Genérico';
+  const customerContact = quotation.customer?.phone || quotation.genericCustomerContact || 'N/A';
+
   return createPortal(
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 100000 }}>
       <div className="glass-strong rounded-2xl w-full max-w-2xl p-6">
@@ -679,14 +851,15 @@ const DetailModal = ({ quotation, onClose }) => {
         <div className="space-y-4">
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400">Cliente</p>
-            <p className="font-medium">{quotation.customer?.fullName}</p>
+            <p className="font-medium">{customerName}</p>
+            <p className="text-xs text-gray-500">{customerContact}</p>
           </div>
 
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Productos</p>
             {quotation.items?.map((item, idx) => (
               <div key={idx} className="flex justify-between py-2 border-b">
-                <span>{item.product?.name} x{item.quantity}</span>
+                <span>{item.product?.name || 'Producto'} x{item.quantity}</span>
                 <span className="font-bold">{formatCurrency(item.subtotal)}</span>
               </div>
             ))}

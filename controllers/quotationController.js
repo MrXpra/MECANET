@@ -3,6 +3,21 @@ import Product from '../models/Product.js';
 import Customer from '../models/Customer.js';
 import Sale from '../models/Sale.js';
 
+const addBusinessDays = (startDate, days) => {
+  const date = new Date(startDate);
+  let added = 0;
+
+  while (added < days) {
+    date.setDate(date.getDate() + 1);
+    const day = date.getDay();
+    if (day !== 0 && day !== 6) {
+      added += 1;
+    }
+  }
+
+  return date;
+};
+
 // @desc    Obtener todas las cotizaciones
 // @route   GET /api/quotations
 // @access  Private
@@ -85,12 +100,20 @@ export const getQuotationById = async (req, res) => {
 // @access  Private
 export const createQuotation = async (req, res) => {
   try {
-    const { customer, items, validUntil, notes, terms } = req.body;
+    const { customer, genericCustomerName, genericCustomerContact, items, validUntil, notes, terms } = req.body;
+    const cleanGenericName = genericCustomerName?.trim();
+    const cleanGenericContact = genericCustomerContact?.trim();
 
-    // Validar cliente
-    const customerExists = await Customer.findById(customer);
-    if (!customerExists) {
-      return res.status(404).json({ message: 'Cliente no encontrado' });
+    if (!customer && (!cleanGenericName || cleanGenericName === '')) {
+      return res.status(400).json({ message: 'Debes seleccionar un cliente o ingresar un nombre genérico' });
+    }
+
+    let customerExists = null;
+    if (customer) {
+      customerExists = await Customer.findById(customer);
+      if (!customerExists) {
+        return res.status(404).json({ message: 'Cliente no encontrado' });
+      }
     }
 
     // Validar y calcular items
@@ -124,13 +147,17 @@ export const createQuotation = async (req, res) => {
     const total = subtotal + tax;
 
     // Crear cotización
+    const fallbackValidUntil = validUntil ? new Date(validUntil) : addBusinessDays(new Date(), 5);
+
     const quotation = new Quotation({
-      customer,
+      customer: customerExists ? customerExists._id : null,
+      genericCustomerName: !customerExists ? cleanGenericName : undefined,
+      genericCustomerContact: !customerExists ? cleanGenericContact : undefined,
       items: processedItems,
       subtotal,
       tax,
       total,
-      validUntil,
+      validUntil: fallbackValidUntil,
       notes,
       terms,
       createdBy: req.user.id,
@@ -168,15 +195,32 @@ export const updateQuotation = async (req, res) => {
       });
     }
 
-    const { customer, items, validUntil, notes, terms } = req.body;
+    const { customer, genericCustomerName, genericCustomerContact, items, validUntil, notes, terms } = req.body;
 
     // Validar cliente si se proporciona
-    if (customer && customer !== quotation.customer.toString()) {
-      const customerExists = await Customer.findById(customer);
-      if (!customerExists) {
-        return res.status(404).json({ message: 'Cliente no encontrado' });
+    if (customer !== undefined) {
+      if (customer) {
+        const customerExists = await Customer.findById(customer);
+        if (!customerExists) {
+          return res.status(404).json({ message: 'Cliente no encontrado' });
+        }
+        quotation.customer = customerExists._id;
+        quotation.genericCustomerName = undefined;
+        quotation.genericCustomerContact = undefined;
+      } else {
+        quotation.customer = null;
       }
-      quotation.customer = customer;
+    }
+
+    if (genericCustomerName !== undefined) {
+      quotation.genericCustomerName = cleanGenericName;
+    }
+    if (genericCustomerContact !== undefined) {
+      quotation.genericCustomerContact = cleanGenericContact;
+    }
+
+    if (!quotation.customer && (!quotation.genericCustomerName || quotation.genericCustomerName.trim() === '')) {
+      return res.status(400).json({ message: 'Debes mantener un cliente asignado o un nombre genérico' });
     }
 
     // Recalcular items si se proporcionan
@@ -215,7 +259,9 @@ export const updateQuotation = async (req, res) => {
       quotation.total = total;
     }
 
-    if (validUntil) quotation.validUntil = validUntil;
+    if (validUntil) {
+      quotation.validUntil = new Date(validUntil);
+    }
     if (notes !== undefined) quotation.notes = notes;
     if (terms !== undefined) quotation.terms = terms;
 

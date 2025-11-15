@@ -28,7 +28,17 @@ const quotationSchema = new mongoose.Schema({
   customer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Customer',
-    required: true,
+    default: null,
+  },
+
+  // Datos de cliente genérico (si no existe en la base)
+  genericCustomerName: {
+    type: String,
+    trim: true,
+  },
+  genericCustomerContact: {
+    type: String,
+    trim: true,
   },
   
   // Items incluidos en la cotización
@@ -176,6 +186,7 @@ quotationSchema.pre('validate', async function(next) {
  * Mejoran el rendimiento de búsquedas frecuentes
  */
 quotationSchema.index({ customer: 1 }); // Cotizaciones por cliente
+quotationSchema.index({ genericCustomerName: 1 }); // Buscar por nombre genérico
 quotationSchema.index({ status: 1 }); // Filtrar por estado
 quotationSchema.index({ createdAt: -1 }); // Ordenar por fecha
 quotationSchema.index({ validUntil: 1 }); // Para job cron de vencimientos
