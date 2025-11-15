@@ -8,7 +8,7 @@ import {
   convertToSale,
   updateQuotationStatus,
 } from '../controllers/quotationController.js';
-import { protect, adminOnly } from '../middleware/authMiddleware.js';
+import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -23,6 +23,6 @@ router.put('/:id/status', protect, updateQuotationStatus);
 router.post('/:id/convert', protect, convertToSale);
 
 // Solo admin puede eliminar
-router.delete('/:id', protect, adminOnly, deleteQuotation);
+router.delete('/:id', protect, admin, deleteQuotation);
 
 export default router;
