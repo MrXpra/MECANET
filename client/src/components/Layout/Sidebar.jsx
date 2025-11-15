@@ -68,6 +68,7 @@ const Sidebar = () => {
   const [ventasExpanded, setVentasExpanded] = useState(
     location.pathname.includes('/facturacion') || 
     location.pathname.includes('/historial-ventas') || 
+    location.pathname.includes('/cotizaciones') ||
     location.pathname.includes('/devoluciones')
   );
   const [inventarioExpanded, setInventarioExpanded] = useState(
@@ -97,6 +98,7 @@ const Sidebar = () => {
   const ventasSections = [
     { path: '/facturacion', icon: ShoppingCart, label: 'Nueva Factura', shortcut: 'Ctrl+B' },
     { path: '/historial-ventas', icon: Receipt, label: 'Historial', shortcut: 'Ctrl+H' },
+    { path: '/cotizaciones', icon: FileText, label: 'Cotizaciones' },
     { path: '/devoluciones', icon: RefreshCw, label: 'Devoluciones' },
   ];
 
@@ -195,6 +197,7 @@ const Sidebar = () => {
             className={`w-full flex items-center gap-2 xl:gap-3 px-3 xl:px-4 py-2 xl:py-3 rounded-lg transition-all duration-200 text-sm xl:text-base ${
               location.pathname.includes('/facturacion') || 
               location.pathname.includes('/historial-ventas') || 
+              location.pathname.includes('/cotizaciones') ||
               location.pathname.includes('/devoluciones')
                 ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'

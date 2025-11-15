@@ -35,6 +35,7 @@ import returnRoutes from './routes/returnRoutes.js'; // Devoluciones de producto
 import cashWithdrawalRoutes from './routes/cashWithdrawalRoutes.js'; // Retiros de caja
 import logRoutes from './routes/logRoutes.js'; // Sistema de logs técnicos
 import auditLogRoutes from './routes/auditLogRoutes.js'; // Sistema de auditoría de usuario
+import quotationRoutes from './routes/quotationRoutes.js'; // Cotizaciones
 
 // Importar middleware de manejo de errores global
 import { errorHandler } from './middleware/errorMiddleware.js';
@@ -142,6 +143,7 @@ app.use('/api/returns', returnRoutes); // /api/returns (devoluciones)
 app.use('/api/cash-withdrawals', cashWithdrawalRoutes); // /api/cash-withdrawals
 app.use('/api/logs', logRoutes); // /api/logs (logs técnicos del sistema)
 app.use('/api/audit-logs', auditLogRoutes); // /api/audit-logs (auditoría de usuario)
+app.use('/api/quotations', quotationRoutes); // /api/quotations (cotizaciones)
 
 // ========== SERVIR FRONTEND EN PRODUCCIÓN ==========
 // En producción, Express sirve los archivos estáticos del build de React

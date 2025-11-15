@@ -100,6 +100,8 @@ const Billing = () => {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [completedSale, setCompletedSale] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('Efectivo');
+  const [amountReceived, setAmountReceived] = useState('');
+  const [change, setChange] = useState(0);
   const [globalDiscount, setGlobalDiscount] = useState(0);
   const [globalDiscountAmount, setGlobalDiscountAmount] = useState(0);
   const [categories, setCategories] = useState([]);
@@ -136,6 +138,18 @@ const Billing = () => {
     // Auto-focus en el campo de búsqueda
     searchInputRef.current?.focus();
   }, [pagination.page, selectedCategory]);
+
+  // Calcular cambio automáticamente
+  useEffect(() => {
+    if (paymentMethod === 'Efectivo' && amountReceived) {
+      const received = parseFloat(amountReceived) || 0;
+      const totalAmount = getTotal();
+      setChange(received - totalAmount);
+    } else {
+      setChange(0);
+      setAmountReceived('');
+    }
+  }, [amountReceived, paymentMethod, items, globalDiscount, globalDiscountAmount]);
 
   // Cerrar modales con tecla ESC
   useEffect(() => {
@@ -303,6 +317,16 @@ const Billing = () => {
 
   const handleCompleteSale = async () => {
     try {
+      // Validar monto recibido para efectivo
+      if (paymentMethod === 'Efectivo') {
+        const received = parseFloat(amountReceived) || 0;
+        const total = getTotal();
+        if (received < total) {
+          toast.error('El monto recibido debe ser mayor o igual al total');
+          return;
+        }
+      }
+
       setIsLoading(true);
 
       const saleData = {
@@ -326,10 +350,12 @@ const Billing = () => {
       setShowPaymentModal(false);
       setShowPrintModal(true);
       
-      // Limpiar carrito
+      // Limpiar carrito y estados de pago
       clearCart();
       setGlobalDiscount(0);
       setGlobalDiscountAmount(0);
+      setAmountReceived('');
+      setChange(0);
       
       // Recargar productos para actualizar stock
       fetchProducts();
@@ -471,6 +497,16 @@ const Billing = () => {
                 Pago: ${sale.paymentMethod}
               </td>
             </tr>
+            ${sale.paymentMethod === 'Efectivo' && amountReceived ? `
+              <tr>
+                <td>Recibido:</td>
+                <td class="right">${formatCurrency(parseFloat(amountReceived))}</td>
+              </tr>
+              <tr style="background: #f0f0f0; font-weight: bold;">
+                <td>CAMBIO:</td>
+                <td class="right">${formatCurrency(change >= 0 ? change : 0)}</td>
+              </tr>
+            ` : ''}
           </table>
           
           <div class="line"></div>
@@ -778,6 +814,9 @@ const Billing = () => {
           total={getTotal()}
           paymentMethod={paymentMethod}
           setPaymentMethod={setPaymentMethod}
+          amountReceived={amountReceived}
+          setAmountReceived={setAmountReceived}
+          change={change}
           onConfirm={handleCompleteSale}
           onClose={() => setShowPaymentModal(false)}
           isLoading={isLoading}
@@ -1137,6 +1176,9 @@ const PaymentModal = ({
   total,
   paymentMethod,
   setPaymentMethod,
+  amountReceived,
+  setAmountReceived,
+  change,
   onConfirm,
   onClose,
   isLoading,
@@ -1329,6 +1371,63 @@ const PaymentModal = ({
             ))}
           </div>
         </div>
+
+        {/* Monto Recibido y Cambio (solo para Efectivo) */}
+        {paymentMethod === 'Efectivo' && (
+          <div className="mb-6 space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Monto Recibido *
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min={calculateFinalTotal()}
+                  value={amountReceived}
+                  onChange={(e) => setAmountReceived(e.target.value)}
+                  className="input pl-8"
+                  placeholder={`Mínimo: ${formatCurrency(calculateFinalTotal())}`}
+                  required
+                />
+              </div>
+            </div>
+
+            {amountReceived && (
+              <div className={`p-4 rounded-lg border-2 ${
+                change >= 0 
+                  ? 'bg-green-50 dark:bg-green-900/20 border-green-500' 
+                  : 'bg-red-50 dark:bg-red-900/20 border-red-500'
+              }`}>
+                <div className="flex justify-between items-center">
+                  <span className={`text-lg font-semibold ${
+                    change >= 0 
+                      ? 'text-green-700 dark:text-green-300' 
+                      : 'text-red-700 dark:text-red-300'
+                  }`}>
+                    Cambio a Devolver:
+                  </span>
+                  <span className={`text-3xl font-bold ${
+                    change >= 0 
+                      ? 'text-green-600 dark:text-green-400' 
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {formatCurrency(change >= 0 ? change : 0)}
+                  </span>
+                </div>
+                {change < 0 && (
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    El monto recibido es menor al total
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-3">
           <button onClick={onClose} className="btn-secondary flex-1">

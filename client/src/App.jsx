@@ -41,6 +41,7 @@ import PurchaseOrders from './pages/PurchaseOrders';
 import Returns from './pages/Returns';
 import SalesHistory from './pages/SalesHistory';
 import CashWithdrawals from './pages/CashWithdrawals';
+import Quotations from './pages/Quotations';
 import Logs from './pages/Logs';
 import AuditLogs from './pages/AuditLogs';
 import Monitoring from './pages/Monitoring';
@@ -123,6 +124,7 @@ export const AppRoutes = () => {
           <Route path="ordenes-compra" element={<PurchaseOrders />} />
           <Route path="devoluciones" element={<Returns />} />
           <Route path="historial-ventas" element={<SalesHistory />} />
+          <Route path="cotizaciones" element={<Quotations />} />
           <Route path="cierre-caja" element={<CashRegister />} />
           <Route path="retiros-caja" element={<CashWithdrawals />} />
           

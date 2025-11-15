@@ -205,4 +205,13 @@ export const createCashWithdrawal = (data) => API.post('/cash-withdrawals', data
 export const updateCashWithdrawalStatus = (id, data) => API.patch(`/cash-withdrawals/${id}`, data); // Aprobar/rechazar retiro
 export const deleteCashWithdrawal = (id) => API.delete(`/cash-withdrawals/${id}`); // Eliminar retiro (solo admin)
 
+// ===== QUOTATIONS - Cotizaciones =====
+export const getQuotations = (params) => API.get('/quotations', { params }); // Listar cotizaciones con filtros
+export const getQuotationById = (id) => API.get(`/quotations/${id}`); // Obtener cotización específica
+export const createQuotation = (data) => API.post('/quotations', data); // Crear cotización
+export const updateQuotation = (id, data) => API.put(`/quotations/${id}`, data); // Actualizar cotización
+export const deleteQuotation = (id) => API.delete(`/quotations/${id}`); // Eliminar cotización (solo admin)
+export const convertQuotationToSale = (id, data) => API.post(`/quotations/${id}/convert`, data); // Convertir a venta
+export const updateQuotationStatus = (id, data) => API.put(`/quotations/${id}/status`, data); // Cambiar estado
+
 export default API;
