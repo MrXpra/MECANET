@@ -176,8 +176,8 @@ export const generateAutoOrder = async (req, res) => {
       ordersBySupplier[supplierId].items.push({
         product: product._id,
         quantity: suggestedQuantity,
-        unitPrice: product.purchasePrice,
-        subtotal: suggestedQuantity * product.purchasePrice,
+        unitPrice: 0, // Sin precio, se define con el proveedor
+        subtotal: 0,
       });
     }
 
@@ -186,22 +186,14 @@ export const generateAutoOrder = async (req, res) => {
 
     for (const supplierId in ordersBySupplier) {
       const orderData = ordersBySupplier[supplierId];
-      
-      let subtotal = 0;
-      orderData.items.forEach(item => {
-        subtotal += item.subtotal;
-      });
-
-      const tax = subtotal * 0.18;
-      const total = subtotal + tax;
 
       const order = new PurchaseOrder({
         supplier: supplierId,
         items: orderData.items,
-        subtotal,
-        tax,
-        total,
-        notes: 'Orden generada automáticamente por stock bajo',
+        subtotal: 0,
+        tax: 0,
+        total: 0,
+        notes: 'Orden generada automáticamente por stock bajo - Precios a confirmar con proveedor',
         createdBy: req.user.id,
       });
 
