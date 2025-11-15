@@ -45,6 +45,7 @@ import {
   Package,
   DollarSign,
   AlertCircle,
+  Printer,
 } from 'lucide-react';
 
 const addBusinessDaysClient = (startDate, days) => {
@@ -78,6 +79,8 @@ const Quotations = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [editingQuotation, setEditingQuotation] = useState(null);
   const [selectedQuotation, setSelectedQuotation] = useState(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [quotationToPrint, setQuotationToPrint] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -145,8 +148,13 @@ const Quotations = () => {
         await updateQuotation(editingQuotation._id, data);
         toast.success('Cotización actualizada');
       } else {
-        await createQuotation(data);
+        const response = await createQuotation(data);
+        const createdQuotation = response?.data;
         toast.success('Cotización creada');
+        if (createdQuotation) {
+          setQuotationToPrint(createdQuotation);
+          setShowPrintModal(true);
+        }
       }
       setShowCreateModal(false);
       setEditingQuotation(null);
@@ -213,6 +221,116 @@ const Quotations = () => {
       month: 'short',
       day: 'numeric',
     });
+  };
+
+  const handlePrintQuotation = (quotation) => {
+    if (!quotation) return;
+
+    const printWindow = window.open('', '_blank', 'width=800,height=900');
+    if (!printWindow) {
+      toast.error('No se pudo abrir la ventana de impresión');
+      return;
+    }
+
+    const customerName = getCustomerDisplayName(quotation);
+    const customerContact = getCustomerDisplayContact(quotation) || 'N/A';
+    const validUntilDisplay = quotation.validUntil ? formatDate(quotation.validUntil) : 'N/A';
+    const createdDate = quotation.createdAt ? formatDate(quotation.createdAt) : formatDate(new Date());
+    const itemsRows = (quotation.items || []).map((item, index) => {
+      const productName = item.product?.name || 'Producto';
+      const qty = item.quantity || 0;
+      const unit = formatCurrency(item.unitPrice || 0);
+      const subtotal = formatCurrency(item.subtotal || (item.unitPrice || 0) * qty);
+      return `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${productName}</td>
+          <td>${qty}</td>
+          <td>${unit}</td>
+          <td>${subtotal}</td>
+        </tr>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="es">
+        <head>
+          <meta charset="UTF-8" />
+          <title>Cotización ${quotation.quotationNumber || ''}</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 24px; color: #111827; }
+            h1 { text-align: center; margin-bottom: 8px; }
+            .meta { text-align: center; color: #6b7280; margin-bottom: 24px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+            th, td { border: 1px solid #e5e7eb; padding: 8px; font-size: 12px; text-align: left; }
+            th { background: #f3f4f6; }
+            .totals { margin-top: 16px; width: 40%; float: right; }
+            .totals td { border: none; padding: 4px 8px; }
+            .totals tr:last-child td { font-size: 16px; font-weight: bold; border-top: 1px solid #d1d5db; }
+            .notes { margin-top: 32px; font-size: 12px; color: #374151; }
+            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #6b7280; }
+          </style>
+        </head>
+        <body>
+          <h1>Cotización</h1>
+          <div class="meta">
+            <div><strong>Número:</strong> ${quotation.quotationNumber || 'N/A'}</div>
+            <div><strong>Fecha:</strong> ${createdDate}</div>
+            <div><strong>Válida hasta:</strong> ${validUntilDisplay}</div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+            <strong>Cliente:</strong> ${customerName}<br />
+            <strong>Contacto:</strong> ${customerContact}
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Producto</th>
+                <th>Cant.</th>
+                <th>Precio</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsRows || '<tr><td colspan="5" style="text-align:center; padding:16px;">Sin productos</td></tr>'}
+            </tbody>
+          </table>
+
+          <table class="totals">
+            <tr>
+              <td>Subtotal:</td>
+              <td>${formatCurrency(quotation.subtotal || 0)}</td>
+            </tr>
+            <tr>
+              <td>Impuestos:</td>
+              <td>${formatCurrency(quotation.tax || 0)}</td>
+            </tr>
+            <tr>
+              <td>Total:</td>
+              <td>${formatCurrency(quotation.total || 0)}</td>
+            </tr>
+          </table>
+
+          ${quotation.notes ? `<div class="notes"><strong>Notas:</strong> ${quotation.notes}</div>` : ''}
+          ${quotation.terms ? `<div class="notes"><strong>Términos:</strong> ${quotation.terms}</div>` : ''}
+
+          <div class="footer">
+            Gracias por su preferencia
+          </div>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }, 300);
   };
 
   if (isLoading && quotations.length === 0) {
@@ -455,6 +573,21 @@ const Quotations = () => {
           onClose={() => {
             setShowCreateModal(false);
             setEditingQuotation(null);
+          }}
+        />
+      )}
+
+      {showPrintModal && quotationToPrint && (
+        <QuotationPrintModal
+          quotation={quotationToPrint}
+          onPrint={() => {
+            handlePrintQuotation(quotationToPrint);
+            setShowPrintModal(false);
+            setQuotationToPrint(null);
+          }}
+          onClose={() => {
+            setShowPrintModal(false);
+            setQuotationToPrint(null);
           }}
         />
       )}
@@ -871,6 +1004,72 @@ const DetailModal = ({ quotation, onClose }) => {
               <span>{formatCurrency(quotation.total)}</span>
             </div>
           </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+const QuotationPrintModal = ({ quotation, onPrint, onClose }) => {
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('es-DO', {
+      style: 'currency',
+      currency: 'DOP',
+    }).format(value);
+  };
+
+  const customerName = quotation.customer?.fullName || quotation.genericCustomerName || 'Cliente Genérico';
+  const validUntil = quotation.validUntil ? new Date(quotation.validUntil).toLocaleDateString('es-DO') : 'N/A';
+
+  return createPortal(
+    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style={{ zIndex: 100000 }}>
+      <div className="glass-strong rounded-2xl p-6 w-full max-w-md animate-scale-in" onClick={(e) => e.stopPropagation()}>
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Printer className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            ¡Cotización creada!
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400">
+            Número: <span className="font-semibold">{quotation.quotationNumber || 'N/A'}</span>
+          </p>
+          <p className="text-3xl font-bold text-primary-600 dark:text-primary-400 mt-3">
+            {formatCurrency(quotation.total || 0)}
+          </p>
+        </div>
+
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg space-y-2 text-sm text-gray-600 dark:text-gray-300">
+          <div className="flex justify-between">
+            <span>Cliente:</span>
+            <span className="font-medium text-gray-900 dark:text-white">{customerName}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Productos:</span>
+            <span className="font-medium text-gray-900 dark:text-white">{quotation.items?.length || 0} ítem(s)</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Válida hasta:</span>
+            <span className="font-medium text-gray-900 dark:text-white">{validUntil}</span>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="btn-secondary flex-1 flex items-center justify-center gap-2"
+          >
+            <X className="w-5 h-5" />
+            No imprimir
+          </button>
+          <button
+            onClick={onPrint}
+            className="btn-primary flex-1 flex items-center justify-center gap-2"
+          >
+            <Printer className="w-5 h-5" />
+            Imprimir
+          </button>
         </div>
       </div>
     </div>,
