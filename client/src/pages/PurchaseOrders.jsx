@@ -109,6 +109,7 @@ const PurchaseOrders = () => {
   const [editingOrder, setEditingOrder] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [receivingOrder, setReceivingOrder] = useState(null);
+  const emailFeatureEnabled = settings?.smtp?.enabled ?? globalSettings?.smtp?.enabled ?? true;
   
   // Estados para modales de confirmación
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -177,7 +178,7 @@ const PurchaseOrders = () => {
       const productsData = productsRes?.data?.products || productsRes?.data || [];
       
       setOrders(Array.isArray(ordersData) ? ordersData : []);
-      setSettings(settingsRes);
+      setSettings(settingsRes?.data || settingsRes);
       setSuppliers(Array.isArray(suppliersData) ? suppliersData.filter(s => s.isActive) : []);
       setProducts(Array.isArray(productsData) ? productsData : []);
     } catch (error) {
@@ -344,6 +345,10 @@ const PurchaseOrders = () => {
   };
 
   const handleSendEmail = (order) => {
+    if (!emailFeatureEnabled) {
+      toast.error('El envío de correos está desactivado desde Configuración > Email.');
+      return;
+    }
     // Validar que el proveedor tenga email
     if (!order.supplier?.email) {
       toast.error('El proveedor no tiene email configurado. Por favor, actualiza los datos del proveedor.');
@@ -356,6 +361,12 @@ const PurchaseOrders = () => {
 
   const confirmSendEmail = async () => {
     if (!orderToEmail) return;
+    if (!emailFeatureEnabled) {
+      toast.error('El envío de correos está desactivado. Actívalo en Configuración > Email.');
+      setShowEmailModal(false);
+      setOrderToEmail(null);
+      return;
+    }
 
     try {
       setShowEmailModal(false);
@@ -508,6 +519,16 @@ const PurchaseOrders = () => {
           </button>
         </div>
       </div>
+
+        {!emailFeatureEnabled && (
+          <div className="card-glass border border-amber-200 dark:border-amber-500/40 p-4 flex items-start gap-3 text-amber-800 dark:text-amber-200">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-sm">El envío de emails está desactivado.</p>
+              <p className="text-xs">Activa el SMTP en Configuración &gt; Negocio para poder enviar órdenes a los proveedores.</p>
+            </div>
+          </div>
+        )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -707,9 +728,13 @@ const PurchaseOrders = () => {
                   </button>
                   <button
                     onClick={() => handleSendEmail(order)}
-                    className={`btn btn-sm ${order.emailSent ? 'btn-success' : 'btn-primary'} flex items-center gap-1.5`}
-                    title={order.emailSent ? `Email enviado el ${new Date(order.emailSentDate).toLocaleDateString()}` : 'Enviar orden por email al proveedor'}
-                    disabled={!order.supplier?.email}
+                    className={`btn btn-sm ${order.emailSent ? 'btn-success' : 'btn-primary'} flex items-center gap-1.5 ${(!order.supplier?.email || !emailFeatureEnabled) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    title={!emailFeatureEnabled
+                      ? 'El envío de correos está desactivado'
+                      : order.emailSent
+                        ? `Email enviado el ${new Date(order.emailSentDate).toLocaleDateString()}`
+                        : 'Enviar orden por email al proveedor'}
+                    disabled={!order.supplier?.email || !emailFeatureEnabled}
                   >
                     <Mail className="w-4 h-4" />
                     {order.emailSent ? 'Reenviar' : 'Enviar Email'}
@@ -1053,6 +1078,12 @@ const PurchaseOrders = () => {
               </div>
             </div>
 
+            {!emailFeatureEnabled && (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-center text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+                Activa el SMTP en Configuración &gt; Email para poder enviar órdenes por correo.
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex gap-3">
               <button
@@ -1066,7 +1097,8 @@ const PurchaseOrders = () => {
               </button>
               <button
                 onClick={confirmSendEmail}
-                className="btn btn-primary flex-1 flex items-center justify-center gap-2"
+                className={`btn btn-primary flex-1 flex items-center justify-center gap-2 ${!emailFeatureEnabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+                disabled={!emailFeatureEnabled}
               >
                 <Mail className="w-4 h-4" />
                 {orderToEmail.emailSent ? 'Reenviar' : 'Enviar Email'}

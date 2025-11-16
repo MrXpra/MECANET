@@ -381,9 +381,10 @@ export const sendPurchaseOrder = async (req, res) => {
     });
   } catch (error) {
     console.error('Error al enviar orden:', error);
-    res.status(500).json({ 
-      message: 'Error al enviar orden de compra', 
-      error: error.message 
+    const emailDisabled = error.message?.includes('desactivado');
+    res.status(emailDisabled ? 400 : 500).json({ 
+      message: emailDisabled ? error.message : 'Error al enviar orden de compra', 
+      error: emailDisabled ? undefined : error.message 
     });
   }
 };

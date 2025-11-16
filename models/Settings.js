@@ -53,6 +53,10 @@ const settingsSchema = new mongoose.Schema({
   // ===== CONFIGURACIÓN DE EMAIL/SMTP =====
   // Configuración del servidor SMTP para envío de emails
   smtp: {
+    enabled: {
+      type: Boolean,
+      default: true
+    },
     // Host del servidor SMTP (ej: smtp.gmail.com)
     host: {
       type: String,

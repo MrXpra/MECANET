@@ -30,6 +30,16 @@ export const useSettingsStore = create((set) => ({
     businessAddress: '',
     businessPhone: '',
     businessEmail: '',
+    smtp: {
+      enabled: true,
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      user: '',
+      password: '',
+      fromName: 'AutoParts Manager',
+      fromEmail: ''
+    },
     taxRate: 0,
     currency: 'DOP',
     receiptFooter: '¡Gracias por su compra!',
