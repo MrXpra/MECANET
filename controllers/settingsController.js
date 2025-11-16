@@ -34,6 +34,10 @@ export const getSettings = async (req, res) => {
     } else if (settingsObj.smtp.enabled === undefined) {
       settingsObj.smtp.enabled = true;
     }
+
+    if (settingsObj.requireOrderReception === undefined) {
+      settingsObj.requireOrderReception = true;
+    }
     
     // No enviar la contraseña SMTP en la respuesta (por seguridad)
     if (settingsObj.smtp.password) {

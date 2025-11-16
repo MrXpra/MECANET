@@ -27,17 +27,21 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { Moon, Sun, LogOut, ChevronDown } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { updateProfile } from '../../services/api';
 import ClockWidget from '../ClockWidget';
 import WeatherWidget from '../WeatherWidget';
 
 const TopBar = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user, logout, setAuth, updateUser } = useAuthStore();
   const { isDarkMode, toggleTheme } = useThemeStore();
   const { settings } = useSettingsStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
+  const [updatingShortcuts, setUpdatingShortcuts] = useState(false);
   const buttonRef = useRef(null);
+  const shortcutsActive = user?.shortcutsEnabled !== false;
 
   const handleLogout = () => {
     logout();
@@ -53,6 +57,28 @@ const TopBar = () => {
       });
     }
     setShowUserMenu(!showUserMenu);
+  };
+
+  const handleShortcutToggle = async () => {
+    if (!user) return;
+    const nextValue = !shortcutsActive;
+    try {
+      setUpdatingShortcuts(true);
+      const response = await updateProfile({ shortcutsEnabled: nextValue });
+      const { token, ...profile } = response.data;
+      if (token) {
+        setAuth(profile, token);
+      } else {
+        updateUser(profile);
+      }
+      toast.success(nextValue ? 'Atajos activados' : 'Atajos desactivados');
+    } catch (error) {
+      console.error('Error al actualizar atajos:', error);
+      const message = error.response?.data?.message || 'No se pudo actualizar la preferencia';
+      toast.error(message);
+    } finally {
+      setUpdatingShortcuts(false);
+    }
   };
 
   return (
@@ -132,6 +158,24 @@ const TopBar = () => {
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {user?.email}
                     </p>
+                  </div>
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">Atajos de teclado</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Activa o desactiva los atajos globales</p>
+                      </div>
+                      <label className={`relative inline-flex items-center cursor-pointer ${updatingShortcuts ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={shortcutsActive}
+                          onChange={handleShortcutToggle}
+                          disabled={updatingShortcuts}
+                        />
+                        <div className="w-10 h-5 bg-gray-300 rounded-full peer dark:bg-gray-600 peer-checked:bg-primary-500"></div>
+                      </label>
+                    </div>
                   </div>
                   <button
                     onClick={handleLogout}

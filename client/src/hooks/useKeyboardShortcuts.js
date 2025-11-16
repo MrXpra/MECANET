@@ -15,11 +15,18 @@
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 
 export const useKeyboardShortcuts = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const shortcutsEnabled = user?.shortcutsEnabled !== false;
 
   useEffect(() => {
+    if (!shortcutsEnabled) {
+      return;
+    }
+
     const handleKeyDown = (event) => {
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const modKey = isMac ? event.metaKey : event.ctrlKey;
@@ -81,7 +88,7 @@ export const useKeyboardShortcuts = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [navigate]);
+  }, [navigate, shortcutsEnabled]);
 };
 
 export default useKeyboardShortcuts;

@@ -87,6 +87,7 @@ import {
   Edit,
   Trash2,
   AlertTriangle,
+  Info,
   Send,
   Mail,
 } from 'lucide-react';
@@ -109,6 +110,7 @@ const PurchaseOrders = () => {
   const [editingOrder, setEditingOrder] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [receivingOrder, setReceivingOrder] = useState(null);
+  const requireReception = globalSettings.requireOrderReception !== false;
   const emailFeatureEnabled = settings?.smtp?.enabled ?? globalSettings?.smtp?.enabled ?? true;
   
   // Estados para modales de confirmación
@@ -238,8 +240,8 @@ const PurchaseOrders = () => {
   };
 
   const handleUpdateStatus = async (orderId, newStatus) => {
-    // Si es "Recibida", abrir modal de confirmación
-    if (newStatus === 'Recibida') {
+    // Si es "Recibida", abrir modal de confirmación solo si la recepción está habilitada
+    if (newStatus === 'Recibida' && requireReception) {
       const order = orders.find(o => o._id === orderId);
       setReceivingOrder(order);
       setShowReceiveModal(true);
@@ -386,8 +388,8 @@ const PurchaseOrders = () => {
 
   const handlePrint = (order) => {
     const printWindow = window.open('', '_blank');
-    const companyName = settings?.businessName || 'AutoParts Manager';
-    const logoUrl = settings?.logo || '';
+    const companyName = settings?.businessName || globalSettings?.businessName || 'AutoParts Manager';
+    const logoUrl = settings?.businessLogoUrl || globalSettings?.businessLogoUrl || '';
     
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -526,6 +528,16 @@ const PurchaseOrders = () => {
             <div>
               <p className="font-semibold text-sm">El envío de emails está desactivado.</p>
               <p className="text-xs">Activa el SMTP en Configuración &gt; Negocio para poder enviar órdenes a los proveedores.</p>
+            </div>
+          </div>
+        )}
+
+        {!requireReception && (
+          <div className="card-glass border border-blue-200 dark:border-blue-500/40 p-4 flex items-start gap-3 text-blue-900 dark:text-blue-200">
+            <Info className="w-5 h-5 flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-sm">Recepción manual desactivada.</p>
+              <p className="text-xs">Las órdenes pueden marcarse como recibidas sin capturar cantidades ni fecha de recepción.</p>
             </div>
           </div>
         )}
@@ -689,7 +701,7 @@ const PurchaseOrders = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  {order.status === 'Pendiente' && (
+                  {order.status === 'Pendiente' && requireReception && (
                     <>
                       <button
                         onClick={() => handleUpdateStatus(order._id, 'Enviada')}
@@ -709,7 +721,17 @@ const PurchaseOrders = () => {
                       </button>
                     </>
                   )}
-                  {order.status === 'Enviada' && (
+                  {order.status === 'Pendiente' && !requireReception && (
+                    <button
+                      onClick={() => handleUpdateStatus(order._id, 'Recibida')}
+                      className="btn btn-sm btn-primary flex items-center gap-1.5"
+                      title="Completar la orden sin registrar recepción."
+                    >
+                      <Package className="w-4 h-4" />
+                      Finalizar
+                    </button>
+                  )}
+                  {order.status === 'Enviada' && requireReception && (
                     <button
                       onClick={() => handleUpdateStatus(order._id, 'Recibida')}
                       className="btn btn-sm btn-primary flex items-center gap-1.5"
@@ -717,6 +739,16 @@ const PurchaseOrders = () => {
                     >
                       <Package className="w-4 h-4" />
                       Marcar Recibida
+                    </button>
+                  )}
+                  {order.status === 'Enviada' && !requireReception && (
+                    <button
+                      onClick={() => handleUpdateStatus(order._id, 'Recibida')}
+                      className="btn btn-sm btn-primary flex items-center gap-1.5"
+                      title="Completar la orden sin registrar recepción."
+                    >
+                      <Package className="w-4 h-4" />
+                      Finalizar
                     </button>
                   )}
                   <button

@@ -105,6 +105,7 @@ import {
   Info,
   Settings as SettingsIcon,
   Store,
+  Package,
   Receipt,
   Bell,
   X,
@@ -172,6 +173,7 @@ const Settings = ({ section = 'all' }) => {
     weatherApiKey: '',
     showWeather: true,
     autoCreatePurchaseOrders: false,
+    requireOrderReception: true,
     autoOrderThreshold: 5,
     toastPosition: 'top-center',
   });
@@ -180,6 +182,7 @@ const Settings = ({ section = 'all' }) => {
   const [autoSaveTimeout, setAutoSaveTimeout] = useState(null);
   const smtpEnabled = formData.smtp?.enabled !== false;
   const isAdminUser = user?.role === 'admin';
+  const isDeveloper = user?.role === 'desarrollador';
   const canManageSettings = ['admin', 'desarrollador'].includes(user?.role);
 
   useEffect(() => {
@@ -211,6 +214,10 @@ const Settings = ({ section = 'all' }) => {
           ...(response.data.smtp || {})
         }
       };
+
+      if (settingsData.requireOrderReception === undefined) {
+        settingsData.requireOrderReception = true;
+      }
       
       setFormData(settingsData);
       setOriginalData(settingsData);
@@ -513,20 +520,20 @@ const Settings = ({ section = 'all' }) => {
   // Tabs de secciones
   const tabs = [
     { id: 'business', label: 'Negocio', icon: Building2, path: '/configuracion/negocio' },
-    { id: 'system', label: 'Sistema', icon: Globe, path: '/configuracion/sistema', adminOnly: true },
+    { id: 'system', label: 'Sistema', icon: Globe, path: '/configuracion/sistema', developerOnly: true },
     { id: 'notifications', label: 'Notificaciones', icon: Bell, path: '/configuracion/notificaciones' },
     { id: 'billing', label: 'Facturación', icon: CreditCard, path: '/configuracion/facturacion' },
     { id: 'integrations', label: 'Integraciones', icon: Cloud, path: '/configuracion/integraciones' },
-  ].filter(tab => !tab.adminOnly || isAdminUser);
+  ].filter(tab => !tab.developerOnly || isDeveloper);
 
   // Función para verificar si una sección debe mostrarse
   const shouldShowSection = (sectionId) => {
-    if (sectionId === 'system' && !isAdminUser) return false;
+    if (sectionId === 'system' && !isDeveloper) return false;
     if (section === 'all') return true;
     return section === sectionId;
   };
 
-  if (section === 'system' && !isAdminUser) {
+  if (section === 'system' && !isDeveloper) {
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="card-glass p-6 flex flex-col items-center text-center gap-3">
@@ -534,7 +541,7 @@ const Settings = ({ section = 'all' }) => {
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Acceso restringido</h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Solo los administradores pueden ver y editar la sección de configuración del sistema.
+              Solo los desarrolladores pueden ver y editar la sección de configuración del sistema.
             </p>
           </div>
         </div>
@@ -1247,6 +1254,48 @@ const Settings = ({ section = 'all' }) => {
         </div>
         )}
 
+        {shouldShowSection('system') && (
+        <div className="card-glass p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+              <Package className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Recepción de Órdenes
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Habilita o deshabilita el proceso formal de recepción
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="font-medium text-gray-900 dark:text-white">
+                Requerir confirmación de recepción
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Si lo desactivas, las órdenes podrán completarse sin capturar cantidades recibidas ni fecha de recepción.
+              </p>
+            </div>
+            <label className={`relative inline-flex items-center cursor-pointer ${!canManageSettings ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={formData.requireOrderReception}
+                onChange={(e) => handleChange('requireOrderReception', e.target.checked)}
+                disabled={!canManageSettings}
+              />
+              <div className="w-12 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:bg-primary-600"></div>
+              <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                {formData.requireOrderReception ? 'Activado' : 'Desactivado'}
+              </span>
+            </label>
+          </div>
+        </div>
+        )}
+
         {/* Weather Settings */}
         {shouldShowSection('integrations') && (
         <div className="card-glass p-6">
@@ -1483,7 +1532,7 @@ const Settings = ({ section = 'all' }) => {
         )}
 
         {/* Data Management Section - Export/Import/Clean */}
-        {(section === 'all' || section === 'system') && isAdminUser && (
+        {(section === 'all' || section === 'system') && isDeveloper && (
         <div className="card-glass p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
