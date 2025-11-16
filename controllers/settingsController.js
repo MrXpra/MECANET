@@ -22,6 +22,7 @@ export const getSettings = async (req, res) => {
     // Asegurar que smtp existe con estructura completa
     if (!settingsObj.smtp) {
       settingsObj.smtp = {
+        enabled: true,
         host: 'smtp.gmail.com',
         port: 587,
         secure: false,
@@ -30,6 +31,8 @@ export const getSettings = async (req, res) => {
         fromName: 'AutoParts Manager',
         fromEmail: ''
       };
+    } else if (settingsObj.smtp.enabled === undefined) {
+      settingsObj.smtp.enabled = true;
     }
     
     // No enviar la contraseña SMTP en la respuesta (por seguridad)
@@ -95,7 +98,7 @@ export const updateSettings = async (req, res) => {
 // @access  Private/Admin
 export const updateSmtpSettings = async (req, res) => {
   try {
-    const { host, port, secure, user, password, fromName, fromEmail } = req.body;
+    const { host, port, secure, user, password, fromName, fromEmail, enabled } = req.body;
     
     let settings = await Settings.findOne();
     
@@ -112,6 +115,7 @@ export const updateSmtpSettings = async (req, res) => {
     }
     
     // Actualizar solo campos SMTP proporcionados
+    if (enabled !== undefined) settings.smtp.enabled = enabled;
     if (host !== undefined) settings.smtp.host = host;
     if (port !== undefined) settings.smtp.port = port;
     if (secure !== undefined) settings.smtp.secure = secure;

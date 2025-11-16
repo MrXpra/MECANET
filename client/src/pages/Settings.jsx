@@ -155,6 +155,7 @@ const Settings = ({ section = 'all' }) => {
     businessPhone: '',
     businessEmail: '',
     smtp: {
+      enabled: true,
       host: 'smtp.gmail.com',
       port: 587,
       secure: false,
@@ -177,6 +178,9 @@ const Settings = ({ section = 'all' }) => {
 
   const [originalData, setOriginalData] = useState({});
   const [autoSaveTimeout, setAutoSaveTimeout] = useState(null);
+  const smtpEnabled = formData.smtp?.enabled !== false;
+  const isAdminUser = user?.role === 'admin';
+  const canManageSettings = ['admin', 'desarrollador'].includes(user?.role);
 
   useEffect(() => {
     fetchSettings();
@@ -188,17 +192,23 @@ const Settings = ({ section = 'all' }) => {
       setIsLoading(true);
       const response = await getSettings();
       
+      const smtpDefaults = {
+        enabled: true,
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        user: '',
+        password: '',
+        fromName: '',
+        fromEmail: ''
+      };
+
       // Asegurar que smtp existe con valores por defecto si no viene del backend
       const settingsData = {
         ...response.data,
-        smtp: response.data.smtp || {
-          host: 'smtp.gmail.com',
-          port: 587,
-          secure: false,
-          user: '',
-          password: '',
-          fromName: '',
-          fromEmail: ''
+        smtp: {
+          ...smtpDefaults,
+          ...(response.data.smtp || {})
         }
       };
       
@@ -286,6 +296,11 @@ const Settings = ({ section = 'all' }) => {
       smtp: { ...formData.smtp, [field]: value }
     });
     setHasChanges(true);
+  };
+
+  const toggleSmtpEnabled = () => {
+    if (!canManageSettings) return;
+    handleSmtpChange('enabled', !smtpEnabled);
   };
 
   const fetchNotificationPreferences = async () => {
@@ -433,6 +448,11 @@ const Settings = ({ section = 'all' }) => {
   };
 
   const handleTestEmail = async () => {
+    if (!smtpEnabled) {
+      toast.error('Activa el envío de correos para probar la conexión.');
+      return;
+    }
+
     try {
       setTestingEmail(true);
       
@@ -493,20 +513,34 @@ const Settings = ({ section = 'all' }) => {
   // Tabs de secciones
   const tabs = [
     { id: 'business', label: 'Negocio', icon: Building2, path: '/configuracion/negocio' },
-    { id: 'system', label: 'Sistema', icon: Globe, path: '/configuracion/sistema' },
+    { id: 'system', label: 'Sistema', icon: Globe, path: '/configuracion/sistema', adminOnly: true },
     { id: 'notifications', label: 'Notificaciones', icon: Bell, path: '/configuracion/notificaciones' },
     { id: 'billing', label: 'Facturación', icon: CreditCard, path: '/configuracion/facturacion' },
     { id: 'integrations', label: 'Integraciones', icon: Cloud, path: '/configuracion/integraciones' },
-  ];
+  ].filter(tab => !tab.adminOnly || isAdminUser);
 
   // Función para verificar si una sección debe mostrarse
   const shouldShowSection = (sectionId) => {
+    if (sectionId === 'system' && !isAdminUser) return false;
     if (section === 'all') return true;
     return section === sectionId;
   };
 
-  const canManageSettings = ['admin', 'desarrollador'].includes(user?.role);
-  const isDeveloper = user?.role === 'desarrollador';
+  if (section === 'system' && !isAdminUser) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="card-glass p-6 flex flex-col items-center text-center gap-3">
+          <AlertCircle className="w-12 h-12 text-amber-500" />
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Acceso restringido</h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              Solo los administradores pueden ver y editar la sección de configuración del sistema.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -710,7 +744,7 @@ const Settings = ({ section = 'all' }) => {
         {/* Email/SMTP Configuration */}
         {shouldShowSection('business') && (
         <div className="card-glass p-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                 <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -724,24 +758,52 @@ const Settings = ({ section = 'all' }) => {
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleTestEmail}
-              disabled={testingEmail || !canManageSettings}
-              className="btn btn-secondary flex items-center gap-2"
-            >
-              {testingEmail ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                  Probando...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4" />
-                  Probar Conexión
-                </>
-              )}
-            </button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-3">
+                <span className={`text-sm font-medium ${smtpEnabled ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                  {smtpEnabled ? 'Emails activados' : 'Emails desactivados'}
+                </span>
+                <button
+                  type="button"
+                  onClick={toggleSmtpEnabled}
+                  disabled={!canManageSettings}
+                  aria-pressed={smtpEnabled}
+                  className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors ${smtpEnabled ? 'bg-green-500' : 'bg-gray-400'} ${!canManageSettings ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${smtpEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+                  />
+                </button>
+              </div>
+              <button
+                onClick={handleTestEmail}
+                disabled={testingEmail || !canManageSettings || !smtpEnabled}
+                className="btn btn-secondary flex items-center gap-2"
+              >
+                {testingEmail ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                    Probando...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Probar Conexión
+                  </>
+                )}
+              </button>
+            </div>
           </div>
+
+          {!smtpEnabled && (
+            <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold">El envío de correos está desactivado.</p>
+                <p className="text-xs">No podrás enviar órdenes de compra ni probar la conexión hasta activarlo nuevamente.</p>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* SMTP Host */}
@@ -753,7 +815,7 @@ const Settings = ({ section = 'all' }) => {
                 type="text"
                 value={formData.smtp?.host || ''}
                 onChange={(e) => handleSmtpChange('host', e.target.value)}
-                disabled={!canManageSettings}
+                disabled={!canManageSettings || !smtpEnabled}
                 className="input"
                 placeholder="smtp.gmail.com"
               />
@@ -771,7 +833,7 @@ const Settings = ({ section = 'all' }) => {
                 type="number"
                 value={formData.smtp?.port || 587}
                 onChange={(e) => handleSmtpChange('port', parseInt(e.target.value))}
-                disabled={!canManageSettings}
+                disabled={!canManageSettings || !smtpEnabled}
                 className="input"
                 placeholder="587"
               />
@@ -789,7 +851,7 @@ const Settings = ({ section = 'all' }) => {
                 type="email"
                 value={formData.smtp?.user || ''}
                 onChange={(e) => handleSmtpChange('user', e.target.value)}
-                disabled={!canManageSettings}
+                disabled={!canManageSettings || !smtpEnabled}
                 className="input"
                 placeholder="tu-email@gmail.com"
               />
@@ -805,7 +867,7 @@ const Settings = ({ section = 'all' }) => {
                   type={showSmtpPassword ? "text" : "password"}
                   value={formData.smtp?.password || ''}
                   onChange={(e) => handleSmtpChange('password', e.target.value)}
-                  disabled={!canManageSettings}
+                  disabled={!canManageSettings || !smtpEnabled}
                   className="input pr-10"
                   placeholder="Escribe aquí la contraseña de 16 caracteres"
                 />
@@ -831,7 +893,7 @@ const Settings = ({ section = 'all' }) => {
                 type="text"
                 value={formData.smtp?.fromName || ''}
                 onChange={(e) => handleSmtpChange('fromName', e.target.value)}
-                disabled={!canManageSettings}
+                disabled={!canManageSettings || !smtpEnabled}
                 className="input"
                 placeholder="Mi Negocio"
               />
@@ -846,7 +908,7 @@ const Settings = ({ section = 'all' }) => {
                 type="email"
                 value={formData.smtp?.fromEmail || ''}
                 onChange={(e) => handleSmtpChange('fromEmail', e.target.value)}
-                disabled={!canManageSettings}
+                disabled={!canManageSettings || !smtpEnabled}
                 className="input"
                 placeholder="noreply@minegocio.com"
               />
@@ -1421,7 +1483,7 @@ const Settings = ({ section = 'all' }) => {
         )}
 
         {/* Data Management Section - Export/Import/Clean */}
-        {(section === 'all' || section === 'system') && isDeveloper && (
+        {(section === 'all' || section === 'system') && isAdminUser && (
         <div className="card-glass p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">

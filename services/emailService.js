@@ -30,6 +30,10 @@ const getEmailTransporter = async () => {
     throw new Error('❌ Configuración del sistema no encontrada. Debe configurar los datos del negocio primero.');
   }
   
+  if (settings.smtp?.enabled === false) {
+    throw new Error('El envío de correos está desactivado desde Configuración > Email (SMTP).');
+  }
+
   // Validar que existe configuración SMTP completa
   if (!settings.smtp?.user) {
     throw new Error('❌ No se ha configurado el correo electrónico SMTP. Vaya a Configuración > Negocio y configure el Email/SMTP.');
