@@ -737,7 +737,7 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
 
   return createPortal(
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 100000 }}>
-      <div className="glass-strong rounded-2xl w-full max-w-7xl max-h-[90vh] flex flex-col">
+      <div className="glass-strong rounded-2xl w-full max-w-[95vw] max-h-[90vh] flex flex-col">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
             <div>
@@ -752,33 +752,41 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex gap-6 p-6">
-          <div className="flex-1 flex flex-col min-w-0">
-            <div className="relative mb-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-hidden grid grid-cols-3 gap-4 p-6">
+          {/* Columna 1: Lista de productos disponibles */}
+          <div className="flex flex-col min-h-0">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <Package className="w-5 h-5" />
+              Productos Disponibles
+            </h3>
+            <div className="relative mb-3">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar productos por nombre o SKU..."
+                placeholder="Buscar productos..."
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
                 className="input w-full pl-10"
               />
             </div>
-            <div className="flex-1 overflow-auto border rounded-lg p-2 space-y-2">
+            <div className="flex-1 overflow-auto border rounded-lg p-2 space-y-2 bg-gray-50 dark:bg-gray-900/50">
               {filteredProducts.map((product) => (
                 <button
                   type="button"
                   key={product._id}
-                  className="w-full p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg flex justify-between items-center text-left"
+                  className="w-full p-3 hover:bg-white dark:hover:bg-gray-800 rounded-lg flex justify-between items-center text-left border border-transparent hover:border-primary-300 dark:hover:border-primary-700 transition-all"
                   onClick={() => addProduct(product)}
                 >
-                  <div>
-                    <p className="font-medium text-sm text-gray-900 dark:text-white">{product.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{product.name}</p>
                     <p className="text-xs text-gray-500">{product.sku}</p>
                   </div>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">
-                    ${(product.sellingPrice ?? 0).toFixed(2)}
-                  </span>
+                  <div className="flex items-center gap-2 ml-2">
+                    <span className="text-sm font-bold text-primary-600 dark:text-primary-400">
+                      ${(product.sellingPrice ?? 0).toFixed(2)}
+                    </span>
+                    <Plus className="w-4 h-4 text-primary-600" />
+                  </div>
                 </button>
               ))}
               {filteredProducts.length === 0 && (
@@ -787,13 +795,18 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
             </div>
           </div>
 
-          <div className="w-[480px] flex flex-col min-w-0">
-            <div className="mb-4 space-y-4">
+          {/* Columna 2: Formulario de datos */}
+          <div className="flex flex-col min-h-0">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Datos de la Cotización
+            </h3>
+            <div className="flex-1 overflow-auto space-y-4 pr-2">
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setCustomerMode('existing')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${
                     customerMode === 'existing'
                       ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20'
                       : 'border-gray-300 text-gray-600 hover:border-primary-200'
@@ -804,7 +817,7 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
                 <button
                   type="button"
                   onClick={() => setCustomerMode('generic')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${
                     customerMode === 'generic'
                       ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20'
                       : 'border-gray-300 text-gray-600 hover:border-primary-200'
@@ -893,68 +906,74 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="flex-1 overflow-auto border rounded-lg p-3 mb-4 min-h-0">
-              <div className="flex items-center justify-between mb-3 sticky top-0 bg-white dark:bg-gray-900 pb-2 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-gray-900 dark:text-white">Productos ({cart.length})</h3>
-                {cart.length > 0 && (
-                  <p className="text-sm font-bold text-primary-600 dark:text-primary-400">
-                    Total: ${approximateTotal.toFixed(2)}
-                  </p>
-                )}
-              </div>
+          {/* Columna 3: Carrito de productos */}
+          <div className="flex flex-col min-h-0">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5" />
+              Carrito ({cart.length})
+            </h3>
+            <div className="flex-1 overflow-auto border-2 border-dashed border-primary-300 dark:border-primary-700 rounded-lg p-3 bg-primary-50/30 dark:bg-primary-900/10">
               {cart.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                  <Package className="w-12 h-12 mb-3 opacity-50" />
-                  <p className="text-center">Selecciona productos de la izquierda</p>
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <ShoppingCart className="w-16 h-16 mb-3 opacity-30" />
+                  <p className="text-center font-medium">Carrito vacío</p>
+                  <p className="text-xs text-center mt-1">Agrega productos desde la izquierda</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {cart.map((item) => (
-                    <div key={item.product} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                      <div className="flex justify-between items-start mb-2">
+                    <div key={item.product} className="p-3 bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start mb-3">
                         <div className="flex-1 min-w-0 pr-2">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.productData?.name || 'Producto'}</p>
-                          <p className="text-xs text-gray-500">{item.productData?.sku || ''}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{item.productData?.name || 'Producto'}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{item.productData?.sku || ''}</p>
                         </div>
                         <button
                           type="button"
                           onClick={() => removeProduct(item.product)}
-                          className="flex-shrink-0 p-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                          className="flex-shrink-0 p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                           title="Eliminar producto"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-5 h-5" />
                         </button>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1">
-                          <label className="block text-xs text-gray-500 mb-1">Cantidad</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Cantidad</label>
                           <input
                             type="number"
                             min="1"
                             value={item.quantity}
                             onChange={(e) => updateQuantity(item.product, e.target.value)}
-                            className="input text-sm w-full"
+                            className="input text-sm w-full px-2 py-1"
                           />
                         </div>
-                        <div className="flex-1">
-                          <label className="block text-xs text-gray-500 mb-1">Precio Unit.</label>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">${(Number(item.unitPrice) || 0).toFixed(2)}</p>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Precio</label>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white px-2 py-1">${(Number(item.unitPrice) || 0).toFixed(2)}</p>
                         </div>
-                        <div className="flex-1">
-                          <label className="block text-xs text-gray-500 mb-1">Subtotal</label>
-                          <p className="text-sm font-bold text-primary-600 dark:text-primary-400">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Subtotal</label>
+                          <p className="text-sm font-bold text-primary-600 dark:text-primary-400 px-2 py-1">
                             ${(item.quantity * (Number(item.unitPrice) || 0)).toFixed(2)}
                           </p>
                         </div>
                       </div>
                     </div>
                   ))}
+                  <div className="mt-4 pt-4 border-t-2 border-primary-300 dark:border-primary-700">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold text-gray-900 dark:text-white">Total</span>
+                      <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">${approximateTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-4">
               <button type="button" onClick={onClose} className="btn-secondary flex-1">
                 Cancelar
               </button>
