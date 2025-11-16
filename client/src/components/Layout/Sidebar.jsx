@@ -63,6 +63,7 @@ const Sidebar = () => {
   const privilegedRoles = ['admin', 'desarrollador'];
   const canSeeAdminMenu = privilegedRoles.includes(user?.role);
   const isDeveloper = user?.role === 'desarrollador';
+  const shortcutsEnabled = user?.shortcutsEnabled !== false;
   
   // Estados para controlar expansión de secciones
   const [configExpanded, setConfigExpanded] = useState(location.pathname.startsWith('/configuracion'));
@@ -231,7 +232,7 @@ const Sidebar = () => {
                     <section.icon className="w-4 h-4" />
                     <span>{section.label}</span>
                   </div>
-                  {section.shortcut && (
+                  {section.shortcut && shortcutsEnabled && (
                     <kbd className="hidden lg:block px-2 py-0.5 text-xs font-mono bg-gray-200 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600">
                       {section.shortcut}
                     </kbd>
@@ -280,7 +281,7 @@ const Sidebar = () => {
                     <section.icon className="w-4 h-4" />
                     <span>{section.label}</span>
                   </div>
-                  {section.shortcut && (
+                  {section.shortcut && shortcutsEnabled && (
                     <kbd className="hidden lg:block px-2 py-0.5 text-xs font-mono bg-gray-200 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600">
                       {section.shortcut}
                     </kbd>
@@ -329,7 +330,7 @@ const Sidebar = () => {
                     <section.icon className="w-4 h-4" />
                     <span>{section.label}</span>
                   </div>
-                  {section.shortcut && (
+                  {section.shortcut && shortcutsEnabled && (
                     <kbd className="hidden lg:block px-2 py-0.5 text-xs font-mono bg-gray-200 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600">
                       {section.shortcut}
                     </kbd>
@@ -405,7 +406,7 @@ const Sidebar = () => {
                     <item.icon className="w-5 h-5" />
                     <span className="font-medium">{item.label}</span>
                   </div>
-                  {item.shortcut && (
+                  {item.shortcut && shortcutsEnabled && (
                     <kbd className="hidden lg:block px-2 py-0.5 text-xs font-mono bg-white/20 dark:bg-gray-800 rounded border border-white/30 dark:border-gray-700">
                       {item.shortcut}
                     </kbd>
@@ -499,7 +500,7 @@ const Sidebar = () => {
                           <section.icon className="w-4 h-4" />
                           <span>{section.label}</span>
                         </div>
-                        {section.shortcut && (
+                        {section.shortcut && shortcutsEnabled && (
                           <kbd className="hidden lg:block px-2 py-0.5 text-xs font-mono bg-gray-200 dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600">
                             {section.shortcut}
                           </kbd>
