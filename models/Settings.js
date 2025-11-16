@@ -153,6 +153,12 @@ const settingsSchema = new mongoose.Schema({
     default: false
   },
   
+  // Requerir proceso formal de recepción de órdenes de compra
+  requireOrderReception: {
+    type: Boolean,
+    default: true
+  },
+
   // Umbral de stock para generar orden automática
   autoOrderThreshold: {
     type: Number,

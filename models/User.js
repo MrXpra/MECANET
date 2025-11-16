@@ -55,6 +55,12 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true // Usuarios activos por defecto
   },
+
+  // Preferencia individual para atajos de teclado
+  shortcutsEnabled: {
+    type: Boolean,
+    default: true
+  },
   
   // Preferencias de notificaciones del usuario
   notificationPreferences: {

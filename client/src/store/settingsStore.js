@@ -48,6 +48,7 @@ export const useSettingsStore = create((set) => ({
     weatherApiKey: '',
     showWeather: true,
     autoCreatePurchaseOrders: false,
+    requireOrderReception: true,
     autoOrderThreshold: 5,
     toastPosition: 'top-center',
   },

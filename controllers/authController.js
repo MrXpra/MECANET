@@ -106,6 +106,8 @@ export const login = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      isActive: user.isActive,
+      shortcutsEnabled: user.shortcutsEnabled,
       token // El frontend guardará esto en localStorage
     });
   } catch (error) {
@@ -149,7 +151,8 @@ export const getProfile = async (req, res) => {
       email: user.email,
       role: user.role,
       isActive: user.isActive,
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
+      shortcutsEnabled: user.shortcutsEnabled
     });
   } catch (error) {
     console.error('Error al obtener perfil:', error);
@@ -180,6 +183,9 @@ export const updateProfile = async (req, res) => {
     // Actualizar solo los campos proporcionados
     user.name = req.body.name || user.name; // Si no se envía, mantener el actual
     user.email = req.body.email || user.email;
+    if (req.body.shortcutsEnabled !== undefined) {
+      user.shortcutsEnabled = req.body.shortcutsEnabled;
+    }
 
     // Si se proporciona nueva contraseña, actualizarla
     if (req.body.password) {
@@ -195,6 +201,8 @@ export const updateProfile = async (req, res) => {
       name: updatedUser.name,
       email: updatedUser.email,
       role: updatedUser.role,
+      isActive: updatedUser.isActive,
+      shortcutsEnabled: updatedUser.shortcutsEnabled,
       token: generateToken(updatedUser._id) // Nuevo token
     });
   } catch (error) {

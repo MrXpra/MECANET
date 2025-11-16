@@ -62,7 +62,8 @@ export const createUser = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      isActive: user.isActive
+      isActive: user.isActive,
+      shortcutsEnabled: user.shortcutsEnabled
     });
   } catch (error) {
     console.error('Error al crear usuario:', error);
@@ -116,7 +117,8 @@ export const updateUser = async (req, res) => {
       name: updatedUser.name,
       email: updatedUser.email,
       role: updatedUser.role,
-      isActive: updatedUser.isActive
+      isActive: updatedUser.isActive,
+      shortcutsEnabled: updatedUser.shortcutsEnabled
     });
   } catch (error) {
     console.error('Error al actualizar usuario:', error);

@@ -62,7 +62,7 @@ const Sidebar = () => {
   const location = useLocation();
   const privilegedRoles = ['admin', 'desarrollador'];
   const canSeeAdminMenu = privilegedRoles.includes(user?.role);
-  const isStrictAdmin = user?.role === 'admin';
+  const isDeveloper = user?.role === 'desarrollador';
   
   // Estados para controlar expansión de secciones
   const [configExpanded, setConfigExpanded] = useState(location.pathname.startsWith('/configuracion'));
@@ -137,11 +137,11 @@ const Sidebar = () => {
   // Subsecciones de Configuración
   const configSections = [
     { path: '/configuracion/negocio', icon: Building2, label: 'Negocio', shortcut: 'Ctrl+,' },
-    { path: '/configuracion/sistema', icon: Globe, label: 'Sistema', adminOnly: true },
+    { path: '/configuracion/sistema', icon: Globe, label: 'Sistema', developerOnly: true },
     { path: '/configuracion/notificaciones', icon: Bell, label: 'Notificaciones' },
     { path: '/configuracion/facturacion', icon: CreditCard, label: 'Facturación' },
     { path: '/configuracion/integraciones', icon: Cloud, label: 'Integraciones' },
-  ].filter(section => !section.adminOnly || isStrictAdmin);
+  ].filter(section => !section.developerOnly || isDeveloper);
 
   return (
     <aside className="w-56 xl:w-64 glass-strong border-r border-gray-200 dark:border-gray-700 flex flex-col">
@@ -414,7 +414,7 @@ const Sidebar = () => {
               ))}
 
               {/* Sistema (Logs y Monitoreo) con subsecciones */}
-              {isStrictAdmin && (
+              {isDeveloper && (
                 <div>
                   <button
                     onClick={() => setSistemaExpanded(!sistemaExpanded)}
