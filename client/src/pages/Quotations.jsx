@@ -737,7 +737,7 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
 
   return createPortal(
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 100000 }}>
-      <div className="glass-strong rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+      <div className="glass-strong rounded-2xl w-full max-w-7xl max-h-[90vh] flex flex-col">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex justify-between items-center">
             <div>
@@ -752,8 +752,8 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex gap-4 p-6">
-          <div className="flex-1 flex flex-col">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex gap-6 p-6">
+          <div className="flex-1 flex flex-col min-w-0">
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
@@ -787,7 +787,7 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
             </div>
           </div>
 
-          <div className="w-96 flex flex-col">
+          <div className="w-[480px] flex flex-col min-w-0">
             <div className="mb-4 space-y-4">
               <div className="flex gap-2">
                 <button
@@ -894,52 +894,63 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto border rounded-lg p-2 mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold">Productos ({cart.length})</h3>
+            <div className="flex-1 overflow-auto border rounded-lg p-3 mb-4 min-h-0">
+              <div className="flex items-center justify-between mb-3 sticky top-0 bg-white dark:bg-gray-900 pb-2 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="font-semibold text-gray-900 dark:text-white">Productos ({cart.length})</h3>
                 {cart.length > 0 && (
-                  <p className="text-xs text-gray-500">
-                    Total aproximado: ${approximateTotal.toFixed(2)}
+                  <p className="text-sm font-bold text-primary-600 dark:text-primary-400">
+                    Total: ${approximateTotal.toFixed(2)}
                   </p>
                 )}
               </div>
               {cart.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">
-                  Selecciona productos de la izquierda
-                </p>
+                <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                  <Package className="w-12 h-12 mb-3 opacity-50" />
+                  <p className="text-center">Selecciona productos de la izquierda</p>
+                </div>
               ) : (
-                cart.map((item) => (
-                  <div key={item.product} className="p-2 bg-gray-50 dark:bg-gray-800 rounded mb-2">
-                    <div className="flex justify-between items-start mb-1">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{item.productData?.name || 'Producto'}</p>
-                        <p className="text-xs text-gray-500">{item.productData?.sku || ''}</p>
+                <div className="space-y-3">
+                  {cart.map((item) => (
+                    <div key={item.product} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.productData?.name || 'Producto'}</p>
+                          <p className="text-xs text-gray-500">{item.productData?.sku || ''}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeProduct(item.product)}
+                          className="flex-shrink-0 p-1 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                          title="Eliminar producto"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeProduct(item.product)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-500 mb-1">Cantidad</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => updateQuantity(item.product, e.target.value)}
+                            className="input text-sm w-full"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-500 mb-1">Precio Unit.</label>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">${(Number(item.unitPrice) || 0).toFixed(2)}</p>
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-500 mb-1">Subtotal</label>
+                          <p className="text-sm font-bold text-primary-600 dark:text-primary-400">
+                            ${(item.quantity * (Number(item.unitPrice) || 0)).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <label className="text-xs text-gray-500">Cantidad</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => updateQuantity(item.product, e.target.value)}
-                          className="input text-sm w-20"
-                        />
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300 ml-auto">
-                        Subtotal: ${(item.quantity * (Number(item.unitPrice) || 0)).toFixed(2)}
-                      </div>
-                    </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
 
