@@ -38,6 +38,10 @@ export const createUser = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
+    if (role === 'desarrollador' && req.user?.role !== 'desarrollador') {
+      return res.status(403).json({ message: 'Solo un desarrollador puede crear usuarios desarrolladores' });
+    }
+
     // Verificar si el usuario ya existe
     const existingUser = await User.findOne({ email });
 

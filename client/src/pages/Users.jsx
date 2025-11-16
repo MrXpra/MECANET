@@ -482,6 +482,7 @@ const Users = () => {
           user={editingUser}
           onSave={handleSaveUser}
           onClose={() => setShowUserModal(false)}
+          canManageDevelopers={canManageDevelopers}
         />
       )}
     </div>
@@ -489,7 +490,7 @@ const Users = () => {
 };
 
 // User Modal Component
-const UserModal = ({ user, onSave, onClose }) => {
+const UserModal = ({ user, onSave, onClose, canManageDevelopers }) => {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -516,6 +517,12 @@ const UserModal = ({ user, onSave, onClose }) => {
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [onClose]);
+
+  useEffect(() => {
+    if (!canManageDevelopers && formData.role === 'desarrollador') {
+      setFormData((prev) => ({ ...prev, role: 'cajero' }));
+    }
+  }, [canManageDevelopers, formData.role]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -659,11 +666,18 @@ const UserModal = ({ user, onSave, onClose }) => {
             >
               <option value="cajero">Cajero</option>
               <option value="admin">Administrador</option>
-              <option value="desarrollador">Desarrollador</option>
+              <option value="desarrollador" disabled={!canManageDevelopers}>
+                Desarrollador { !canManageDevelopers ? '(solo desarrolladores pueden asignar)' : '' }
+              </option>
             </select>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {roleDescriptions[formData.role] || roleDescriptions.cajero}
             </p>
+            {!canManageDevelopers && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                Solo un usuario desarrollador puede crear o asignar este rol.
+              </p>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">

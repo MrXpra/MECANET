@@ -1678,7 +1678,7 @@ const CustomerModal = ({ onSelect, onClose }) => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Cédula
+                  Cédula * (obligatoria)
                 </label>
                 <input
                   type="text"
@@ -1690,7 +1690,7 @@ const CustomerModal = ({ onSelect, onClose }) => {
                     }
                   }}
                   className={`input font-mono ${customerErrors.cedula ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
-                  placeholder="001-0123456-7 (opcional)"
+                  placeholder="Ingresa la cédula (no puede estar vacía)"
                 />
                 {customerErrors.cedula && (
                   <p className="text-xs text-red-600 mt-1">{customerErrors.cedula}</p>
