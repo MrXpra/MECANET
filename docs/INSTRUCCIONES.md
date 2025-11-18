@@ -78,12 +78,12 @@ git --version
 
 ```bash
 # Opción A: Clonar desde GitHub
-git clone https://github.com/MrXpra/SistemaGestorDeTallerMecanico.git
-cd SistemaGestorDeTallerMecanico
+git clone https://github.com/MrXpra/MECANET.git
+cd MECANET
 
 # Opción B: Descargar ZIP
 # Descarga el ZIP desde GitHub y descomprime
-cd SistemaGestorDeTallerMecanico
+cd MECANET
 ```
 
 ### Paso 2: Instalar Dependencias del Backend
@@ -127,7 +127,7 @@ Antes de iniciar el sistema, necesitas una base de datos MongoDB. Tienes dos opc
 5. Click en "Connect" → "Connect your application"
 6. Copia el connection string (se verá así):
    ```
-   mongodb+srv://usuario:password@cluster.mongodb.net/autoparts_db
+   mongodb+srv://usuario:password@cluster.mongodb.net/mecanet_db
    ```
 
 #### Opción B: MongoDB Local
@@ -137,7 +137,7 @@ Antes de iniciar el sistema, necesitas una base de datos MongoDB. Tienes dos opc
 # Sigue las instrucciones en: https://www.mongodb.com/docs/manual/installation/
 
 # Tu connection string será:
-mongodb://localhost:27017/autoparts_db
+mongodb://localhost:27017/mecanet_db
 ```
 
 ### Paso 5: Configurar Variables de Entorno
@@ -163,7 +163,7 @@ Edita el archivo `.env` con tu editor favorito y **reemplaza los valores** con t
 # CONFIGURACIÓN DE BASE DE DATOS (OBLIGATORIO)
 # ========================================
 # ⚠️ Reemplaza esto con tu connection string real de MongoDB Atlas
-MONGODB_URI="mongodb+srv://usuario:password@cluster.mongodb.net/autoparts_db"
+MONGODB_URI="mongodb+srv://usuario:password@cluster.mongodb.net/mecanet_db"
 
 # ========================================
 # CONFIGURACIÓN DE AUTENTICACIÓN (OBLIGATORIO)
@@ -274,33 +274,29 @@ npm start
 
 **⚠️ IMPORTANTE: Tu base de datos está vacía. Debes crear al menos un usuario para poder acceder al sistema.**
 
-Tienes 3 opciones:
+Tienes 2 opciones:
 
-#### Opción A: Seed con Datos de Prueba (Recomendado para desarrollo/pruebas)
+#### Opción A: Crear Admin por Defecto (Rápido)
 
-Crea usuarios de ejemplo + datos de prueba:
+Crea un usuario administrador con credenciales predefinidas:
 
 ```bash
 # Detén el servidor backend (Ctrl+C)
 
-# Ejecuta el script de seed
-npm run seed
+# Ejecuta el script
+npm run create-admin
 
 # Reinicia el servidor
 npm run dev
 ```
 
 **Crea automáticamente:**
-- ✅ Usuario administrador (admin@autoparts.com / admin123)
-- ✅ Usuario cajero (cajero@autoparts.com / cajero123)
-- ✅ 10 productos de ejemplo
-- ✅ 3 clientes
-- ✅ 2 proveedores
+- ✅ Usuario administrador (admin@mecanet.com / Admin123!)
 - ✅ Configuración inicial del negocio
 
-#### Opción B: Setup para Cliente (Para instalación en producción)
+#### Opción B: Setup Personalizado (Para producción)
 
-Configuración personalizada sin datos de prueba:
+Configuración personalizada paso a paso:
 
 ```bash
 # Detén el servidor backend (Ctrl+C)
@@ -318,85 +314,24 @@ npm run dev
 - Datos del negocio
 - Configuración regional (moneda, impuestos, zona horaria)
 
-#### Opción C: Solo Crear Admin (Mínimo necesario)
-
-Crear solo el usuario administrador:
-
-```bash
-# Detén el servidor backend (Ctrl+C)
-
-# Ejecuta el script
-npm run create-admin
-
-# Sigue las instrucciones
-# Reinicia el servidor
-npm run dev
-```
-
-**Crea:**
-- ✅ 1 usuario administrador con tus datos
-- Base de datos vacía (sin productos, clientes, etc.)
-
 ### 8. Acceder al Sistema
 
 Abre tu navegador en:
 ```
-http://localhost:3000
+http://localhost:5173
 ```
 
-#### ✅ Escenario A: Si usaste `npm run seed`
+(Nota: Vite usa el puerto 5173 por defecto, no 3000)
 
-**Credenciales de Prueba:**
-- **Email:** admin@autoparts.com
-- **Contraseña:** admin123
+#### Si usaste Opción A (create-admin):
 
-El sistema ya tiene datos de ejemplo:
-- 👤 2 usuarios (admin y cajero)
-- 📦 10 productos
-- 👥 3 clientes
-- 🏪 2 proveedores
-- ⚙️ Configuración básica del negocio
+**Credenciales:**
+- **Email:** admin@mecanet.com
+- **Contraseña:** Admin123!
 
-#### ❌ Escenario B: Si NO usaste `npm run seed`
+#### Si usaste Opción B (setup-client):
 
-**Tu base de datos está vacía.** No tienes ningún usuario para hacer login.
-
-**Solución - Opción 1: Ejecutar seed ahora**
-```bash
-# Detén el servidor backend (Ctrl+C en la terminal del backend)
-npm run seed
-# Reinicia el servidor
-npm run dev
-```
-Luego usa las credenciales del Escenario A.
-
-**Solución - Opción 2: Usar el script de setup para cliente**
-
-Si prefieres configurar el sistema desde cero con tus propios datos:
-
-```bash
-# Detén el servidor backend (Ctrl+C)
-npm run setup-client
-```
-
-Este script te preguntará:
-- Nombre y email del administrador
-- Contraseña del administrador
-- Datos del negocio
-- Configuración regional
-
-Después de completar el script, usa las credenciales que creaste.
-
-**Solución - Opción 3: Crear solo un usuario admin**
-
-Si solo necesitas un usuario administrador sin datos de ejemplo:
-
-```bash
-# Detén el servidor backend (Ctrl+C)
-npm run create-admin
-```
-
-Sigue las instrucciones para crear el usuario admin y luego usa esas credenciales.
+Usa las credenciales que definiste durante el proceso de configuración.
 
 ---
 

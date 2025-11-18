@@ -32,8 +32,8 @@ const createAdmin = async () => {
     // Nota: NO hasheamos manualmente, el middleware pre('save') del modelo lo hace automáticamente
     const admin = await User.create({
       name: 'Administrador',
-      email: 'admin@admin.com',
-      password: '123456', // Contraseña en texto plano, será hasheada por el middleware
+      email: 'admin@mecanet.com',
+      password: 'Admin123!', // Contraseña en texto plano, será hasheada por el middleware
       role: 'admin',
       isActive: true
     });
@@ -43,8 +43,8 @@ const createAdmin = async () => {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('📋 Credenciales de acceso:');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('👤 Email: admin@admin.com');
-    console.log('🔑 Contraseña: 123456');
+    console.log('👤 Email: admin@mecanet.com');
+    console.log('🔑 Contraseña: Admin123!');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('');
     console.log('⚠️  IMPORTANTE: Cambia la contraseña después del primer login');

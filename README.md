@@ -2,14 +2,14 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-green.svg)
 ![React](https://img.shields.io/badge/react-18.2.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 Sistema de Punto de Venta (POS) moderno y completo para tiendas de repuestos automotrices, desarrollado con tecnologías de vanguardia y diseño minimalista con efectos glassmorphism.
 
-[🚀 Demo](#) | [📖 Documentación](./docs/) | [🐛 Reportar Bug](https://github.com/MrXpra/SistemaGestorDeTallerMecanico/issues)
+[🚀 Demo](#) | [📖 Documentación](./docs/) | [🐛 Reportar Bug](https://github.com/MrXpra/MECANET/issues)
 
 </div>
 
@@ -19,8 +19,8 @@ Sistema de Punto de Venta (POS) moderno y completo para tiendas de repuestos aut
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/MrXpra/SistemaGestorDeTallerMecanico.git
-cd SistemaGestorDeTallerMecanico
+git clone https://github.com/MrXpra/MECANET.git
+cd MECANET
 
 # 2. Instalar dependencias backend
 npm install
@@ -34,7 +34,7 @@ cd ..
 npm run setup
 
 # 5. Inicializar base de datos
-npm run create-admin  # o npm run seed
+npm run create-admin
 
 # 6. Iniciar servidores
 npm run dev           # Terminal 1: Backend
@@ -64,7 +64,7 @@ cd client && npm run dev  # Terminal 2: Frontend
 └────────────────────────────┬────────────────────────────────┘
                              │
 ┌────────────────────────────▼────────────────────────────────┐
-│  4. npm run create-admin / npm run seed                     │
+│  4. npm run create-admin                                    │
 │     └─ Inicializa base de datos                            │
 │     └─ Crea usuario(s) del sistema                         │
 └────────────────────────────┬────────────────────────────────┘
@@ -190,8 +190,8 @@ cd client && npm run dev  # Terminal 2: Frontend
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/MrXpra/SistemaGestorDeTallerMecanico.git
-cd SistemaGestorDeTallerMecanico
+git clone https://github.com/MrXpra/MECANET.git
+cd MECANET
 ```
 
 ### 2. Instalar dependencias
@@ -240,8 +240,6 @@ npm run generate-jwt
 
 ## 4. Inicializar la Base de Datos
 
-#### Opción A: Crear solo usuario administrador (Recomendado para producción)
-
 ```bash
 npm run create-admin
 ```
@@ -251,19 +249,6 @@ Este comando creará:
 - ✅ Configuración inicial del negocio
 
 **⚠️ IMPORTANTE:** El script te pedirá crear una contraseña segura.
-
-#### Opción B: Poblar con datos de ejemplo (Para desarrollo/pruebas)
-
-```bash
-npm run seed
-```
-
-Este comando creará:
-- ✅ Usuario administrador (admin@autoparts.com / Admin123!)
-- ✅ Usuario cajero (cajero@autoparts.com / Cajero123!)
-- ✅ Configuración inicial del negocio
-- ✅ Proveedores de ejemplo
-- ✅ 10 productos de ejemplo
 
 ---
 
@@ -355,7 +340,7 @@ npm run release:major
 ## 📁 Estructura del Proyecto
 
 ```
-autoparts-manager/
+mecanet/
 ├── client/                    # Frontend React
 │   ├── public/
 │   ├── src/
@@ -570,11 +555,11 @@ VITE_API_URL=https://tu-backend.railway.app/api
 Después de ejecutar `npm run seed`:
 
 **Administrador:**
-- Email: `admin@autoparts.com`
+- Email: `admin@mecanet.com`
 - Contraseña: `Admin123!`
 
 **Cajero:**
-- Email: `cajero@autoparts.com`
+- Email: `cajero@mecanet.com`
 - Contraseña: `Cajero123!`
 
 ---
