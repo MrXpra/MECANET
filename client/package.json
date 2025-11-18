@@ -1,6 +1,6 @@
 {
-  "name": "autoparts-manager-client",
-  "version": "0.1.0",
+  "name": "mecanet-client",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "proxy": "http://localhost:5000",

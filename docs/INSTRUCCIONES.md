@@ -1,4 +1,4 @@
-# 📖 AutoParts Manager - Instrucciones de Uso
+# 📖 MECANET - Instrucciones de Uso
 
 ## 🎯 Guía Completa de Instalación, Configuración y Uso
 

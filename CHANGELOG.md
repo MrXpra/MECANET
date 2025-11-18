@@ -11,7 +11,7 @@ y este proyecto adhiere al [Versionado Semántico](https://semver.org/lang/es/).
 
 ### 🎉 Primera Versión Estable
 
-Esta es la primera versión estable del sistema AutoParts Manager, con todas las funcionalidades principales implementadas.
+Esta es la primera versión estable del sistema MECANET, con todas las funcionalidades principales implementadas.
 
 ### ✨ Agregado
 
@@ -133,7 +133,7 @@ Esta es la primera versión estable del sistema AutoParts Manager, con todas las
 
 ### 📋 Notas de la Versión
 
-Esta versión marca el lanzamiento oficial del sistema AutoParts Manager como una solución completa y profesional para la gestión de tiendas de repuestos automotrices. Todas las funcionalidades principales han sido implementadas y probadas.
+Esta versión marca el lanzamiento oficial del sistema MECANET como una solución completa y profesional para la gestión de tiendas de repuestos automotrices. Todas las funcionalidades principales han sido implementadas y probadas.
 
 El sistema incluye ahora un robusto sistema de auditoría y monitoreo que permite rastrear todas las acciones de los usuarios y supervisar el rendimiento del sistema en tiempo real.
 

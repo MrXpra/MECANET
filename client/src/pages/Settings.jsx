@@ -656,7 +656,7 @@ const Settings = ({ section = 'all' }) => {
                 onChange={(e) => handleChange('businessName', e.target.value)}
                 disabled={!canManageSettings}
                 className="input"
-                placeholder="AutoParts Manager"
+                placeholder="MECANET"
                 required
               />
             </div>

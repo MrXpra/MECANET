@@ -157,7 +157,7 @@ if (process.env.NODE_ENV === 'production') {
 } else {
   // En desarrollo, solo mostramos un mensaje en la ruta raíz
   app.get('/', (req, res) => {
-    res.json({ message: 'AutoParts Manager API está funcionando correctamente' });
+    res.json({ message: 'MECANET API está funcionando correctamente' });
   });
 }
 

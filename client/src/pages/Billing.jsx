@@ -107,6 +107,7 @@ const Billing = () => {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [viewMode, setViewMode] = useState('list'); // 'list' o 'grid'
+  const [highlightedItems, setHighlightedItems] = useState(new Set());
   const searchInputRef = useRef(null);
 
   // Paginación
@@ -262,6 +263,27 @@ const Billing = () => {
     }
 
     addItem(product);
+    
+    // Agregar animación al item
+    setHighlightedItems(prev => new Set(prev).add(product._id));
+    
+    // Scroll al item agregado después de un pequeño delay
+    setTimeout(() => {
+      const itemElement = document.getElementById(`cart-item-${product._id}`);
+      if (itemElement) {
+        itemElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 100);
+    
+    // Remover la animación después de 2 segundos
+    setTimeout(() => {
+      setHighlightedItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(product._id);
+        return newSet;
+      });
+    }, 2000);
+    
     toast.success(`${product.name} añadido`);
   };
 
@@ -369,38 +391,70 @@ const Billing = () => {
 
   const printInvoice = (sale) => {
     const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Error: No se pudo abrir la ventana de impresión. Verifica que los pop-ups estén permitidos.');
+      return;
+    }
+    
     printWindow.document.write(`
       <html>
         <head>
           <title>Factura ${sale.invoiceNumber}</title>
+          <meta charset="UTF-8">
           <style>
+            * { 
+              margin: 0; 
+              padding: 0; 
+              box-sizing: border-box; 
+            }
             @media print {
-              @page { size: 80mm auto; margin: 0; }
-              body { margin: 10mm; }
+              @page { 
+                size: 80mm auto; 
+                margin: 0mm; 
+              }
+              body { 
+                margin: 0mm;
+                padding: 2mm 3mm 3mm 3mm;
+              }
+              html, body {
+                height: auto !important;
+                overflow: visible !important;
+              }
+            }
+            html, body {
+              height: auto;
+              overflow-y: visible;
             }
             body { 
-              font-family: 'Courier New', monospace; 
+              font-family: 'Courier New', 'Courier', monospace; 
               width: 80mm;
-              margin: 0 auto;
-              padding: 5mm;
-              font-size: 11px;
+              max-width: 80mm;
+              margin: 0;
+              padding: 3mm;
+              font-size: 10px;
+              line-height: 1.3;
             }
             h1 { 
               text-align: center; 
-              font-size: 16px; 
-              margin: 5px 0;
+              font-size: 14px; 
+              margin: 2px 0;
               font-weight: bold;
+              text-transform: uppercase;
             }
             .line { 
               border-top: 1px dashed #000; 
-              margin: 8px 0; 
+              margin: 3px 0; 
+              height: 0;
             }
             table { 
               width: 100%; 
               border-collapse: collapse;
+              table-layout: fixed;
             }
             td { 
-              padding: 2px 0; 
+              padding: 1px 0; 
+              vertical-align: top;
+              word-wrap: break-word;
             }
             .right { 
               text-align: right; 
@@ -412,25 +466,32 @@ const Billing = () => {
               text-align: center; 
             }
             .small { 
-              font-size: 9px; 
+              font-size: 8px; 
             }
             .info-section {
-              margin: 8px 0;
-              font-size: 12px;
-              font-weight: bold;
+              margin: 3px 0;
+              font-size: 10px;
+              line-height: 1.3;
+            }
+            .info-section div {
+              margin: 1px 0;
             }
             .item-row {
-              margin-bottom: 4px;
+              margin-bottom: 2px;
             }
             .total-row {
-              font-size: 13px;
+              font-size: 12px;
               font-weight: bold;
-              padding-top: 4px;
+              padding-top: 3px;
+              border-top: 1px solid #000;
+            }
+            thead {
+              border-bottom: 1px solid #000;
             }
           </style>
         </head>
         <body>
-          <h1>AutoParts Manager</h1>
+          <h1>MECANET</h1>
           <div class="line"></div>
           
           <div class="info-section">
@@ -510,13 +571,28 @@ const Billing = () => {
           </table>
           
           <div class="line"></div>
-          <p class="center bold">¡Gracias por su compra!</p>
-          <p class="center small">Este documento no tiene validez fiscal</p>
+          <p class="center bold" style="margin: 3px 0;">¡Gracias por su compra!</p>
+          <p class="center small" style="margin: 2px 0 3px 0;">Este documento no tiene validez fiscal</p>
         </body>
       </html>
     `);
     printWindow.document.close();
-    printWindow.print();
+    
+    // Esperar a que se cargue el contenido antes de imprimir
+    setTimeout(() => {
+      try {
+        printWindow.focus();
+        printWindow.print();
+        
+        // Cerrar la ventana después de imprimir (opcional)
+        setTimeout(() => {
+          printWindow.close();
+        }, 500);
+      } catch (error) {
+        console.error('Error al imprimir:', error);
+        toast.error('Error al enviar a la impresora. Verifica que esté conectada y configurada correctamente.');
+      }
+    }, 250);
   };
 
   const formatCurrency = (value) => {
@@ -765,6 +841,7 @@ const Billing = () => {
                   onDiscountChange={handleDiscountChange}
                   onRemove={handleRemoveItem}
                   calculateItemTotal={calculateItemTotal}
+                  isHighlighted={highlightedItems.has(item.product._id)}
                 />
               ))}
             </div>
@@ -1065,6 +1142,7 @@ const CartItem = ({
   onDiscountChange,
   onRemove,
   calculateItemTotal,
+  isHighlighted,
 }) => {
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('es-DO', {
@@ -1074,13 +1152,19 @@ const CartItem = ({
   };
 
   return (
-    <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-      <div className="flex justify-between items-start mb-2">
+    <div 
+      id={`cart-item-${item.product._id}`}
+      className={`p-2 rounded-lg bg-gray-50 dark:bg-gray-800 transition-all duration-500 ${
+      isHighlighted 
+        ? 'ring-4 ring-green-400 dark:ring-green-500 shadow-lg shadow-green-200 dark:shadow-green-900/50 scale-[1.02] animate-pulse-gentle' 
+        : ''
+    }`}>
+      <div className="flex justify-between items-start mb-1.5">
         <div className="flex-1">
-          <h4 className="font-medium text-sm text-gray-900 dark:text-white">
+          <h4 className="font-semibold text-base text-gray-900 dark:text-white leading-tight">
             {item.product.name}
           </h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {item.product.sku} • {formatCurrency(item.product.sellingPrice)}
           </p>
         </div>
@@ -1093,10 +1177,10 @@ const CartItem = ({
       </div>
 
       {/* Quantity Controls and Custom Discount in same row */}
-      <div className="grid grid-cols-2 gap-3 mb-2">
+      <div className="grid grid-cols-2 gap-2 mb-1.5">
         {/* Cantidad */}
         <div>
-          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-0.5 block">
             Cantidad:
           </label>
           <div className="flex items-center gap-1">
@@ -1118,7 +1202,7 @@ const CartItem = ({
                   onQuantityChange(item.product._id, 1);
                 }
               }}
-              className="w-16 text-center input py-1 text-sm"
+              className="w-16 text-center input py-0.5 text-sm"
               min="1"
               max={item.product.stock}
             />
@@ -1134,7 +1218,7 @@ const CartItem = ({
 
         {/* Descuento */}
         <div>
-          <label className="text-xs text-gray-600 dark:text-gray-400 mb-1 block">
+          <label className="text-xs text-gray-600 dark:text-gray-400 mb-0.5 block">
             Descuento:
           </label>
           <div className="flex items-center gap-1">
@@ -1144,7 +1228,7 @@ const CartItem = ({
               onChange={(e) =>
                 onDiscountChange(item.product._id, e.target.value)
               }
-              className="w-16 text-center input py-1 text-sm"
+              className="w-16 text-center input py-0.5 text-sm"
               min="0"
               max="100"
             />
@@ -1153,7 +1237,7 @@ const CartItem = ({
         </div>
       </div>
 
-      <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex justify-between items-center pt-1.5 border-t border-gray-200 dark:border-gray-700">
         <span className="text-xs text-gray-500 dark:text-gray-400">
           Total:
         </span>

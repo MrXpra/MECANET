@@ -1,4 +1,4 @@
-# AutoParts Manager — copilot instructions
+# MECANET — copilot instructions
 
 Goal: give an AI coding agent the minimal, high‑value knowledge to be productive in this repo.
 

@@ -83,7 +83,7 @@ const generatePurchaseOrderPDF = (purchaseOrder, supplier, settings) => {
       doc.on('error', reject);
 
       // Header con información del negocio
-      doc.fontSize(20).font('Helvetica-Bold').text(settings.businessName || 'AutoParts Manager', { align: 'center' });
+      doc.fontSize(20).font('Helvetica-Bold').text(settings.businessName || 'MECANET', { align: 'center' });
       doc.fontSize(10).font('Helvetica').moveDown(0.5);
       
       if (settings.businessAddress) {
@@ -191,7 +191,7 @@ const generatePurchaseOrderPDF = (purchaseOrder, supplier, settings) => {
       );
 
       doc.fontSize(7).text(
-        `Documento generado automáticamente por ${settings.businessName || 'AutoParts Manager'}`,
+        `Documento generado automáticamente por ${settings.businessName || 'MECANET'}`,
         50,
         doc.page.height - 50,
         { align: 'center', width: 512 }
@@ -349,7 +349,7 @@ export const sendPurchaseOrderEmail = async (purchaseOrder, supplier) => {
             Gracias por su atención y servicio
           </p>
           <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-            Este es un correo automático generado por ${settings.businessName || 'AutoParts Manager'}
+            Este es un correo automático generado por ${settings.businessName || 'MECANET'}
           </p>
         </div>
 

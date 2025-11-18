@@ -364,6 +364,20 @@
     animation: scale-in 0.2s ease-out;
   }
 
+  /* Animación suave para items del carrito cuando se agregan/actualizan */
+  @keyframes pulse-gentle {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.85;
+    }
+  }
+
+  .animate-pulse-gentle {
+    animation: pulse-gentle 0.6s ease-in-out 3;
+  }
+
   /* Animaciones para el fondo del login */
   @keyframes blob {
     0%, 100% {

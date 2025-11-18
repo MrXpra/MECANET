@@ -877,6 +877,11 @@ const ProductModal = ({ product, onSave, onClose, categories, brands, allProduct
                 name="sku"
                 value={formData.sku}
                 onChange={handleSkuChange}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault(); // Prevenir submit del formulario al escanear
+                  }
+                }}
                 disabled={!!product || isRestockMode}
                 className={`input pl-10 ${errors.sku ? 'border-red-500' : ''} ${(product || isRestockMode) ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
                 placeholder="Ej: FLT-001"

@@ -388,7 +388,7 @@ const PurchaseOrders = () => {
 
   const handlePrint = (order) => {
     const printWindow = window.open('', '_blank');
-    const companyName = settings?.businessName || globalSettings?.businessName || 'AutoParts Manager';
+    const companyName = settings?.businessName || globalSettings?.businessName || 'MECANET';
     const logoUrl = settings?.businessLogoUrl || globalSettings?.businessLogoUrl || '';
     
     printWindow.document.write(`

@@ -1,8 +1,8 @@
-# 🚀 AutoParts Manager - Características del Sistema
+# 🚀 MECANET - Características del Sistema
 
 ## 📋 Descripción General
 
-**AutoParts Manager** es un sistema completo de Punto de Venta (POS) diseñado específicamente para tiendas de repuestos automotrices y talleres mecánicos. El sistema ofrece una solución integral para gestionar inventario, ventas, clientes, proveedores y operaciones de caja.
+**MECANET** es un sistema completo de Punto de Venta (POS) diseñado específicamente para tiendas de repuestos automotrices y talleres mecánicos. El sistema ofrece una solución integral para gestionar inventario, ventas, clientes, proveedores y operaciones de caja.
 
 ---
 

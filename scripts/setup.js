@@ -24,7 +24,7 @@ function question(prompt) {
 function showBanner() {
   console.log('\n╔═══════════════════════════════════════════════════════════╗');
   console.log('║                                                           ║');
-  console.log('║       🚗 AutoParts Manager - Configuración Inicial       ║');
+  console.log('║       🚗 MECANET - Configuración Inicial       ║');
   console.log('║                                                           ║');
   console.log('╚═══════════════════════════════════════════════════════════╝\n');
   console.log('Este asistente te ayudará a configurar las variables de entorno\n');
@@ -114,7 +114,7 @@ async function setup() {
 
     // Crear contenido del archivo .env (valores entre comillas simples obligatorias)
     const lines = [];
-    lines.push("# Configuración de AutoParts Manager");
+    lines.push("# Configuración de MECANET");
     lines.push(`# Generado automáticamente el ${new Date().toLocaleString('es-MX')}`);
     lines.push("");
     lines.push("# Conexión a MongoDB");

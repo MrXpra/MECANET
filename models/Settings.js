@@ -23,7 +23,7 @@ const settingsSchema = new mongoose.Schema({
   // Nombre del negocio (se muestra en sidebar y recibos)
   businessName: {
     type: String,
-    default: 'AutoParts Manager'
+    default: 'MECANET'
   },
   
   // URL del logo (puede ser local o externa)
@@ -88,7 +88,7 @@ const settingsSchema = new mongoose.Schema({
     // Nombre del remitente que aparecerá en los emails
     fromName: {
       type: String,
-      default: 'AutoParts Manager'
+      default: 'MECANET'
     },
     // Email del remitente (por defecto usa businessEmail)
     fromEmail: {

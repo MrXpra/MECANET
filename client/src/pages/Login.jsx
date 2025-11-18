@@ -148,7 +148,7 @@ const Login = () => {
               </svg>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              {settings.businessName || 'AutoParts Manager'}
+              {settings.businessName || 'MECANET'}
             </h1>
             <p className="text-gray-600 dark:text-primary-100">Sistema de Punto de Venta</p>
           </div>
@@ -244,7 +244,7 @@ const Login = () => {
 
         {/* Footer */}
         <p className="text-center text-white dark:text-white/80 text-sm mt-6 font-medium drop-shadow-md">
-          © 2025 AutoParts Manager. Todos los derechos reservados.
+          © 2025 MECANET. Todos los derechos reservados.
         </p>
       </div>
     </div>

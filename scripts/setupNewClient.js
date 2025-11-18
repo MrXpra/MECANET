@@ -38,7 +38,7 @@ const question = (query) => new Promise((resolve) => rl.question(query, resolve)
 const setupNewClient = async () => {
   try {
     console.log('\n╔════════════════════════════════════════════════════════════╗');
-    console.log('║     🚀 CONFIGURACIÓN DE NUEVO CLIENTE - AutoParts Manager  ║');
+    console.log('║     🚀 CONFIGURACIÓN DE NUEVO CLIENTE - MECANET  ║');
     console.log('╚════════════════════════════════════════════════════════════╝\n');
 
     // Conectar a MongoDB

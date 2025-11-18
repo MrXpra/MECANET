@@ -299,7 +299,7 @@ const SalesHistory = () => {
           </style>
         </head>
         <body>
-          <h1>${settings.businessName || 'AutoParts Manager'}</h1>
+          <h1>${settings.businessName || 'MECANET'}</h1>
           <div class="line"></div>
           
           <div class="info-section">

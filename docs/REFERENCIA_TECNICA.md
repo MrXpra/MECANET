@@ -1,4 +1,4 @@
-# 🔧 AutoParts Manager - Referencia Técnica
+# 🔧 MECANET - Referencia Técnica
 
 ## 📚 Guía Completa de Arquitectura, API y Código
 

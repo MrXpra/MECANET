@@ -28,7 +28,7 @@ export const getSettings = async (req, res) => {
         secure: false,
         user: '',
         password: '',
-        fromName: 'AutoParts Manager',
+        fromName: 'MECANET',
         fromEmail: ''
       };
     } else if (settingsObj.smtp.enabled === undefined) {
@@ -352,7 +352,7 @@ export const exportData = async (req, res) => {
       metadata: {
         exportDate: new Date().toISOString(),
         version: '1.0.0',
-        systemName: settings?.businessName || 'AutoParts Manager',
+        systemName: settings?.businessName || 'MECANET',
         totalRecords: {
           products: products.length,
           sales: sales.length,

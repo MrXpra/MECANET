@@ -25,7 +25,7 @@ import { create } from 'zustand';
 
 export const useSettingsStore = create((set) => ({
   settings: {
-    businessName: 'AutoParts Manager',
+    businessName: 'MECANET',
     businessLogoUrl: '/logo.png',
     businessAddress: '',
     businessPhone: '',
@@ -37,7 +37,7 @@ export const useSettingsStore = create((set) => ({
       secure: false,
       user: '',
       password: '',
-      fromName: 'AutoParts Manager',
+      fromName: 'MECANET',
       fromEmail: ''
     },
     taxRate: 0,

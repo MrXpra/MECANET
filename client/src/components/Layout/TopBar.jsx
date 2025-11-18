@@ -87,7 +87,7 @@ const TopBar = () => {
         {/* Business Name */}
         <div>
           <h2 className="text-lg lg:text-2xl font-bold text-gray-900 dark:text-white whitespace-nowrap">
-            {settings.businessName || 'AutoParts Manager'}
+            {settings.businessName || 'MECANET'}
           </h2>
         </div>
 
@@ -208,7 +208,7 @@ const getPageTitle = () => {
     '/reportes': 'Reportes',
     '/configuracion': 'Configuración',
   };
-  return titles[path] || 'AutoParts Manager';
+  return titles[path] || 'MECANET';
 };
 
 export default TopBar;

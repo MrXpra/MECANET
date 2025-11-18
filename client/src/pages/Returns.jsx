@@ -284,7 +284,7 @@ const Returns = () => {
           </style>
         </head>
         <body>
-          <h1>${settings.businessName || 'AutoParts Manager'}</h1>
+          <h1>${settings.businessName || 'MECANET'}</h1>
           <h2>NOTA DE DEVOLUCIÓN</h2>
           <div class="line"></div>
           
@@ -1346,7 +1346,7 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
                           {getPriceDifference() > 0 
                             ? `Cliente debe pagar ${formatCurrency(getPriceDifference())}`
                             : getPriceDifference() < 0
-                              ? `Se le devuelve ${formatCurrency(Math.abs(getPriceDifference()))}`
+                              ? `Se le devolvió ${formatCurrency(Math.abs(getPriceDifference()))}`
                               : 'Sin diferencia de precio'
                           }
                         </p>
@@ -1500,40 +1500,40 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
                           </div>
                         </div>
                       ))}
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-green-300 dark:border-green-700">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-gray-700 dark:text-gray-300">
-                          Total productos de cambio:
-                        </span>
-                        <span className="font-bold text-green-700 dark:text-green-300">
-                          {formatCurrency(getExchangeTotal())}
-                        </span>
+                      <div className="border-t border-green-300 dark:border-green-700 pt-2 mt-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium text-gray-700 dark:text-gray-300">
+                            Total productos de cambio:
+                          </span>
+                          <span className="font-bold text-green-700 dark:text-green-300">
+                            {formatCurrency(getExchangeTotal())}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm mt-1">
+                          <span className="font-medium text-gray-700 dark:text-gray-300">
+                            Total a devolver:
+                          </span>
+                          <span className="font-bold text-red-700 dark:text-red-400">
+                            -{formatCurrency(getTotalAmount())}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-green-300 dark:border-green-700">
+                          <span className="font-bold text-gray-900 dark:text-white">
+                            Diferencia:
+                          </span>
+                          <span className={`font-bold text-lg ${getPriceDifference() >= 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                            {getPriceDifference() >= 0 ? '+' : ''}{formatCurrency(getPriceDifference())}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
+                          {getPriceDifference() > 0 
+                            ? `El cliente debe pagar ${formatCurrency(getPriceDifference())} adicional`
+                            : getPriceDifference() < 0
+                              ? `Se le devolverá ${formatCurrency(Math.abs(getPriceDifference()))} al cliente`
+                              : 'Cambio exacto, sin diferencia de precio'
+                          }
+                        </p>
                       </div>
-                      <div className="flex items-center justify-between text-sm mt-1">
-                        <span className="font-medium text-gray-700 dark:text-gray-300">
-                          Total a devolver:
-                        </span>
-                        <span className="font-bold text-red-700 dark:text-red-400">
-                          -{formatCurrency(getTotalAmount())}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-green-300 dark:border-green-700">
-                        <span className="font-bold text-gray-900 dark:text-white">
-                          Diferencia:
-                        </span>
-                        <span className={`font-bold text-lg ${getPriceDifference() >= 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                          {getPriceDifference() >= 0 ? '+' : ''}{formatCurrency(getPriceDifference())}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
-                        {getPriceDifference() > 0 
-                          ? `El cliente debe pagar ${formatCurrency(getPriceDifference())} adicional`
-                          : getPriceDifference() < 0
-                            ? `Se le devolverá ${formatCurrency(Math.abs(getPriceDifference()))} al cliente`
-                            : 'Cambio exacto, sin diferencia de precio'
-                        }
-                      </p>
                     </div>
                   </div>
                 )}
@@ -1722,7 +1722,7 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
           </style>
         </head>
         <body>
-          <h1>${settings.businessName || 'AutoParts Manager'}</h1>
+          <h1>${settings.businessName || 'MECANET'}</h1>
           <h2>NOTA DE DEVOLUCIÓN</h2>
           <div class="line"></div>
           
@@ -1850,6 +1850,7 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
             <div>Procesado por: ${returnData.processedBy?.name || 'N/A'}</div>
             ${returnData.approvedBy ? `<div>Aprobado por: ${returnData.approvedBy?.name}</div>` : ''}
           </div>
+          
           
           <div class="line"></div>
           <p class="center bold">Gracias por su comprensión</p>

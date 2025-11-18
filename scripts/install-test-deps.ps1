@@ -1,7 +1,7 @@
-# Testing Setup Script for AutoParts Manager
+# Testing Setup Script for MECANET
 # Run this script to install all testing dependencies
 
-Write-Host "🧪 Installing Testing Dependencies for AutoParts Manager..." -ForegroundColor Cyan
+Write-Host "🧪 Installing Testing Dependencies for MECANET..." -ForegroundColor Cyan
 Write-Host ""
 
 # Navigate to client directory

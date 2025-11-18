@@ -1,4 +1,4 @@
-# 🚗 AutoParts Manager - Sistema POS
+# 🚗 MECANET - Sistema POS
 
 <div align="center">
 

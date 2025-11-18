@@ -821,7 +821,7 @@ const PrintableReport = ({ user, sales, summary, formatCurrency, formatDate, for
       <div className="printable-report">
         {/* Encabezado */}
         <div style={{ textAlign: 'center', marginBottom: '20pt', borderBottom: '2pt solid black', paddingBottom: '10pt' }}>
-          <h1 style={{ margin: '0 0 5pt 0', fontSize: '20pt' }}>AutoParts Manager</h1>
+          <h1 style={{ margin: '0 0 5pt 0', fontSize: '20pt' }}>MECANET</h1>
           <p style={{ margin: '0', fontSize: '10pt', color: '#666' }}>Sistema de Punto de Venta</p>
         </div>
 
@@ -987,7 +987,7 @@ const PrintableReport = ({ user, sales, summary, formatCurrency, formatDate, for
 
       {/* Pie de página */}
       <div style={{ marginTop: '30pt', textAlign: 'center', fontSize: '9pt', color: '#666', borderTop: '1pt solid #ddd', paddingTop: '10pt' }}>
-        <p style={{ margin: '0' }}>Documento generado automáticamente por AutoParts Manager</p>
+        <p style={{ margin: '0' }}>Documento generado automáticamente por MECANET</p>
         <p style={{ margin: '5pt 0 0 0' }}>Fecha de impresión: {formatDate(now)} - {formatTime(now)}</p>
       </div>
     </div>

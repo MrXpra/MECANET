@@ -1,4 +1,4 @@
-# Script de publicación de versiones - AutoParts Manager
+# Script de publicación de versiones - MECANET
 # Uso: .\scripts\release.ps1 -Type [patch|minor|major]
 
 param(
@@ -93,12 +93,24 @@ Write-Info "[1/7] Actualizando version.json..."
 $versionData = @{
     version = $newVersion
     lastUpdated = (Get-Date -Format "yyyy-MM-dd")
-    releaseNotes = "Versión $newVersion del sistema AutoParts Manager"
+    releaseNotes = "Versión $newVersion del sistema MECANET"
 }
 $versionData | ConvertTo-Json | Set-Content ".\version.json"
 
+# Actualizar package.json (Backend)
+Write-Info "[1.1/7] Actualizando package.json (Backend)..."
+$pkgBackend = Get-Content ".\package.json" | ConvertFrom-Json
+$pkgBackend.version = $newVersion
+$pkgBackend | ConvertTo-Json -Depth 10 | Set-Content ".\package.json"
+
+# Actualizar client/package.json (Frontend)
+Write-Info "[1.2/7] Actualizando client/package.json (Frontend)..."
+$pkgClient = Get-Content ".\client\package.json" | ConvertFrom-Json
+$pkgClient.version = $newVersion
+$pkgClient | ConvertTo-Json -Depth 10 | Set-Content ".\client\package.json"
+
 # Commitear el cambio de versión
-git add version.json
+git add version.json package.json client/package.json
 git commit -m "chore: bump version to $newVersion"
 Write-Success "version.json actualizado"
 
