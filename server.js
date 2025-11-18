@@ -193,7 +193,8 @@ app.use('/api/quotations', quotationRoutes); // /api/quotations (cotizaciones)
 app.get('/', (req, res) => {
   res.json({ 
     message: 'MECANET API está funcionando correctamente',
-    status: 'online'
+    status: 'online',
+    timestamp: new Date().toISOString()
   });
 });
 
