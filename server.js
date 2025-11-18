@@ -147,19 +147,10 @@ app.use('/api/quotations', quotationRoutes); // /api/quotations (cotizaciones)
 
 // ========== SERVIR FRONTEND EN PRODUCCIÓN ==========
 // En producción, Express sirve los archivos estáticos del build de React
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'client/build')));
-  
-  // Cualquier ruta no API devuelve el index.html (para React Router)
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
-  });
-} else {
-  // En desarrollo, solo mostramos un mensaje en la ruta raíz
-  app.get('/', (req, res) => {
-    res.json({ message: 'MECANET API está funcionando correctamente' });
-  });
-}
+// En producción, solo API
+app.get('/', (req, res) => {
+  res.json({ message: 'MECANET API está funcionando correctamente' });
+});
 
 // ========== MIDDLEWARE DE ERRORES ==========
 // Logger de errores (debe ir ANTES del errorHandler)
