@@ -26,14 +26,16 @@ export const useProductStore = create((set, get) => ({
 
     try {
       const response = await getProducts();
-      // Asumiendo que response.data es el array de productos
+      // Asegurar que siempre sea un array
+      const productsData = Array.isArray(response.data) ? response.data : [];
       set({ 
-        products: response.data, 
+        products: productsData, 
         lastFetched: Date.now(),
         isLoading: false 
       });
     } catch (error) {
       set({ 
+        products: [], // Asegurar array vacío en caso de error
         error: error.message || 'Error al cargar productos', 
         isLoading: false 
       });
