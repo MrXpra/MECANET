@@ -136,7 +136,7 @@ const corsOptions = {
       callback(null, true);
     }
     // En producción, permitir dominios de Railway y Vercel
-    else if (process.env.NODE_ENV === 'production' && (origin.includes('railway.app') || origin.includes('vercel.app'))) {
+    else if (process.env.NODE_ENV === 'production' && (origin.includes('railway.app') || origin.includes('vercel.app') || origin.includes('mecanet.site'))) {
       callback(null, true);
     }
     else {
