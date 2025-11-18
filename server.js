@@ -132,7 +132,7 @@ const corsOptions = {
       callback(null, true);
     } 
     // Permitir cualquier subdominio de Vercel del proyecto
-    else if (origin.includes('sistema-gestor-de-taller-mecanico') && origin.includes('.vercel.app')) {
+    else if (origin.includes('mecanet') && origin.includes('.vercel.app')) {
       callback(null, true);
     }
     // En producción, permitir dominios de Railway y Vercel
