@@ -183,7 +183,10 @@ app.use('/api/quotations', quotationRoutes); // /api/quotations (cotizaciones)
 // En producción, Express sirve los archivos estáticos del build de React
 // En producción, solo API
 app.get('/', (req, res) => {
-  res.json({ message: 'MECANET API está funcionando correctamente' });
+  res.json({ 
+    message: 'MECANET API está funcionando correctamente',
+    status: 'online'
+  });
 });
 
 // ========== MIDDLEWARE DE ERRORES ==========
