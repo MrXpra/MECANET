@@ -26,8 +26,12 @@ export const useProductStore = create((set, get) => ({
 
     try {
       const response = await getProducts();
-      // Asegurar que siempre sea un array
-      const productsData = Array.isArray(response.data) ? response.data : [];
+      // El backend retorna { products: [...], pagination: {...} }
+      const productsData = Array.isArray(response.data?.products) 
+        ? response.data.products 
+        : Array.isArray(response.data) 
+        ? response.data 
+        : [];
       set({ 
         products: productsData, 
         lastFetched: Date.now(),
