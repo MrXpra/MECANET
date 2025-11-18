@@ -18,6 +18,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js'; // Función para conectar a MongoDB
 import LogService from './services/logService.js'; // Servicio de logs con limpieza automática
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 
 // ========== IMPORTAR TODAS LAS RUTAS ==========
 // Cada archivo de rutas maneja un módulo específico de la aplicación
@@ -72,6 +74,38 @@ LogService.startAutoCleaning();
 
 // Inicializar la aplicación Express
 const app = express();
+
+// ========== SEGURIDAD ==========
+// 1. HELMET: Configurar cabeceras HTTP seguras
+// Protege contra XSS, clickjacking, sniffing, etc.
+app.use(helmet());
+
+// 2. RATE LIMITING: Proteger contra fuerza bruta y DDoS
+// Límite general: 100 peticiones por IP cada 15 minutos
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // Límite por IP
+  standardHeaders: true, // Retorna info de límite en las cabeceras `RateLimit-*`
+  legacyHeaders: false, // Deshabilita las cabeceras `X-RateLimit-*`
+  message: {
+    status: 429,
+    message: 'Demasiadas peticiones desde esta IP, por favor intente nuevamente en 15 minutos'
+  }
+});
+
+// Aplicar limitador a todas las rutas
+app.use(limiter);
+
+// Limitador estricto para rutas de autenticación (login)
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 10, // 10 intentos de login por hora por IP
+  message: { 
+    status: 429, 
+    message: 'Demasiados intentos de inicio de sesión, por favor intente nuevamente en una hora' 
+  }
+});
+app.use('/api/auth/login', authLimiter);
 
 // ========== MIDDLEWARE GLOBAL ==========
 // CORS: Configurado para desarrollo local y producción

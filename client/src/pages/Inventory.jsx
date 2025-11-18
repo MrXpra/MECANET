@@ -46,8 +46,9 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { getProducts, createProduct, updateProduct, deleteProduct, getSuppliers } from '../services/api';
+import { createProduct, updateProduct, deleteProduct, getSuppliers } from '../services/api';
 import { useSettingsStore } from '../store/settingsStore';
+import { useProductStore } from '../store/productStore'; // Importar nuevo store
 import toast from 'react-hot-toast';
 import { TableSkeleton } from '../components/SkeletonLoader';
 import {
@@ -81,10 +82,19 @@ import {
 const Inventory = () => {
   const navigate = useNavigate();
   const { settings } = useSettingsStore();
-  const [products, setProducts] = useState([]);
+  
+  // Usar el store global en lugar de estado local
+  const { 
+    products, 
+    fetchProducts, 
+    isLoading, 
+    invalidateCache 
+  } = useProductStore();
+
+  // const [products, setProducts] = useState([]); // ELIMINADO
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false); // ELIMINADO
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -114,21 +124,10 @@ const Inventory = () => {
   });
 
   useEffect(() => {
-    fetchProducts();
-    fetchSuppliers();
-  }, [pagination.page]);
+    fetchProducts(); // Usar función del store con caché
+  }, [fetchProducts]);
 
-  const fetchSuppliers = async () => {
-    try {
-      const response = await getSuppliers({ limit: 1000 });
-      const suppliersData = response?.data?.suppliers || response?.data || [];
-      setSuppliers(Array.isArray(suppliersData) ? suppliersData : []);
-    } catch (error) {
-      console.error('Error al cargar proveedores:', error);
-      setSuppliers([]);
-    }
-  };
-
+  // Filter products
   useEffect(() => {
     filterAndSortProducts();
   }, [products, searchTerm, categoryFilter, brandFilter, supplierFilter, stockFilter, sortBy, sortOrder]);
@@ -147,35 +146,18 @@ const Inventory = () => {
     }
   }, [showProductModal]);
 
-  const fetchProducts = async () => {
+  const fetchSuppliers = async () => {
     try {
-      setIsLoading(true);
-      const response = await getProducts({ page: pagination.page, limit: pagination.limit });
-      
-      // El backend ahora devuelve { products, pagination }
-      const productsData = response?.data?.products || response?.data || [];
-      const paginationData = response?.data?.pagination || {};
-      
-      setProducts(Array.isArray(productsData) ? productsData : []);
-      setPagination(prev => ({
-        ...prev,
-        ...paginationData
-      }));
-      
-      // Extract unique categories and brands
-      const uniqueCategories = [...new Set(productsData.map(p => p.category).filter(Boolean))];
-      const uniqueBrands = [...new Set(productsData.map(p => p.brand).filter(Boolean))];
-      setCategories(uniqueCategories);
-      setBrands(uniqueBrands);
+      const response = await getSuppliers({ limit: 1000 });
+      const suppliersData = response?.data?.suppliers || response?.data || [];
+      setSuppliers(Array.isArray(suppliersData) ? suppliersData : []);
     } catch (error) {
-      console.error('Error fetching products:', error);
-      toast.error('Error al cargar productos');
-      setProducts([]);
-    } finally {
-      setIsLoading(false);
+      console.error('Error al cargar proveedores:', error);
+      setSuppliers([]);
     }
   };
 
+  // Filter and sort products based on various criteria
   const filterAndSortProducts = () => {
     let filtered = [...products];
 
@@ -247,36 +229,49 @@ const Inventory = () => {
     setShowProductModal(true);
   };
 
-  const handleDeleteProduct = async (productId) => {
-    if (!window.confirm('¿Está seguro de eliminar este producto?')) {
-      return;
-    }
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleDeleteProduct = async () => {
+    if (!productToDelete) return;
 
     try {
-      await deleteProduct(productId);
+      await deleteProduct(productToDelete._id);
       toast.success('Producto eliminado exitosamente');
-      fetchProducts();
+      setShowDeleteConfirm(false);
+      setProductToDelete(null);
+      invalidateCache(); // Invalidar caché
+      fetchProducts(true); // Recargar
     } catch (error) {
       console.error('Error deleting product:', error);
       toast.error(error.response?.data?.message || 'Error al eliminar producto');
     }
   };
 
-  const handleSaveProduct = async (productData, productId = null) => {
+  const handleCreateProduct = async (productData) => {
     try {
-      if (editingProduct || productId) {
-        const id = productId || editingProduct._id;
-        await updateProduct(id, productData);
-        toast.success('Producto actualizado exitosamente');
-      } else {
-        await createProduct(productData);
-        toast.success('Producto creado exitosamente');
-      }
+      await createProduct(productData);
+      toast.success('Producto creado exitosamente');
       setShowProductModal(false);
-      fetchProducts();
+      invalidateCache(); // Invalidar caché para forzar recarga
+      fetchProducts(true); // Recargar inmediatamente
     } catch (error) {
-      console.error('Error saving product:', error);
-      toast.error(error.response?.data?.message || 'Error al guardar producto');
+      console.error('Error creating product:', error);
+      toast.error(error.response?.data?.message || 'Error al crear producto');
+    }
+  };
+
+  const handleUpdateProduct = async (productData) => {
+    try {
+      await updateProduct(editingProduct._id, productData);
+      toast.success('Producto actualizado exitosamente');
+      setShowProductModal(false);
+      setEditingProduct(null);
+      invalidateCache(); // Invalidar caché
+      fetchProducts(true); // Recargar
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast.error(error.response?.data?.message || 'Error al actualizar producto');
     }
   };
 
@@ -600,7 +595,10 @@ const Inventory = () => {
                           <Edit className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={() => handleDeleteProduct(product._id)}
+                          onClick={() => {
+                            setProductToDelete(product);
+                            setShowDeleteConfirm(true);
+                          }}
                           className="text-red-600 hover:text-red-700 dark:text-red-400"
                         >
                           <Trash2 className="w-5 h-5" />
@@ -655,13 +653,60 @@ const Inventory = () => {
       {showProductModal && (
         <ProductModal
           product={editingProduct}
-          onSave={handleSaveProduct}
+          onSave={editingProduct ? handleUpdateProduct : handleCreateProduct}
           onClose={() => setShowProductModal(false)}
           categories={categories}
           brands={brands}
           allProducts={products}
           suppliers={suppliers}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && productToDelete && (
+        <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style={{ zIndex: 100000 }}>
+          <div className="glass-strong rounded-2xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                Confirmar Eliminación
+              </h3>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-gray-700 dark:text-gray-300">
+                ¿Está seguro de que desea eliminar el producto <span className="font-semibold">{productToDelete.name}</span>? Esta acción no se puede deshacer.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="btn-secondary flex-1"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteProduct}
+                className="btn-danger flex-1"
+              >
+                {isLoading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <Check className="w-5 h-5" />
+                    Eliminar Producto
+                  </div>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
