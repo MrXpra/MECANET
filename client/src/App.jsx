@@ -93,6 +93,16 @@ export const AppRoutes = () => {
     return () => clearInterval(interval);
   }, [checkAutoTheme, autoThemeEnabled]);
 
+  // Actualizar favicon dinámicamente con el logo del sistema
+  useEffect(() => {
+    if (settings?.businessLogo) {
+      const link = document.querySelector("link[rel~='icon']");
+      if (link) {
+        link.href = settings.businessLogo;
+      }
+    }
+  }, [settings?.businessLogo]);
+
   // Aplicar clase dark al documentElement para que funcione con portals
   useEffect(() => {
     if (isDarkMode) {
