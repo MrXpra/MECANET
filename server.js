@@ -58,6 +58,14 @@ dotenv.config();
 // Aseguramos que exista un secreto para JWT y tenga longitud mínima razonable.
 const MIN_JWT_LENGTH = 32; // mínimo recomendado (en hex esto sería 32+), ajustar según necesidades
 const jwtSecret = process.env.JWT_SECRET;
+
+// Debug: Mostrar todas las variables de entorno disponibles
+console.log('🔍 Variables de entorno detectadas:');
+console.log('JWT_SECRET:', jwtSecret ? `Presente (${jwtSecret.length} caracteres)` : 'NO DEFINIDA');
+console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'Presente' : 'NO DEFINIDA');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+
 if (!jwtSecret || String(jwtSecret).length < MIN_JWT_LENGTH) {
   console.error('FATAL: La variable de entorno JWT_SECRET no está definida o es demasiado corta.');
   console.error('Genera un secreto seguro ejecutando: node ./scripts/generateJwtSecret.js');
