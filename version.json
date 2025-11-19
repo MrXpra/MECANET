@@ -1,5 +1,5 @@
 {
-  "version": "1.0.1",
-  "lastUpdated": "2025-11-13",
-  "releaseNotes": "Versión 1.0.1 - Mejoras en optimización de logs, tema automático, tests y script de load testing para MongoDB"
+  "version": "1.0.2",
+  "lastUpdated": "2025-11-19",
+  "releaseNotes": "Versión 1.0.2 - Fix: Habilitar trust proxy para Railway"
 }

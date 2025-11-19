@@ -76,6 +76,10 @@ LogService.startAutoCleaning();
 // Inicializar la aplicación Express
 const app = express();
 
+// Habilitar 'trust proxy' es necesario para despliegues en Railway/Vercel/AWS
+// Esto permite que express-rate-limit identifique correctamente la IP real del usuario
+app.set('trust proxy', 1);
+
 // ========== SEGURIDAD ==========
 // 1. HELMET: Configurar cabeceras HTTP seguras
 // Protege contra XSS, clickjacking, sniffing, etc.
