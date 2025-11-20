@@ -61,29 +61,20 @@ if %STARTUP_CODE% equ 2 (
     echo ========================================================
     echo.
     
-    if not exist ".update-pending" (
-        echo [ERROR] Archivo .update-pending no encontrado
-        pause
-        goto :START_SERVER
+    REM Buscar directamente la carpeta dentro de temp_source_update
+    echo Buscando carpeta de actualizacion...
+    
+    set "UPDATE_PATH="
+    for /d %%G in ("temp_source_update\MrXpra-MECANET-*") do (
+        set "UPDATE_PATH=%%G"
+        goto :FOUND_UPDATE
     )
     
-    set /p UPDATE_PATH=<.update-pending
-    
-    echo [DEBUG] Ruta leida del archivo: %UPDATE_PATH%
-    echo [DEBUG] Verificando si existe...
-    
-    if not exist "%UPDATE_PATH%" (
-        echo [ERROR] La carpeta no existe en esa ruta
-        echo [DEBUG] Buscando carpeta dentro de temp_source_update...
-        
-        REM Buscar la carpeta dentro de temp_source_update
-        for /d %%G in ("temp_source_update\*") do set "UPDATE_PATH=%%G"
-        
-        echo [DEBUG] Nueva ruta encontrada: %UPDATE_PATH%
-    )
-    
-    if not exist "%UPDATE_PATH%" (
-        echo [ERROR] No se pudo encontrar la carpeta de actualizacion
+    :FOUND_UPDATE
+    if not defined UPDATE_PATH (
+        echo [ERROR] No se encontro carpeta de actualizacion en temp_source_update
+        echo [DEBUG] Contenido de temp_source_update:
+        dir /b temp_source_update 2>nul
         pause
         goto :START_SERVER
     )
@@ -94,7 +85,7 @@ if %STARTUP_CODE% equ 2 (
     robocopy "%UPDATE_PATH%" "." /E /XO /XD ".git" "node_modules" "temp_source_update" "distribucion" /XF ".env" ".gitignore" "package-lock.json" >nul
     
     if %errorlevel% geq 8 (
-        echo [ERROR] Error al copiar archivos
+        echo [ERROR] Error al copiar archivos (Codigo: %errorlevel%)
         pause
         goto :START_SERVER
     )
@@ -108,14 +99,17 @@ if %STARTUP_CODE% equ 2 (
 
     echo Actualizando dependencias...
     if exist "node\node.exe" (
-        "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --production
+        "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --production >nul 2>&1
     ) else (
-        call npm install --production
+        call npm install --production >nul 2>&1
     )
 
     echo.
-    echo [OK] Actualizacion completada
-    echo El servidor se iniciara con la nueva version
+    echo ========================================================
+    echo [OK] ACTUALIZACION COMPLETADA
+    echo ========================================================
+    echo.
+    echo El servidor se iniciara con la nueva version...
     timeout /t 3 >nul
 )
 
