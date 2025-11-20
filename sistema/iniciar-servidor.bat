@@ -64,3 +64,11 @@ start /B cmd /c "timeout /t 5 >nul && start http://localhost:5000"
 
 REM Iniciar servidor en PRIMER PLANO para ver logs
 %NODE_CMD% server.js
+
+REM Si el servidor se detiene (por error o Ctrl+C), mantener la ventana abierta
+echo.
+echo ========================================================
+echo   SERVIDOR DETENIDO
+echo ========================================================
+echo.
+pause
