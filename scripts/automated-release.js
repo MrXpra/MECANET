@@ -57,51 +57,6 @@ async function main() {
     const newVersion = `${major}.${minor}.${patch}`;
     console.log(`✨ Nueva versión: ${newVersion}`);
 
-    // 1.5. Gestión del Changelog
-    let releaseNotes = '';
-    console.log('\n📝 GESTIÓN DEL CHANGELOG');
-    console.log('   Es importante documentar los cambios de esta versión.');
-    const addToChangelog = await question('   ¿Desea agregar una entrada al CHANGELOG.md? (s/n) [s]: ') || 's';
-
-    if (addToChangelog.toLowerCase() === 's') {
-        console.log('\n   Ingrese las notas de la versión (Markdown soportado).');
-        console.log('   Ejemplos:');
-        console.log('     ### ✨ Agregado');
-        console.log('     - Nueva funcionalidad X');
-        console.log('     ### 🐛 Corregido');
-        console.log('     - Bug Y arreglado');
-        console.log('\n   Escriba "FIN" en una línea nueva para terminar la entrada.\n');
-
-        while (true) {
-            const line = await question('   > ');
-            if (line.trim() === 'FIN') break;
-            releaseNotes += line + '\n';
-        }
-
-        if (releaseNotes.trim()) {
-            const changelogPath = path.join(rootDir, 'CHANGELOG.md');
-            if (fs.existsSync(changelogPath)) {
-                let content = fs.readFileSync(changelogPath, 'utf8');
-                const marker = '---';
-                const idx = content.indexOf(marker);
-                
-                const entryHeader = `## [${newVersion}] - ${new Date().toISOString().split('T')[0]}\n\n`;
-                const fullEntry = entryHeader + releaseNotes + '\n';
-
-                if (idx !== -1) {
-                    // Insertar después del marcador ---
-                    const newContent = content.slice(0, idx + marker.length) + '\n\n' + fullEntry + content.slice(idx + marker.length).trimStart();
-                    fs.writeFileSync(changelogPath, newContent);
-                    console.log('   ✅ CHANGELOG.md actualizado exitosamente.');
-                } else {
-                    // Si no hay marcador, agregar al principio
-                    fs.writeFileSync(changelogPath, fullEntry + content);
-                    console.log('   ✅ CHANGELOG.md actualizado (al inicio).');
-                }
-            }
-        }
-    }
-
     const confirm = await question('\n   ¿Proceder con el Release? (s/n): ');
     if (confirm.toLowerCase() !== 's') process.exit(0);
 
@@ -118,7 +73,7 @@ async function main() {
         const versionData = {
             version: newVersion,
             lastUpdated: new Date().toISOString().split('T')[0],
-            releaseNotes: releaseNotes.trim() || `Release v${newVersion}`
+            releaseNotes: `Release v${newVersion}`
         };
         fs.writeFileSync(versionJsonPath, JSON.stringify(versionData, null, 2));
 
@@ -181,7 +136,7 @@ async function main() {
                 tag_name: `v${newVersion}`,
                 target_commitish: currentBranch,
                 name: `v${newVersion}`,
-                body: releaseNotes.trim() || `Release automático v${newVersion}`,
+                body: `Release automático v${newVersion}`,
                 draft: false,
                 prerelease: false
             };
