@@ -29,34 +29,34 @@ async function main() {
     console.log('\n🔍 [SMART-STARTUP] Iniciando verificación de sistema...');
 
     // 1. Conectar a MongoDB (Solo para leer configuración)
-    try {
-        if (!process.env.MONGODB_URI) {
-            console.log('⚠️  No hay MONGODB_URI definida. Saltando verificación de actualizaciones.');
-            process.exit(0);
-        }
+    // Si no hay .env (instalación limpia), asumimos autoUpdate = true y saltamos conexión
+    if (!process.env.MONGODB_URI) {
+        console.log('ℹ️  Instalación limpia detectada (Sin .env).');
+        console.log('   Se verificará la última versión disponible por defecto.');
+    } else {
+        try {
+            await mongoose.connect(process.env.MONGODB_URI, {
+                serverSelectionTimeoutMS: 5000
+            });
 
-        await mongoose.connect(process.env.MONGODB_URI, {
-            serverSelectionTimeoutMS: 5000
-        });
-    } catch (error) {
-        console.log('⚠️  No se pudo conectar a la BD. Saltando verificación (Modo Offline).');
-        process.exit(0);
-    }
-
-    // 2. Leer configuración
-    let autoUpdate = true;
-    try {
-        const settings = await Settings.findOne();
-        if (settings && settings.autoUpdate === false) {
-            autoUpdate = false;
+            // 2. Leer configuración solo si hay conexión
+            try {
+                const settings = await Settings.findOne();
+                if (settings && settings.autoUpdate === false) {
+                    autoUpdate = false;
+                }
+            } catch (error) {
+                console.log('⚠️  Error leyendo configuración. Usando valores por defecto.');
+            }
+            
+            await mongoose.disconnect();
+        } catch (error) {
+            console.log('⚠️  No se pudo conectar a la BD. Saltando verificación de configuración personalizada.');
         }
-    } catch (error) {
-        console.log('⚠️  Error leyendo configuración. Usando valores por defecto.');
     }
 
     if (!autoUpdate) {
         console.log('ℹ️  Actualizaciones automáticas desactivadas por configuración.');
-        await mongoose.disconnect();
         process.exit(0);
     }
 

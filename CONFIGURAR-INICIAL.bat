@@ -21,8 +21,10 @@ if not exist "node_modules" (
     if %errorlevel% neq 0 (
         echo [ERROR] Fallo la instalacion de dependencias.
         echo Continuando con la configuracion sin verificar actualizaciones...
+        pause
         goto :CONFIGURACION
     )
+    echo [OK] Dependencias instaladas.
 )
 
 REM ========================================================
@@ -52,6 +54,7 @@ if %errorlevel% equ 2 (
     
     if not exist "%UPDATE_PATH%" (
         echo [ERROR] No se encontro la carpeta de actualizacion.
+        pause
         goto :CONFIGURACION
     )
 
@@ -89,6 +92,7 @@ if %errorlevel% equ 2 (
 REM ========================================================
 REM 3. INICIAR CONFIGURACIÓN
 REM ========================================================
+echo Iniciando script de configuracion...
 powershell -ExecutionPolicy Bypass -File "sistema\CONFIGURAR-INICIAL.ps1"
 
 echo.
