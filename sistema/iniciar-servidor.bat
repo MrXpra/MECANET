@@ -61,14 +61,29 @@ if %STARTUP_CODE% equ 2 (
     echo ========================================================
     echo.
     
+    if not exist ".update-pending" (
+        echo [ERROR] Archivo .update-pending no encontrado
+        pause
+        goto :START_SERVER
+    )
+    
     set /p UPDATE_PATH=<.update-pending
     
+    echo [DEBUG] Ruta leida del archivo: %UPDATE_PATH%
+    echo [DEBUG] Verificando si existe...
+    
     if not exist "%UPDATE_PATH%" (
-        echo [ERROR] Carpeta de actualizacion no encontrada
-        echo [DEBUG] Buscando en: %UPDATE_PATH%
-        echo [DEBUG] Contenido de la carpeta raiz:
-        dir /b
-        echo.
+        echo [ERROR] La carpeta no existe en esa ruta
+        echo [DEBUG] Buscando carpeta dentro de temp_source_update...
+        
+        REM Buscar la carpeta dentro de temp_source_update
+        for /d %%G in ("temp_source_update\*") do set "UPDATE_PATH=%%G"
+        
+        echo [DEBUG] Nueva ruta encontrada: %UPDATE_PATH%
+    )
+    
+    if not exist "%UPDATE_PATH%" (
+        echo [ERROR] No se pudo encontrar la carpeta de actualizacion
         pause
         goto :START_SERVER
     )
