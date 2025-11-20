@@ -7,14 +7,14 @@ y este proyecto adhiere al [Versionado Semántico](https://semver.org/lang/es/).
 
 ---
 
-## [1.5.0] - 2025-11-20
+## [1.4.10] - 2025-11-20
 
 ### ✨ Agregado
-- **Modal de Versión:** Ahora muestra automáticamente el contenido del CHANGELOG.md
-- **Debug:** Logs extensivos para diagnosticar problemas con devoluciones
+- **Modal de Versión:** Ahora muestra automáticamente el contenido del CHANGELOG.md en lugar de texto genérico
+- **Debug:** Endpoint `/api/debug/returns` para diagnosticar problemas con devoluciones
 
 ### 🐛 Corregido
-- **Changelog:** El modal de "Acerca de" ahora lee y muestra las notas de release desde CHANGELOG.md en lugar de un texto genérico
+- **Changelog:** El modal de "Acerca de" ahora lee y muestra las notas de release desde CHANGELOG.md
 
 ## [1.4.9] - 2025-11-20
 
