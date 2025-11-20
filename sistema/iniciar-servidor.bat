@@ -66,16 +66,28 @@ if %STARTUP_CODE% equ 2 (
     if not exist "%UPDATE_PATH%" (
         echo [ERROR] Carpeta de actualizacion no encontrada
         echo [DEBUG] Buscando en: %UPDATE_PATH%
-        echo [DEBUG] Archivo .update-pending contiene:
-        type .update-pending
+        echo [DEBUG] Contenido de la carpeta raiz:
+        dir /b
         echo.
         pause
         goto :START_SERVER
     )
 
+    echo [OK] Carpeta encontrada: %UPDATE_PATH%
+    echo.
     echo Copiando archivos...
     robocopy "%UPDATE_PATH%" "." /E /XO /XD ".git" "node_modules" "temp_source_update" "distribucion" /XF ".env" ".gitignore" "package-lock.json" >nul
+    
+    if %errorlevel% geq 8 (
+        echo [ERROR] Error al copiar archivos
+        pause
+        goto :START_SERVER
+    )
+    
+    echo Copiando package.json...
     copy /Y "%UPDATE_PATH%\package.json" "." >nul
+    
+    echo Limpiando archivos temporales...
     rmdir /s /q "temp_source_update" 2>nul
     del ".update-pending" 2>nul
 
@@ -88,7 +100,8 @@ if %STARTUP_CODE% equ 2 (
 
     echo.
     echo [OK] Actualizacion completada
-    timeout /t 2 >nul
+    echo El servidor se iniciara con la nueva version
+    timeout /t 3 >nul
 )
 
 :START_SERVER
