@@ -83,10 +83,17 @@ if %STARTUP_CODE% equ 2 (
     echo.
     echo Copiando archivos del sistema...
     
-    REM Copiar package.json primero
+    REM Copiar archivos de versión primero (críticos)
     copy /Y "%UPDATE_PATH%\package.json" "." >nul
     if %errorlevel% neq 0 (
         echo [ERROR] No se pudo copiar package.json
+        pause
+        goto :CLEANUP_AND_START
+    )
+    
+    copy /Y "%UPDATE_PATH%\version.json" "." >nul
+    if %errorlevel% neq 0 (
+        echo [ERROR] No se pudo copiar version.json
         pause
         goto :CLEANUP_AND_START
     )
