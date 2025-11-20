@@ -319,6 +319,42 @@ app.get('/api/version', (req, res) => {
   }
 });
 
+// Endpoint de debug para verificar devoluciones
+app.get('/api/debug/returns', async (req, res) => {
+  try {
+    const Return = require('./models/Return.js').default;
+    const Sale = require('./models/Sale.js').default;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Obtener todas las devoluciones aprobadas
+    const returns = await Return.find({ status: 'Aprobada' })
+      .populate('sale', 'createdAt invoiceNumber total')
+      .limit(20)
+      .lean();
+    
+    const debug = {
+      today: today.toISOString(),
+      totalReturns: returns.length,
+      returns: returns.map(r => ({
+        id: r._id,
+        returnNumber: r.returnNumber,
+        totalAmount: r.totalAmount,
+        returnDate: r.createdAt,
+        saleInvoice: r.sale?.invoiceNumber,
+        saleDate: r.sale?.createdAt,
+        saleTotal: r.sale?.total
+      }))
+    };
+    
+    res.json(debug);
+  } catch (error) {
+    console.error('Error en debug:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ========== SERVIR FRONTEND EN PRODUCCIÓN ==========
 // En producción, Express sirve los archivos estáticos del build de React
 if (process.env.NODE_ENV === 'production') {
