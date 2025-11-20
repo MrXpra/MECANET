@@ -84,6 +84,13 @@ const Dashboard = () => {
       const response = await getAllDashboardData();
       const data = response.data;
 
+      // DEBUG: Mostrar en consola las estadísticas recibidas
+      console.log('🎯 DASHBOARD v1.4.14+ - Datos recibidos:', {
+        ventasHoy: data.stats?.today?.total,
+        devolucionesHoy: data.stats?.today?.returns,
+        montoDevuelto: data.stats?.today?.returnsAmount
+      });
+
       setStats(data.stats);
       setSalesByDay(data.salesByDay);
       setTopProducts(data.topProducts);
