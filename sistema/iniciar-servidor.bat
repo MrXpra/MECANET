@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
 
 REM Ir al directorio raiz del proyecto
@@ -31,7 +31,7 @@ if not exist ".env" (
     pause
 )
 
-REM Establecer NODE_ENV en producción para servir el frontend
+REM Establecer NODE_ENV en producciÃ³n para servir el frontend
 set NODE_ENV=production
 
 REM Verificar si el servidor ya esta corriendo
@@ -83,7 +83,7 @@ if %STARTUP_CODE% equ 2 (
     echo.
     echo Copiando archivos del sistema...
     
-    REM Copiar archivos de versión primero (críticos)
+    REM Copiar archivos de versiÃ³n primero (crÃ­ticos)
     copy /Y "%UPDATE_PATH%\package.json" "." >nul
     if %errorlevel% neq 0 (
         echo [ERROR] No se pudo copiar package.json
@@ -138,10 +138,10 @@ if %STARTUP_CODE% equ 2 (
     timeout /t 2 >nul
 )
 
-REM Asegurar que SIEMPRE estamos en el directorio raíz antes de iniciar
+REM Asegurar que SIEMPRE estamos en el directorio raÃ­z antes de iniciar
 cd /d "%~dp0\.."
 
-REM Re-detectar Node.js después de actualización
+REM Re-detectar Node.js despuÃ©s de actualizaciÃ³n
 set "NODE_CMD=node"
 if exist "node\node.exe" (
     set "NODE_CMD=node\node.exe"
@@ -153,10 +153,10 @@ echo.
 echo Iniciando servidor...
 echo.
 
-REM NO abrir navegador desde aquí, el servidor lo abre automáticamente
+REM NO abrir navegador desde aquÃ­, el servidor lo abre automÃ¡ticamente
 %NODE_CMD% server.js
 
-REM Capturar el código de salida
+REM Capturar el cÃ³digo de salida
 set SERVER_EXIT=%errorlevel%
 
 REM Si el servidor se detiene, mantener la ventana abierta
