@@ -10,6 +10,9 @@ export const requestLogger = (req, res, next) => {
   const originalJson = res.json;
 
   res.json = function(data) {
+    // Restaurar original para evitar bucles
+    res.json = originalJson;
+    
     const duration = Date.now() - startTime;
     const statusCode = res.statusCode;
 

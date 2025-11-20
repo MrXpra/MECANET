@@ -34,6 +34,9 @@ export const performanceMonitor = (req, res, next) => {
   
   // Función para registrar métricas
   const logPerformance = () => {
+    // Evitar registrar si la respuesta ya fue enviada o si hubo error crítico
+    if (res.headersSent && res.statusCode === 500) return;
+
     const endTime = Date.now();
     const executionTime = endTime - startTime;
     const endMemory = process.memoryUsage().heapUsed;
@@ -84,12 +87,16 @@ export const performanceMonitor = (req, res, next) => {
   
   // Interceptar res.json
   res.json = function(data) {
+    // Restaurar método original para evitar bucles si se llama múltiples veces
+    res.json = originalJson;
     logPerformance();
     return originalJson.call(this, data);
   };
   
   // Interceptar res.send
   res.send = function(data) {
+    // Restaurar método original
+    res.send = originalSend;
     logPerformance();
     return originalSend.call(this, data);
   };
