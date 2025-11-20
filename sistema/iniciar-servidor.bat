@@ -141,11 +141,6 @@ if %STARTUP_CODE% equ 2 (
     echo ========================================================
     echo.
     timeout /t 2 >nul
-    goto :START_SERVER
-    
-    :CLEANUP_AND_START
-    rmdir /s /q "temp_source_update" 2>nul
-    del ".update-pending" 2>nul
 )
 
 :START_SERVER
