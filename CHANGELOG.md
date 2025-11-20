@@ -7,6 +7,73 @@ y este proyecto adhiere al [Versionado Semántico](https://semver.org/lang/es/).
 
 ---
 
+## [1.4.8] - 2025-11-20
+
+### 🐛 Corregido
+- **Dashboard:** Simplificado el cálculo de devoluciones para diagnosticar problemas de estadísticas
+- **Debug:** Agregados logs detallados para identificar inconsistencias en el cálculo de ventas netas
+- **Estadísticas:** Removido temporalmente el cálculo de beneficio en devoluciones para aislar el problema
+- **Monitoreo:** Agregado facet de debug que muestra las primeras 5 devoluciones en consola para verificación
+
+### 🔧 Técnico
+- Simplificada la agregación de MongoDB para devoluciones
+- Mejorado el logging en `getDashboardStats` para troubleshooting
+- Agregado campo `saleDate` en pipeline de agregación de devoluciones
+
+## [1.4.7] - 2025-11-20
+
+### ✨ Agregado
+- **Estadísticas:** Las devoluciones ahora afectan la fecha de la venta original, no la fecha de devolución
+- **Dashboard:** Estadísticas diarias ahora muestran el rendimiento real del día de la venta
+
+### 🐛 Corregido
+- **Lógica de Negocio:** Corregido cálculo de estadísticas - las devoluciones procesadas HOY de ventas de AYER ya no afectan las estadísticas de HOY
+- **Reportes:** Los reportes de múltiples días ahora incluyen correctamente las devoluciones del período
+
+### 💡 Ejemplo
+- Lunes: Venta de $1,000 → Dashboard muestra $1,000
+- Martes: Devolución de $500 de la venta del lunes → Dashboard del Lunes ahora muestra $500, Dashboard del Martes muestra $0
+
+## [1.4.6] - 2025-11-20
+
+## [1.4.5] - 2025-11-20
+
+### ✨ Agregado
+- **Beneficios:** Implementado cálculo real de beneficios/ganancias considerando devoluciones
+- **Modelo Sale:** Agregado campo `purchasePriceAtSale` para almacenar costo de productos al momento de venta
+
+### 🔧 Técnico
+- Dashboard ahora calcula: Beneficio = (Precio Venta - Precio Compra) × Cantidad
+- Las devoluciones restan el beneficio perdido del total
+- Nuevo campo `profit` en respuesta de `/api/dashboard/stats`
+
+## [1.4.4] - 2025-11-20
+
+### ✨ Agregado
+- **Dashboard:** Las devoluciones aprobadas ahora se restan de las estadísticas de ventas
+- **Estadísticas:** Agregados campos `returns` y `returnsAmount` en respuesta del dashboard
+
+### 🐛 Corregido
+- **Cálculos:** Total mostrado ahora es neto (Ventas - Devoluciones)
+- **Reportes:** Gráficas de ventas por día reflejan devoluciones correctamente
+
+## [1.4.2] - 2025-11-20
+
+### 🐛 Corregido
+- **Modal de Pago:** Corrección definitiva del cálculo de cambio/vuelto
+- **Descuentos:** El cambio ahora considera correctamente los descuentos globales aplicados
+- **UX:** Cálculo del cambio se realiza en tiempo real dentro del modal usando `useMemo`
+
+## [1.4.1] - 2025-11-20
+
+### 🐛 Corregido
+- **Modal de Pago:** Corregido cálculo de cambio cuando se aplican descuentos
+- **Actualizaciones:** Las actualizaciones locales ahora compilan correctamente el frontend después de descargar código fuente
+
+### 🔧 Técnico
+- Script `iniciar-servidor.bat` ahora ejecuta `npm run build` en carpeta client después de actualizar
+- Soporte para compilación con Node.js portable y global
+
 ## [1.1.6] - 2025-11-20
 
 Corrección error 500 al iniciar
