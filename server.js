@@ -329,8 +329,8 @@ app.get('/api/debug/returns', async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Obtener todas las devoluciones aprobadas
-    const returns = await Return.find({ status: 'Aprobada' })
+    // Obtener todas las devoluciones completadas
+    const returns = await Return.find({ status: 'Completada' })
       .populate('sale', 'createdAt invoiceNumber total')
       .limit(20)
       .lean();

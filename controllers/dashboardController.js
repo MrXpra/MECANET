@@ -22,8 +22,8 @@ export const getDashboardStats = async (req, res) => {
     console.log('  Week:', startOfWeek.toISOString());
     console.log('  Month:', startOfMonth.toISOString());
 
-    // Primero, obtener todas las devoluciones aprobadas para debug
-    const allReturns = await Return.find({ status: 'Aprobada' })
+    // Primero, obtener todas las devoluciones completadas para debug
+    const allReturns = await Return.find({ status: 'Completada' })
       .populate('sale', 'createdAt invoiceNumber total')
       .limit(10)
       .lean();
@@ -110,7 +110,7 @@ export const getDashboardStats = async (req, res) => {
     const returnsStats = await Return.aggregate([
       {
         $match: {
-          status: 'Aprobada',
+          status: 'Completada',
           totalAmount: { $ne: null, $exists: true }
         }
       },
@@ -290,7 +290,7 @@ export const getSalesByDay = async (req, res) => {
     const returns = await Return.aggregate([
       {
         $match: {
-          status: 'Aprobada'
+          status: 'Completada'
         }
       },
       {
@@ -478,7 +478,7 @@ export const getAllDashboardData = async (req, res) => {
       Return.aggregate([
         {
           $match: {
-            status: 'Aprobada',
+            status: 'Completada',
             totalAmount: { $ne: null, $exists: true }
           }
         },
