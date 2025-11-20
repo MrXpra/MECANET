@@ -1,6 +1,6 @@
 {
   "name": "mecanet-backend",
-  "version": "1.3.28",
+  "version": "1.3.29",
   "description": "Backend para sistema POS de taller mecánico",
   "main": "server.js",
   "type": "module",
