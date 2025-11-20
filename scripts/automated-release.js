@@ -37,7 +37,10 @@ async function main() {
         if (cont.toLowerCase() !== 's') process.exit(0);
     }
 
-    // 1. Determinar versión
+    // 1. Determinar versión y rama
+    const currentBranch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: rootDir }).toString().trim();
+    console.log(`   Rama actual: ${currentBranch}`);
+
     const packageJsonPath = path.join(rootDir, 'package.json');
     const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
     const currentVersion = pkg.version;
@@ -107,14 +110,26 @@ async function main() {
         console.log('   Bajando cambios remotos para evitar conflictos...');
         try {
             // Intentar traer cambios remotos antes de subir
-            execSync('git pull origin develop', { stdio: 'inherit', cwd: rootDir });
+            execSync(`git pull origin ${currentBranch}`, { stdio: 'inherit', cwd: rootDir });
         } catch (e) {
-            console.warn('⚠️  Advertencia: No se pudo hacer git pull. Es posible que debas resolver conflictos manualmente.');
+            console.warn(`⚠️  Advertencia: No se pudo hacer git pull de ${currentBranch}. Es posible que debas resolver conflictos manualmente.`);
         }
 
-        console.log('   Subiendo cambios...');
-        execSync('git push origin develop', { stdio: 'inherit', cwd: rootDir }); // Asumiendo develop
+        console.log(`   Subiendo cambios a ${currentBranch}...`);
+        execSync(`git push origin ${currentBranch}`, { stdio: 'inherit', cwd: rootDir });
         
+        // Intentar subir a la otra rama principal también (sincronización básica)
+        const otherBranch = currentBranch === 'main' ? 'develop' : (currentBranch === 'develop' ? 'main' : null);
+        if (otherBranch) {
+            try {
+                console.log(`   Intentando sincronizar también con ${otherBranch}...`);
+                execSync(`git push origin ${currentBranch}:${otherBranch}`, { stdio: 'inherit', cwd: rootDir });
+                console.log(`   ✅ ${otherBranch} actualizado.`);
+            } catch (e) {
+                console.warn(`   ⚠️  No se pudo actualizar ${otherBranch} automáticamente (probablemente requiere merge).`);
+            }
+        }
+
         // Opcional: Tag en git
         // execSync(`git tag v${newVersion}`, { stdio: 'inherit', cwd: rootDir });
         // execSync(`git push origin v${newVersion}`, { stdio: 'inherit', cwd: rootDir });
@@ -127,7 +142,7 @@ async function main() {
             const createReleaseUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases`;
             const releaseData = {
                 tag_name: `v${newVersion}`,
-                target_commitish: 'develop', // O main
+                target_commitish: currentBranch,
                 name: `v${newVersion}`,
                 body: `Release automático v${newVersion}`,
                 draft: false,
