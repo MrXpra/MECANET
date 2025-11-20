@@ -46,23 +46,12 @@ if %errorlevel% equ 0 (
     exit /b 0
 )
 
-REM Iniciar el servidor en PRIMER PLANO (para ver logs de error)
+REM Iniciar el servidor mostrando logs en pantalla
 echo.
-echo ========================================================
-echo   INICIANDO SERVIDOR MECANET
-echo ========================================================
-echo.
-echo Puerto: 5000
-echo Presiona Ctrl+C para detener el servidor
-echo.
-echo Logs del servidor:
-echo --------------------------------------------------------
+echo Iniciando servidor...
 echo.
 
-REM Abrir navegador después de 8 segundos (darle tiempo al servidor)
-start /B cmd /c "timeout /t 8 >nul && start http://localhost:5000"
-
-REM Iniciar servidor mostrando logs en pantalla
+REM NO abrir navegador desde aquí, el servidor lo abre automáticamente
 %NODE_CMD% server.js
 
 REM Capturar el código de salida

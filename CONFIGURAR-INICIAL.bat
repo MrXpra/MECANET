@@ -1,23 +1,20 @@
 @echo off
 chcp 65001 >nul
 cd /d "%~dp0"
-title CONFIGURACION Y ARRANQUE MECANET
+title MECANET - Configuracion
 
 echo.
 echo ========================================================
-echo    MECANET - CONFIGURACION INICIAL
+echo    MECANET - Configuracion Inicial
 echo ========================================================
 echo.
 
 REM ========================================================
-REM 1. INSTALACIÓN DE DEPENDENCIAS (Si es necesario)
+REM 1. INSTALACIÓN DE DEPENDENCIAS
 REM ========================================================
 if not exist "node_modules" (
-    echo [PASO 1/3] Instalando dependencias necesarias...
-    echo Esto puede tomar unos minutos...
-    echo.
+    echo [1/3] Instalando dependencias...
     
-    REM Detectar si usamos node portable o global
     if exist "node\node.exe" (
         "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --omit=dev
     ) else (
@@ -26,21 +23,18 @@ if not exist "node_modules" (
     
     if %errorlevel% neq 0 (
         echo.
-        echo [ERROR] Fallo la instalacion de dependencias.
-        echo.
+        echo Error instalando dependencias.
         pause
         exit /b 1
     )
-    echo.
-    echo [OK] Dependencias instaladas correctamente.
+    echo OK
 )
 
 REM ========================================================
-REM 2. SMART STARTUP (Verificar actualizaciones)
+REM 2. VERIFICAR ACTUALIZACIONES
 REM ========================================================
 echo.
-echo [PASO 2/3] Verificando actualizaciones...
-echo.
+echo [2/3] Verificando actualizaciones...
 
 if exist "node\node.exe" (
     "node\node.exe" scripts/smart-startup.js
@@ -53,33 +47,21 @@ set STARTUP_CODE=%errorlevel%
 if %STARTUP_CODE% equ 2 (
     cls
     echo.
-    echo ========================================================
-    echo    APLICANDO ACTUALIZACION
-    echo ========================================================
-    echo.
-    echo Por favor espere, no cierre esta ventana...
-    echo.
-
+    echo Aplicando actualizacion...
+    
     set /p UPDATE_PATH=<.update-pending
     
     if not exist "%UPDATE_PATH%" (
-        echo [ERROR] No se encontro la carpeta de actualizacion.
-        echo.
+        echo Error: Carpeta de actualizacion no encontrada
         pause
         goto :CONFIGURACION
     )
 
-    echo Copiando archivos desde: %UPDATE_PATH%
-    echo.
-
     robocopy "%UPDATE_PATH%" "." /E /XO /XD ".git" "node_modules" "temp_source_update" "distribucion" /XF ".env" ".gitignore" "package-lock.json" >nul
-
     copy /Y "%UPDATE_PATH%\package.json" "." >nul
-
     rmdir /s /q "temp_source_update"
     del ".update-pending"
 
-    echo.
     echo Actualizando dependencias...
     if exist "node\node.exe" (
         "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --production
@@ -87,9 +69,8 @@ if %STARTUP_CODE% equ 2 (
         call npm install --production
     )
 
-    echo.
-    echo [OK] Sistema actualizado correctamente.
-    timeout /t 3 >nul
+    echo OK
+    timeout /t 2 >nul
     cls
 )
 
@@ -98,15 +79,14 @@ REM ========================================================
 REM 3. CONFIGURACIÓN DEL SISTEMA
 REM ========================================================
 echo.
-echo [PASO 3/3] Iniciando configuracion del sistema...
+echo [3/3] Configurando sistema...
 echo.
 
 powershell -ExecutionPolicy Bypass -File "sistema\CONFIGURAR-INICIAL.ps1"
 
 echo.
 echo ========================================================
-echo    CONFIGURACION FINALIZADA
+echo    Configuracion Finalizada
 echo ========================================================
 echo.
-echo Presiona cualquier tecla para cerrar esta ventana...
 pause >nul

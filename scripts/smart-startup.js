@@ -26,85 +26,76 @@ const settingsSchema = new mongoose.Schema({
 const Settings = mongoose.model('Settings', settingsSchema);
 
 async function main() {
-    console.log('\n🔍 [SMART-STARTUP] Iniciando verificación de sistema...');
+    console.log('\n🔍 Verificando actualizaciones...');
 
     // Variable para controlar si las actualizaciones están activadas
     let autoUpdate = true;
 
     // 1. Conectar a MongoDB (Solo para leer configuración)
-    // Si no hay .env (instalación limpia), asumimos autoUpdate = true y saltamos conexión
     if (!process.env.MONGODB_URI) {
-        console.log('ℹ️  Instalación limpia detectada (Sin .env).');
-        console.log('   Se verificará la última versión disponible por defecto.');
+        console.log('ℹ️  Primera instalación detectada.');
     } else {
         try {
             await mongoose.connect(process.env.MONGODB_URI, {
                 serverSelectionTimeoutMS: 5000
             });
 
-            // 2. Leer configuración solo si hay conexión
+            // 2. Leer configuración
             try {
                 const settings = await Settings.findOne();
                 if (settings && settings.autoUpdate === false) {
                     autoUpdate = false;
                 }
             } catch (error) {
-                console.log('⚠️  Error leyendo configuración. Usando valores por defecto.');
+                // Ignorar errores de lectura
             }
             
             await mongoose.disconnect();
         } catch (error) {
-            console.log('⚠️  No se pudo conectar a la BD. Saltando verificación de configuración personalizada.');
+            // Si no puede conectar a BD, continuar normal
         }
     }
 
     if (!autoUpdate) {
-        console.log('ℹ️  Actualizaciones automáticas desactivadas por configuración.');
+        console.log('ℹ️  Actualizaciones automáticas desactivadas.');
         process.exit(0);
     }
 
     // 3. Verificar Actualización
-    console.log('☁️  Verificando nueva versión en GitHub (Source)...');
+    console.log('☁️  Consultando última versión...');
     const updateInfo = await SourceUpdateService.checkRemoteVersion();
 
     if (updateInfo.hasUpdate) {
-        console.log('\n🚀 ¡NUEVA VERSIÓN DISPONIBLE!');
-        console.log(`   Local:  v${updateInfo.localVersion}`);
-        console.log(`   Remota: v${updateInfo.remoteVersion}`);
-        console.log('   Fuente: Rama principal (main)');
+        console.log('\n🚀 Nueva versión disponible');
+        console.log(`   Actual:  v${updateInfo.localVersion}`);
+        console.log(`   Nueva:   v${updateInfo.remoteVersion}`);
 
         const answers = await inquirer.prompt([
             {
                 type: 'confirm',
                 name: 'update',
-                message: '¿Desea descargar e instalar la actualización ahora?',
+                message: '¿Descargar e instalar actualización?',
                 default: true
             }
         ]);
 
         if (answers.update) {
             try {
-                // Descargar código fuente
                 const sourcePath = await SourceUpdateService.downloadSource();
-                
-                // Crear archivo de bandera para que el BAT sepa dónde está el código
                 const updateFlagPath = path.join(rootDir, '.update-pending');
                 fs.writeFileSync(updateFlagPath, sourcePath, 'utf8');
 
-                console.log('✅ Código fuente descargado y listo para aplicar.');
-                await mongoose.disconnect();
+                console.log('✅ Actualización descargada.');
                 process.exit(2); // Código 2 = Actualización pendiente
             } catch (error) {
-                console.error('❌ Error descargando actualización:', error.message);
-                await mongoose.disconnect();
-                process.exit(0); // Continuar arranque normal si falla descarga
+                console.error('❌ Error:', error.message);
+                process.exit(0);
             }
         }
     } else {
-        console.log('✅ El sistema está actualizado.');
+        console.log('✅ Sistema actualizado.');
     }
 
-    await mongoose.disconnect();
     process.exit(0);
 }
 

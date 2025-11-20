@@ -100,49 +100,21 @@ try {
   }
   
   APP_VERSION = packageJson.version;
-  console.log(`📦 MECANET v${APP_VERSION} iniciando...`);
+  console.log(`\n🚀 MECANET v${APP_VERSION}`);
 } catch (error) {
-  console.error('⚠️  Error leyendo archivos de versión:', error.message);
-  // En desarrollo podría permitirse, pero en producción es crítico
-  if (process.env.NODE_ENV === 'production') {
-    console.error('❌ No se puede iniciar sin información de versión válida.');
-    process.exit(1);
-  }
+  console.error('❌ Error leyendo versión:', error.message);
+  if (process.env.NODE_ENV === 'production') process.exit(1);
 }
 
-// Determinar modo de aplicación (Cloud vs Desktop)
-// APP_MODE puede ser 'desktop' (local .exe) o 'cloud' (Railway/Web)
-// Detectar automáticamente: si hay RAILWAY_ENVIRONMENT o similar, es cloud; si no, es desktop
+// Determinar modo de aplicación
 const IS_CLOUD_ENV = process.env.RAILWAY_ENVIRONMENT || process.env.VERCEL || process.env.HEROKU_APP_NAME;
 const APP_MODE = process.env.APP_MODE || (IS_CLOUD_ENV ? 'cloud' : 'desktop');
 const IS_LOCAL_APP = APP_MODE === 'desktop';
 
-console.log(`🚀 Modo de Aplicación: ${APP_MODE.toUpperCase()}`);
-if (IS_LOCAL_APP) {
-  console.log('💻 Ejecutando en modo ESCRITORIO (Local)');
-} else {
-  console.log('☁️  Ejecutando en modo NUBE (Server/Railway)');
-}
-
-// Cargar variables de entorno (.env) - PORT, MONGO_URI, JWT_SECRET, etc
-console.log('📂 Cargando variables de entorno...');
-console.log('📍 Directorio de trabajo:', __dirname);
-console.log('📍 Buscando archivo .env en:', path.join(__dirname, '.env'));
-
 const envResult = dotenv.config();
-
 if (envResult.error) {
-  console.error('⚠️  No se pudo cargar el archivo .env:', envResult.error.message);
-  console.log('ℹ️  Continuando con variables de entorno del sistema...');
-} else {
-  console.log('✅ Archivo .env cargado correctamente');
-  console.log('✅ Variables cargadas:', Object.keys(envResult.parsed || {}).length);
+  console.error('⚠️  Archivo .env no encontrado');
 }
-
-console.log('🔧 NODE_ENV:', process.env.NODE_ENV || 'no definido');
-console.log('🌐 PORT:', process.env.PORT || '5000 (por defecto)');
-console.log('🔐 JWT_SECRET:', process.env.JWT_SECRET ? '✓ Definido' : '✗ NO DEFINIDO');
-console.log('🗄️  MONGODB_URI:', process.env.MONGODB_URI ? '✓ Definido' : '✗ NO DEFINIDO');
 
 // ===== Validación temprana de JWT_SECRET =====
 // Aseguramos que exista un secreto para JWT y tenga longitud mínima razonable.
@@ -175,23 +147,17 @@ if (!jwtSecret || String(jwtSecret).length < MIN_JWT_LENGTH) {
   await waitAndExit(1);
 }
 
-// Conectar a MongoDB usando la URI en variables de entorno
-console.log('\n📡 Conectando a MongoDB...');
+// Conectar a MongoDB
+console.log('📡 Conectando a base de datos...');
 try {
   await connectDB();
-  console.log('✅ Conexión a MongoDB establecida exitosamente');
+  console.log('✅ Base de datos conectada');
 } catch (error) {
-  console.error('\n❌ FATAL: No se pudo conectar a la base de datos.');
-  console.error('   Error:', error.message);
-  console.error('\n📝 Verifica:');
-  console.error('   1. Tu conexión a internet está activa');
-  console.error('   2. La variable MONGODB_URI en el archivo .env es correcta');
-  console.error('   3. Tu IP está permitida en MongoDB Atlas (Network Access)');
-  console.error('\n🗄️  MONGODB_URI actual:', process.env.MONGODB_URI ? 'Definida (oculta por seguridad)' : 'NO DEFINIDA');
+  console.error('❌ Error de conexión:', error.message);
   await waitAndExit(1);
 }
 
-// Iniciar limpieza automática de logs (cada 24 horas)
+// Iniciar limpieza automática de logs
 LogService.startAutoCleaning();
 
 // Inicializar la aplicación Express
@@ -370,35 +336,23 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, async () => {
-  console.log('\n✅ ═══════════════════════════════════════════════');
-  console.log('   🚀 MECANET INICIADO CORRECTAMENTE');
-  console.log('   ═══════════════════════════════════════════════');
-  console.log(`   🌐 Servidor: http://localhost:${PORT}`);
-  console.log(`   🔧 Entorno: ${process.env.NODE_ENV || 'development'}`);
-  console.log('   ═══════════════════════════════════════════════\n');
+  console.log('\n✅ Servidor iniciado en http://localhost:' + PORT);
+  console.log('   Entorno:', process.env.NODE_ENV || 'development');
 
   // En modo ESCRITORIO (Local), abrir automáticamente el navegador
-  if (IS_LOCAL_APP && process.env.NODE_ENV === 'production') {
-    const url = `http://localhost:${PORT}`;
-    console.log(`🌐 Abriendo navegador en ${url}...`);
+  // NOTA: Solo abrir si no viene de un reinicio (evitar duplicados)
+  if (IS_LOCAL_APP && process.env.NODE_ENV === 'production' && !process.env.SKIP_BROWSER_OPEN) {
     try {
-      await open(url);
-      console.log('✅ Navegador abierto exitosamente\n');
+      await open(`http://localhost:${PORT}`);
+      console.log('✅ Navegador abierto\n');
     } catch (error) {
-      console.error('⚠️  No se pudo abrir el navegador automáticamente:', error.message);
-      console.log(`📌 Por favor, abre manualmente: ${url}\n`);
+      console.log('⚠️  Abre manualmente: http://localhost:' + PORT + '\n');
     }
-    console.log('ℹ️  Para detener el servidor, presiona Ctrl+C\n');
   }
 }).on('error', (error) => {
-  console.error('\n❌ ERROR AL INICIAR EL SERVIDOR:');
-  console.error('   Error:', error.message);
+  console.error('\n❌ Error al iniciar servidor:', error.message);
   if (error.code === 'EADDRINUSE') {
-    console.error(`\n   El puerto ${PORT} ya está en uso.`);
-    console.error('\n📝 Soluciones:');
-    console.error('   1. Cierra cualquier otra instancia de MECANET');
-    console.error('   2. Cambia el puerto en el archivo .env (ejemplo: PORT=5001)');
-    console.error('   3. Reinicia tu computadora si el problema persiste');
+    console.error(`   Puerto ${PORT} ya está en uso. Cierra otras instancias.`);
   }
   if (process.env.NODE_ENV === 'production') {
     console.log('\n⏸️  Presiona cualquier tecla para cerrar...');
