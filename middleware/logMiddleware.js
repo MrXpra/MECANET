@@ -6,13 +6,12 @@ import LogService from '../services/logService.js';
 export const requestLogger = (req, res, next) => {
   const startTime = Date.now();
 
-  // Guardar el método original de res.json para interceptarlo
-  const originalJson = res.json;
+  // Usar evento 'finish' para registrar el log después de enviar la respuesta
+  res.on('finish', () => {
+    // Evitar duplicados si ya se registró
+    if (res.locals.requestLogged) return;
+    res.locals.requestLogged = true;
 
-  res.json = function(data) {
-    // Restaurar original para evitar bucles
-    res.json = originalJson;
-    
     const duration = Date.now() - startTime;
     const statusCode = res.statusCode;
 
@@ -84,10 +83,7 @@ export const requestLogger = (req, res, next) => {
         });
       });
     }
-
-    // Llamar al método original
-    return originalJson.call(this, data);
-  };
+  });
 
   next();
 };

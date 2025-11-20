@@ -29,13 +29,14 @@ export const performanceMonitor = (req, res, next) => {
   */
   
   // Guardar el método original de res.json
-  const originalJson = res.json;
-  const originalSend = res.send;
+  // const originalJson = res.json;
+  // const originalSend = res.send;
   
   // Función para registrar métricas
   const logPerformance = () => {
-    // Evitar registrar si la respuesta ya fue enviada o si hubo error crítico
-    if (res.headersSent && res.statusCode === 500) return;
+    // Evitar registrar si ya se registró (por si acaso)
+    if (res.locals.performanceLogged) return;
+    res.locals.performanceLogged = true;
 
     const endTime = Date.now();
     const executionTime = endTime - startTime;
@@ -85,28 +86,12 @@ export const performanceMonitor = (req, res, next) => {
     }
   };
   
-  // Interceptar res.json
-  res.json = function(data) {
-    // Restaurar método original para evitar bucles si se llama múltiples veces
-    res.json = originalJson;
-    logPerformance();
-    return originalJson.call(this, data);
-  };
+  // Usar el evento 'finish' que es el estándar para logging en Express
+  // Se dispara cuando la respuesta se ha enviado completamente al cliente
+  res.on('finish', logPerformance);
   
-  // Interceptar res.send
-  res.send = function(data) {
-    // Restaurar método original
-    res.send = originalSend;
-    logPerformance();
-    return originalSend.call(this, data);
-  };
-  
-  // Manejar errores no capturados en la respuesta
-  res.on('finish', () => {
-    if (!res.headersSent) {
-      logPerformance();
-    }
-  });
+  // También escuchar 'close' por si la conexión se cierra prematuramente
+  res.on('close', logPerformance);
   
   next();
 };

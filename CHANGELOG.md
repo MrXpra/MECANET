@@ -14,6 +14,8 @@ Corrección error 500 al iniciar
 ## [1.1.3] - 2025-11-19
 
 ### ✨ Agregado
+### 🐛 Corregido
+- **Core:** Reescritura completa de `performanceMiddleware.js` y `logMiddleware.js` para eliminar el "monkey-patching" de `res.json` y `res.send`. Ahora usan eventos estándar (`res.on('finish')`), eliminando definitivamente los errores 500 y desbordamientos de pila al servir archivos estáticos o respuestas no-JSON.
 - **Actualizador Automático:** El script `CONFIGURAR-INICIAL.bat` ahora verifica automáticamente si existe una nueva versión en GitHub Releases antes de iniciar. Si el usuario acepta, descarga y actualiza el sistema automáticamente.
 - **Scripts:** Nuevo script `scripts/startup-check.js` para gestionar la lógica de verificación y descarga de actualizaciones.
 
