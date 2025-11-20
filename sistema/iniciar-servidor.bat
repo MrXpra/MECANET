@@ -46,23 +46,21 @@ if %errorlevel% equ 0 (
     exit /b 0
 )
 
-REM Iniciar el servidor en segundo plano usando VBScript
-echo Set WshShell = CreateObject^("WScript.Shell"^) > "%temp%\mecanet-start.vbs"
-echo WshShell.Run "cmd /c cd /d ""%~dp0\.."" && %NODE_CMD% server.js", 0, False >> "%temp%\mecanet-start.vbs"
-cscript //nologo "%temp%\mecanet-start.vbs"
-del "%temp%\mecanet-start.vbs"
-
-REM Mensaje final y abrir navegador
+REM Iniciar el servidor en PRIMER PLANO (para ver logs de error)
 echo.
-echo MECANET se esta iniciando...
-echo Esperando que el servidor este listo...
-timeout /t 5 >nul
-
-echo Abriendo navegador...
-start http://localhost:5000
-
+echo ========================================================
+echo   INICIANDO SERVIDOR MECANET
+echo ========================================================
 echo.
-echo MECANET ejecutandose en segundo plano
-echo Para detener el servidor, ejecuta DETENER-MECANET.bat
+echo Puerto: 5000
+echo Presiona Ctrl+C para detener el servidor
 echo.
-timeout /t 2 >nul
+echo Logs del servidor:
+echo --------------------------------------------------------
+echo.
+
+REM Abrir navegador después de 5 segundos (en segundo plano)
+start /B cmd /c "timeout /t 5 >nul && start http://localhost:5000"
+
+REM Iniciar servidor en PRIMER PLANO para ver logs
+%NODE_CMD% server.js
