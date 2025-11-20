@@ -36,13 +36,20 @@ class SourceUpdateService {
             const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
             const localVersion = pkg.version;
 
-            // 2. Obtener package.json remoto (RAW)
-            // Usamos raw.githubusercontent.com para obtener el archivo crudo
+            // 2. Obtener package.json remoto (RAW) con cache-busting
             const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${BRANCH}/package.json`;
             
-            const config = {};
+            const config = {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                },
+                // Agregar timestamp para evitar cache
+                params: { '_': Date.now() }
+            };
+            
             if (process.env.GITHUB_TOKEN) {
-                config.headers = { 'Authorization': `token ${process.env.GITHUB_TOKEN}` };
+                config.headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
             }
 
             const response = await axios.get(rawUrl, config);
