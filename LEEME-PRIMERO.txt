@@ -1,0 +1,54 @@
+# ============================================
+# MECANET - Inicio Rápido para Desarrollo
+# ============================================
+
+## CONFIGURACIÓN INICIAL
+
+Si es la primera vez que trabajas en este proyecto:
+
+1. Instala las dependencias:
+   npm install
+   cd client && npm install && cd ..
+
+2. Configura las variables de entorno:
+   - Ejecuta CONFIGURAR-INICIAL.bat
+   - Configura MongoDB, crea usuarios admin y dev
+   - Script solo se ejecuta UNA VEZ
+   - O copia .env.example a .env manualmente
+
+3. Compila el frontend:
+   cd client && npm run build && cd ..
+
+## DESARROLLO
+
+Para trabajar en el proyecto:
+
+- **npm run dev** - Inicia el backend con nodemon
+- **cd client && npm run dev** - Inicia el frontend en modo desarrollo
+
+## PRODUCCIÓN LOCAL
+
+Para probar en modo producción:
+
+- **INICIAR-MECANET.bat** - Inicia el servidor en segundo plano
+- **DETENER-MECANET.bat** - Detiene el servidor
+
+## ESTRUCTURA DEL PROYECTO
+
+- **sistema/** - Scripts de configuración y ejecución
+- **config/** - Configuración del servidor
+- **controllers/** - Lógica de negocio
+- **models/** - Modelos de MongoDB
+- **routes/** - Rutas de la API
+- **client/** - Frontend React + Vite
+
+## DISTRIBUCIÓN
+
+Para crear un paquete portable:
+
+1. .\scripts\build-all.ps1
+2. El paquete se creará en distribucion/
+
+============================================
+MECANET - Sistema POS para Talleres Mecánicos
+============================================

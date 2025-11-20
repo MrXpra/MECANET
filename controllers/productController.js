@@ -244,7 +244,11 @@ export const updateProduct = async (req, res) => {
 
     // Si se está actualizando el SKU, verificar que no exista otro producto con ese SKU
     if (req.body.sku && req.body.sku !== product.sku) {
-      const existingProduct = await Product.findOne({ sku: req.body.sku.toUpperCase() });
+      const existingProduct = await Product.findOne({ 
+        sku: req.body.sku.toUpperCase(),
+        _id: { $ne: req.params.id } // Excluir el producto actual de la búsqueda
+      });
+      
       if (existingProduct) {
         return res.status(400).json({ message: 'El SKU ya existe' });
       }

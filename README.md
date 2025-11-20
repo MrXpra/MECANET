@@ -341,7 +341,18 @@ npm run release:major
 
 ```
 mecanet/
-├── client/                    # Frontend React
+├── 📄 CONFIGURAR-INICIAL.bat  # Configuración inicial del sistema
+├── 📄 INICIAR-MECANET.bat     # Inicia el servidor
+├── 📄 DETENER-MECANET.bat     # Detiene el servidor
+├── 📄 LEEME-PRIMERO.txt       # Instrucciones rápidas
+│
+├── sistema/                   # 🔧 Scripts internos del sistema
+│   ├── iniciar-servidor.bat
+│   ├── detener-servidor.bat
+│   ├── CONFIGURAR-INICIAL.bat
+│   └── CONFIGURAR-INICIAL.ps1
+│
+├── client/                    # 🎨 Frontend React
 │   ├── public/
 │   ├── src/
 │   │   ├── components/       # Componentes reutilizables
@@ -370,10 +381,10 @@ mecanet/
 │   ├── tailwind.config.js
 │   └── postcss.config.js
 │
-├── config/                   # Configuraciones
+├── config/                   # ⚙️ Configuraciones
 │   └── db.js                # Conexión a MongoDB
 │
-├── controllers/              # Controladores
+├── controllers/              # 🎮 Controladores
 │   ├── authController.js
 │   ├── productController.js
 │   ├── saleController.js
@@ -382,19 +393,19 @@ mecanet/
 │   ├── settingsController.js
 │   └── dashboardController.js
 │
-├── middleware/               # Middlewares
+├── middleware/               # 🛡️ Middlewares
 │   ├── authMiddleware.js
 │   ├── errorMiddleware.js
 │   └── validationMiddleware.js
 │
-├── models/                   # Modelos de Mongoose
+├── models/                   # 🗄️ Modelos de Mongoose
 │   ├── User.js
 │   ├── Product.js
 │   ├── Sale.js
 │   ├── Customer.js
 │   └── Settings.js
 │
-├── routes/                   # Rutas de la API
+├── routes/                   # 🛣️ Rutas de la API
 │   ├── authRoutes.js
 │   ├── productRoutes.js
 │   ├── saleRoutes.js
@@ -690,6 +701,40 @@ El sistema ahora incluye validación automática de tokens al iniciar. Si detect
 - Muestra un mensaje de "Verificando sesión..."
 
 **⚠️ Nota para desarrollo:** Si estás reinstalando el sistema frecuentemente, usa siempre la página de limpieza o limpia el localStorage antes de volver a iniciar sesión.
+
+---
+
+## 📦 Distribución On-Premise
+
+MECANET puede distribuirse como una aplicación portable para instalación local en computadoras Windows.
+
+### Scripts de Distribución
+
+```bash
+# 🚀 TODO EN UNO - Genera el ZIP completo listo para distribuir
+npm run build:all
+
+# Opciones adicionales:
+npm run build:all:clean        # Limpia antes de compilar
+npm run build:all:skip-node    # Sin incluir Node.js (paquete más pequeño)
+
+# O paso por paso:
+npm run build:portable    # Crear paquete portable
+npm run download:node     # Incluir Node.js
+npm run package:zip       # Comprimir para distribución
+npm run clean:dist        # Limpiar carpeta de distribución
+```
+
+Los paquetes se generan en la carpeta `distribucion/` con el formato:
+- `MECANET-Portable/` - Paquete listo para usar
+- `MECANET-v1.0.1-Portable.zip` - Archivo comprimido (incluye versión)
+
+### Documentación de Distribución
+
+Ver archivos en `docs/`:
+- `DEPLOY-ONPREMISE.md` - Guía completa de despliegue
+- `SOLUCION-EJECUTABLE.md` - Opciones de empaquetado
+- `IMPLEMENTACION-COMPLETADA.md` - Detalles técnicos
 
 ---
 

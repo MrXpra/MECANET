@@ -27,7 +27,8 @@
  * - Glassmorphism (glass-strong) y animaciones de hover
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -54,6 +55,10 @@ import {
   Cloud,
   Activity,
   Shield,
+  X,
+  Calendar,
+  CheckCircle2,
+  Info
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -90,6 +95,16 @@ const Sidebar = () => {
     location.pathname.includes('/auditoria') || 
     location.pathname.includes('/monitoreo')
   );
+
+  const [versionInfo, setVersionInfo] = useState(null);
+  const [showVersionModal, setShowVersionModal] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/version')
+      .then(res => res.json())
+      .then(data => setVersionInfo(data))
+      .catch(err => console.error('Error fetching version:', err));
+  }, []);
 
   // Secciones principales sin subsecciones
   const mainItems = [
@@ -166,7 +181,15 @@ const Sidebar = () => {
           >
             <FileText className="w-8 h-8 xl:w-9 xl:h-9 text-white" />
           </div>
-          <p className="text-xs xl:text-sm text-gray-500 dark:text-gray-400 font-medium">POS System</p>
+          <p className="text-xs xl:text-sm text-gray-500 dark:text-gray-400 font-medium">MECANET</p>
+          {versionInfo && (
+            <button 
+              onClick={() => setShowVersionModal(true)}
+              className="mt-1 text-[10px] px-2 py-0.5 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors cursor-pointer border border-primary-100 dark:border-primary-800"
+            >
+              v{versionInfo.version}
+            </button>
+          )}
         </div>
       </div>
 
@@ -547,6 +570,78 @@ const Sidebar = () => {
           </div>
         </div>
       </div>
+
+      {/* Version Modal */}
+      {showVersionModal && versionInfo && createPortal(
+        <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style={{ zIndex: 100000 }}>
+          <div className="glass-strong rounded-2xl p-0 w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-6 text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Package className="w-32 h-32 transform rotate-12 translate-x-8 -translate-y-8" />
+              </div>
+              <div className="relative z-10 flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-bold flex items-center gap-2">
+                    <Package className="w-6 h-6" />
+                    MECANET
+                  </h3>
+                  <p className="text-primary-100 text-sm mt-1">Sistema de Punto de Venta</p>
+                </div>
+                <button
+                  onClick={() => setShowVersionModal(false)}
+                  className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 bg-white dark:bg-gray-900">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Versión Actual</span>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">v{versionInfo.version}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Última Actualización</span>
+                  <div className="flex items-center justify-end gap-1 text-gray-700 dark:text-gray-300 mt-1">
+                    <Calendar className="w-4 h-4" />
+                    <span className="font-medium">{versionInfo.lastUpdated}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Info className="w-4 h-4 text-primary-500" />
+                  Novedades de esta versión
+                </h4>
+                
+                <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                  <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                    {versionInfo.releaseNotes}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-100 dark:border-green-900/30">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Su sistema está actualizado y funcionando correctamente.</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-center">
+              <p className="text-xs text-gray-500">
+                © {new Date().getFullYear()} MECANET POS. Todos los derechos reservados.
+              </p>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </aside>
   );
 };

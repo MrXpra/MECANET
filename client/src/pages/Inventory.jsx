@@ -653,7 +653,29 @@ const Inventory = () => {
       {showProductModal && (
         <ProductModal
           product={editingProduct}
-          onSave={editingProduct ? handleUpdateProduct : handleCreateProduct}
+          onSave={async (data, id) => {
+            // Si recibimos un ID (modo ReStock), usamos handleUpdateProduct
+            if (id) {
+              // Necesitamos simular que editingProduct existe para que handleUpdateProduct funcione
+              // O modificar handleUpdateProduct para aceptar ID
+              
+              // Mejor opción: Llamar directamente a updateProduct aquí
+              try {
+                await updateProduct(id, data);
+                toast.success('Stock actualizado exitosamente');
+                setShowProductModal(false);
+                setEditingProduct(null);
+                invalidateCache();
+                fetchProducts(true);
+              } catch (error) {
+                console.error('Error updating product:', error);
+                toast.error(error.response?.data?.message || 'Error al actualizar producto');
+              }
+            } else {
+              // Flujo normal
+              editingProduct ? await handleUpdateProduct(data) : await handleCreateProduct(data);
+            }
+          }}
           onClose={() => setShowProductModal(false)}
           categories={categories}
           brands={brands}
@@ -855,7 +877,23 @@ const ProductModal = ({ product, onSave, onClose, categories, brands, allProduct
           ...formData,
           stock: targetStock,
         };
-        await onSave(updatedData, existingProduct._id);
+        // En modo ReStock, siempre usamos updateProduct (onSave con ID)
+        // Si onSave es handleCreateProduct, necesitamos llamar a handleUpdateProduct
+        if (existingProduct._id) {
+            // Si tenemos el ID del producto existente, usamos updateProduct
+            // Pero necesitamos pasar el ID como segundo argumento si onSave lo espera
+            // O llamar directamente a la función de actualización si onSave es genérico
+            
+            // Hack: Si estamos en modo ReStock, significa que el usuario intentó crear un producto
+            // pero el sistema detectó que ya existe. Por lo tanto, 'onSave' probablemente sea 'handleCreateProduct'.
+            // Debemos forzar el uso de la lógica de actualización.
+            
+            // Si onSave es handleCreateProduct, fallará porque intentará hacer POST /api/products
+            // Necesitamos una forma de decirle al componente padre que use updateProduct
+            
+            // Solución: Pasamos el ID como segundo argumento, y el componente padre debe manejarlo
+            await onSave(updatedData, existingProduct._id);
+        }
       } finally {
         setIsLoading(false);
       }

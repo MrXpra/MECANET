@@ -63,6 +63,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useCartStore } from '../store/cartStore';
+import { useProductStore } from '../store/productStore';
 import {
   getProducts,
   getProductBySku,
@@ -91,6 +92,7 @@ import {
 } from 'lucide-react';
 
 const Billing = () => {
+  const { invalidateCache } = useProductStore();
   const [showTooltip, setShowTooltip] = useState(null);
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -364,6 +366,12 @@ const Billing = () => {
       };
 
       const response = await createSale(saleData);
+      
+      // Invalidar caché de productos para que el inventario se actualice
+      invalidateCache();
+      
+      // Recargar productos locales para actualizar stock en pantalla de ventas
+      fetchProducts();
       
       toast.success('¡Venta completada exitosamente!');
       

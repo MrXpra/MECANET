@@ -69,6 +69,7 @@ import {
 import toast from 'react-hot-toast';
 import { PurchaseOrdersSkeleton } from '../components/SkeletonLoader';
 import { useSettingsStore } from '../store/settingsStore';
+import { useProductStore } from '../store/productStore';
 import {
   ClipboardList,
   Plus,
@@ -95,6 +96,7 @@ import {
 const PurchaseOrders = () => {
   const location = useLocation();
   const { settings: globalSettings } = useSettingsStore();
+  const { invalidateCache } = useProductStore();
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
@@ -254,6 +256,11 @@ const PurchaseOrders = () => {
         status: newStatus,
         receivedDate: null,
       });
+      
+      if (newStatus === 'Recibida') {
+        invalidateCache();
+      }
+      
       toast.success('Estado actualizado correctamente');
       fetchData();
     } catch (error) {
@@ -303,6 +310,9 @@ const PurchaseOrders = () => {
         receivedQuantities,
         receiveNotes: finalNotes,
       });
+      
+      // Invalidar caché de productos para que el inventario se actualice
+      invalidateCache();
       
       if (discrepancies.length > 0) {
         toast.success(`Orden recibida con ${discrepancies.length} discrepancia(s) registrada(s)`, {
@@ -1889,7 +1899,7 @@ const OrderDetailsModal = ({ order, onClose }) => {
               <span>ITBIS (18%):</span>
               <span>${order.tax.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
+            <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white pt-2 border-t border-gray-300 dark:border-gray-600">
               <span>Total:</span>
               <span>${order.total.toFixed(2)}</span>
             </div>
