@@ -123,17 +123,15 @@ if %STARTUP_CODE% equ 2 (
     )
     
     echo Compilando frontend actualizado...
-    if exist "node\node.exe" (
-        cd client
-        "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" install --production=false
+    cd client
+    if exist "..\node\node.exe" (
+        "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" install --production=false 2>nul
         "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" run build
-        cd ..
     ) else (
-        cd client
-        call npm install --production=false
+        call npm install --production=false 2>nul
         call npm run build
-        cd ..
     )
+    cd ..
 
     echo.
     echo ========================================================
