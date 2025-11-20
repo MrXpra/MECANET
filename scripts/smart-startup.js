@@ -28,6 +28,9 @@ const Settings = mongoose.model('Settings', settingsSchema);
 async function main() {
     console.log('\n🔍 [SMART-STARTUP] Iniciando verificación de sistema...');
 
+    // Variable para controlar si las actualizaciones están activadas
+    let autoUpdate = true;
+
     // 1. Conectar a MongoDB (Solo para leer configuración)
     // Si no hay .env (instalación limpia), asumimos autoUpdate = true y saltamos conexión
     if (!process.env.MONGODB_URI) {
