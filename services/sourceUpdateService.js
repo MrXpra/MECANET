@@ -36,24 +36,25 @@ class SourceUpdateService {
             const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
             const localVersion = pkg.version;
 
-            // 2. Obtener package.json remoto (RAW) con cache-busting en la URL
-            const timestamp = Date.now();
-            const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${BRANCH}/package.json?t=${timestamp}`;
+            // 2. Obtener package.json remoto usando GitHub API (no raw)
+            const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/package.json?ref=${BRANCH}`;
             
             const config = {
                 headers: {
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0'
+                    'Accept': 'application/vnd.github.v3+json',
+                    'User-Agent': 'MECANET-Auto-Update'
                 }
             };
             
             if (process.env.GITHUB_TOKEN) {
-                config.headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
+                config.headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
             }
 
-            const response = await axios.get(rawUrl, config);
-            const remotePkg = response.data;
+            const response = await axios.get(apiUrl, config);
+            
+            // GitHub API devuelve el contenido en base64
+            const content = Buffer.from(response.data.content, 'base64').toString('utf8');
+            const remotePkg = JSON.parse(content);
             const remoteVersion = remotePkg.version;
 
             // 3. Comparar versiones
