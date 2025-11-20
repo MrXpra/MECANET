@@ -29,8 +29,39 @@ if (Test-Path ".env") {
 
 # Verificar que existe .env.example
 if (-not (Test-Path ".env.example")) {
-    Write-Host "ERROR: No se encuentra el archivo .env.example" -ForegroundColor Red
-    exit 1
+    Write-Host "ADVERTENCIA: No se encuentra el archivo .env.example" -ForegroundColor Yellow
+    Write-Host "Creando archivo .env.example por defecto..." -ForegroundColor Cyan
+    
+    $defaultEnv = @"
+# ============================================
+# MECANET - Configuración del Sistema
+# ============================================
+# IMPORTANTE: Renombra este archivo a ".env" y completa los valores
+
+# Conexión a MongoDB
+# Obtén tu URL de conexión desde MongoDB Atlas (https://www.mongodb.com/cloud/atlas)
+# O usa una instancia local: mongodb://localhost:27017/mecanet
+MONGODB_URI=mongodb://localhost:27017/mecanet
+
+# Secreto para JWT (Tokens de autenticación)
+# Genera uno único ejecutando: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+# O usa el script: node scripts/generateJwtSecret.js
+JWT_SECRET=CAMBIA_ESTE_VALOR_POR_UNO_SEGURO_DE_64_CARACTERES_MINIMO
+JWT_EXPIRE=1h
+
+# Puerto del servidor
+PORT=5000
+
+# Entorno de ejecución
+NODE_ENV=production
+"@
+    $defaultEnv | Out-File -FilePath ".env.example" -Encoding UTF8
+    
+    if (-not (Test-Path ".env.example")) {
+        Write-Host "ERROR: No se pudo crear el archivo .env.example" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "Archivo .env.example creado exitosamente." -ForegroundColor Green
 }
 
 Write-Host "Configurando MECANET para nuevo cliente...`n" -ForegroundColor White

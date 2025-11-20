@@ -44,6 +44,8 @@ $files = @('server.js', 'package.json', 'package-lock.json', 'nodemon.json', 've
 foreach ($file in $files) {
     if (Test-Path $file) {
         Copy-Item -Path $file -Destination "distribucion\$distFolder" -Force
+    } else {
+        Write-Host "ADVERTENCIA: No se encuentra $file" -ForegroundColor Yellow
     }
 }
 

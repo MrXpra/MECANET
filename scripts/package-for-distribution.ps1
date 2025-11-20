@@ -34,7 +34,13 @@ if (-not (Test-Path "$packageFolder\node\node.exe")) {
 # Verificar que existe .env
 if (-not (Test-Path "$packageFolder\.env")) {
     Write-Host "⚠️  ADVERTENCIA: No se encuentra .env" -ForegroundColor Yellow
-    Write-Host "   El paquete no tendrá configuración. Agrega .env antes de distribuir.`n" -ForegroundColor Yellow
+    Write-Host "   El paquete no tendrá configuración predefinida.`n" -ForegroundColor Yellow
+}
+
+# Verificar que existe .env.example
+if (-not (Test-Path "$packageFolder\.env.example")) {
+    Write-Host "⚠️  ADVERTENCIA: No se encuentra .env.example" -ForegroundColor Red
+    Write-Host "   El script de configuración inicial fallará sin este archivo.`n" -ForegroundColor Yellow
 }
 
 # Eliminar ZIP anterior si existe
