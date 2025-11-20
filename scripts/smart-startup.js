@@ -1,13 +1,11 @@
 import mongoose from 'mongoose';
-import inquirer from 'inquirer';
+import readline from 'readline';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { execSync } from 'child_process';
 
-// Importar modelos y servicios
-// Nota: Usamos import dinámico para Settings porque requiere conexión a DB
+// Importar servicios
 import SourceUpdateService from '../services/sourceUpdateService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -17,8 +15,15 @@ const rootDir = path.join(__dirname, '..');
 // Cargar variables de entorno
 dotenv.config({ path: path.join(rootDir, '.env') });
 
-// Definir esquema de Settings inline para evitar cargar todo el modelo y sus dependencias
-// Esto hace el script más ligero y menos propenso a errores de dependencias circulares
+// Helper para readline
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+const question = (query) => new Promise((resolve) => rl.question(query, resolve));
+
+// Definir esquema de Settings inline
 const settingsSchema = new mongoose.Schema({
     autoUpdate: { type: Boolean, default: true }
 }, { strict: false });
@@ -70,16 +75,9 @@ async function main() {
         console.log(`   Actual:  v${updateInfo.localVersion}`);
         console.log(`   Nueva:   v${updateInfo.remoteVersion}`);
 
-        const answers = await inquirer.prompt([
-            {
-                type: 'confirm',
-                name: 'update',
-                message: '¿Descargar e instalar actualización?',
-                default: true
-            }
-        ]);
-
-        if (answers.update) {
+        const answer = await question('\n¿Descargar e instalar actualización? (s/n): ');
+        
+        if (answer.toLowerCase() === 's' || answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {
             try {
                 console.log('\n📥 Iniciando descarga...');
                 const sourcePath = await SourceUpdateService.downloadSource();
@@ -90,11 +88,13 @@ async function main() {
                 fs.writeFileSync(updateFlagPath, sourcePath, 'utf8');
                 
                 console.log('✅ Actualización lista para aplicar.');
+                rl.close();
                 process.exit(2); // Código 2 = Actualización pendiente
             } catch (error) {
                 console.error('❌ Error descargando:', error.message);
                 console.error('   Stack:', error.stack);
                 console.log('\n⚠️  Continuando sin actualizar...');
+                rl.close();
                 process.exit(0);
             }
         } else {
@@ -104,6 +104,7 @@ async function main() {
         console.log('✅ Sistema actualizado.');
     }
 
+    rl.close();
     process.exit(0);
 }
 
