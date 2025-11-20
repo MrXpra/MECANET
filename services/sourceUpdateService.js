@@ -36,16 +36,16 @@ class SourceUpdateService {
             const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
             const localVersion = pkg.version;
 
-            // 2. Obtener package.json remoto (RAW) con cache-busting
-            const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${BRANCH}/package.json`;
+            // 2. Obtener package.json remoto (RAW) con cache-busting en la URL
+            const timestamp = Date.now();
+            const rawUrl = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${BRANCH}/package.json?t=${timestamp}`;
             
             const config = {
                 headers: {
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
-                },
-                // Agregar timestamp para evitar cache
-                params: { '_': Date.now() }
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
             };
             
             if (process.env.GITHUB_TOKEN) {
