@@ -129,6 +129,9 @@ if %STARTUP_CODE% equ 2 (
         call npm run build
     )
     popd
+    
+    REM Asegurar que estamos en el directorio raíz
+    cd /d "%~dp0\.."
 
     echo.
     echo ========================================================
