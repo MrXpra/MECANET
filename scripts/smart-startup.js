@@ -81,16 +81,24 @@ async function main() {
 
         if (answers.update) {
             try {
+                console.log('\n📥 Iniciando descarga...');
                 const sourcePath = await SourceUpdateService.downloadSource();
+                console.log('   Código descargado en:', sourcePath);
+                
                 const updateFlagPath = path.join(rootDir, '.update-pending');
+                console.log('   Guardando referencia en:', updateFlagPath);
                 fs.writeFileSync(updateFlagPath, sourcePath, 'utf8');
-
-                console.log('✅ Actualización descargada.');
+                
+                console.log('✅ Actualización lista para aplicar.');
                 process.exit(2); // Código 2 = Actualización pendiente
             } catch (error) {
-                console.error('❌ Error:', error.message);
+                console.error('❌ Error descargando:', error.message);
+                console.error('   Stack:', error.stack);
+                console.log('\n⚠️  Continuando sin actualizar...');
                 process.exit(0);
             }
+        } else {
+            console.log('ℹ️  Actualización omitida por el usuario.');
         }
     } else {
         console.log('✅ Sistema actualizado.');
