@@ -2,6 +2,7 @@ import Sale from '../models/Sale.js';
 import Product from '../models/Product.js';
 import User from '../models/User.js';
 import Customer from '../models/Customer.js';
+import Return from '../models/Return.js';
 
 // @desc    Obtener estadísticas del dashboard (optimizado)
 // @route   GET /api/dashboard/stats
@@ -16,7 +17,7 @@ export const getDashboardStats = async (req, res) => {
 
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    // Usar agregación para calcular todo en una sola query
+    // Calcular ventas usando agregación
     const salesStats = await Sale.aggregate([
       {
         $match: {
@@ -60,9 +61,62 @@ export const getDashboardStats = async (req, res) => {
       }
     ]);
 
+    // Calcular devoluciones aprobadas usando agregación
+    const returnsStats = await Return.aggregate([
+      {
+        $match: {
+          status: 'Aprobada',
+          totalAmount: { $ne: null, $exists: true }
+        }
+      },
+      {
+        $facet: {
+          today: [
+            { $match: { createdAt: { $gte: today } } },
+            {
+              $group: {
+                _id: null,
+                total: { $sum: '$totalAmount' },
+                count: { $sum: 1 }
+              }
+            }
+          ],
+          week: [
+            { $match: { createdAt: { $gte: startOfWeek } } },
+            {
+              $group: {
+                _id: null,
+                total: { $sum: '$totalAmount' },
+                count: { $sum: 1 }
+              }
+            }
+          ],
+          month: [
+            { $match: { createdAt: { $gte: startOfMonth } } },
+            {
+              $group: {
+                _id: null,
+                total: { $sum: '$totalAmount' },
+                count: { $sum: 1 }
+              }
+            }
+          ]
+        }
+      }
+    ]);
+
     const todayData = salesStats[0].today[0] || { total: 0, count: 0 };
     const weekData = salesStats[0].week[0] || { total: 0, count: 0 };
     const monthData = salesStats[0].month[0] || { total: 0, count: 0 };
+
+    const todayReturns = returnsStats[0].today[0] || { total: 0, count: 0 };
+    const weekReturns = returnsStats[0].week[0] || { total: 0, count: 0 };
+    const monthReturns = returnsStats[0].month[0] || { total: 0, count: 0 };
+
+    // Calcular totales netos (ventas - devoluciones)
+    const todayNetTotal = todayData.total - todayReturns.total;
+    const weekNetTotal = weekData.total - weekReturns.total;
+    const monthNetTotal = monthData.total - monthReturns.total;
 
     // Ejecutar queries de conteo en paralelo
     const [lowStockCount, totalProducts, totalCustomers, activeUsers] = await Promise.all([
@@ -74,17 +128,23 @@ export const getDashboardStats = async (req, res) => {
 
     res.json({
       today: {
-        total: todayData.total,
+        total: todayNetTotal,
         transactions: todayData.count,
-        avgTicket: todayData.count > 0 ? todayData.total / todayData.count : 0
+        avgTicket: todayData.count > 0 ? todayNetTotal / todayData.count : 0,
+        returns: todayReturns.count,
+        returnsAmount: todayReturns.total
       },
       week: {
-        total: weekData.total,
-        transactions: weekData.count
+        total: weekNetTotal,
+        transactions: weekData.count,
+        returns: weekReturns.count,
+        returnsAmount: weekReturns.total
       },
       month: {
-        total: monthData.total,
-        transactions: monthData.count
+        total: monthNetTotal,
+        transactions: monthData.count,
+        returns: monthReturns.count,
+        returnsAmount: monthReturns.total
       },
       inventory: {
         totalProducts,
@@ -109,6 +169,7 @@ export const getSalesByDay = async (req, res) => {
     startDate.setDate(startDate.getDate() - daysAgo);
     startDate.setHours(0, 0, 0, 0);
 
+    // Obtener ventas por día
     const sales = await Sale.aggregate([
       {
         $match: {
@@ -128,12 +189,43 @@ export const getSalesByDay = async (req, res) => {
       }
     ]);
 
-    // Formatear para el frontend
-    const formattedSales = sales.map(item => ({
-      date: item._id,
-      total: item.total,
-      transactions: item.count
-    }));
+    // Obtener devoluciones aprobadas por día
+    const returns = await Return.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate },
+          status: 'Aprobada'
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          total: { $sum: '$totalAmount' },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Crear mapa de devoluciones por fecha
+    const returnsMap = {};
+    returns.forEach(ret => {
+      returnsMap[ret._id] = {
+        total: ret.total,
+        count: ret.count
+      };
+    });
+
+    // Formatear para el frontend restando devoluciones
+    const formattedSales = sales.map(item => {
+      const returnData = returnsMap[item._id] || { total: 0, count: 0 };
+      return {
+        date: item._id,
+        total: item.total - returnData.total, // Neto después de devoluciones
+        transactions: item.count,
+        returns: returnData.count,
+        returnsAmount: returnData.total
+      };
+    });
 
     res.json(formattedSales);
   } catch (error) {
