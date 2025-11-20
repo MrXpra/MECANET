@@ -1,6 +1,6 @@
 {
   "name": "mecanet-backend",
-  "version": "1.1.7",
+  "version": "1.2.0",
   "description": "Backend para sistema POS de taller mecánico",
   "main": "server.js",
   "type": "module",
@@ -50,6 +50,7 @@
     "express-validator": "^7.0.1",
     "form-data": "^4.0.5",
     "helmet": "^8.1.0",
+    "inquirer": "^13.0.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.0",
     "node-fetch": "^3.3.2",

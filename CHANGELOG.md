@@ -13,6 +13,10 @@ Corrección error 500 al iniciar
 
 ## [1.1.3] - 2025-11-19
 
+### ✨ Agregado
+- **Actualizador Automático:** El script `CONFIGURAR-INICIAL.bat` ahora verifica automáticamente si existe una nueva versión en GitHub Releases antes de iniciar. Si el usuario acepta, descarga y actualiza el sistema automáticamente.
+- **Scripts:** Nuevo script `scripts/startup-check.js` para gestionar la lógica de verificación y descarga de actualizaciones.
+
 ### 🐛 Corregido
 - **Core:** Corregido un error crítico en `performanceMiddleware.js` que podía causar un desbordamiento de pila (Stack Overflow) y errores 500 al interceptar consultas de base de datos repetidamente.
 - **Instalación:** El script `CONFIGURAR-INICIAL.ps1` ahora instala automáticamente las dependencias (`npm install`) si no existen, antes de intentar verificar la conexión a la base de datos. Esto soluciona el error `ERR_MODULE_NOT_FOUND` en instalaciones limpias.
