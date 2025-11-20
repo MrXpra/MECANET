@@ -72,10 +72,6 @@ import auditLogRoutes from './routes/auditLogRoutes.js'; // Sistema de auditorí
 import quotationRoutes from './routes/quotationRoutes.js'; // Cotizaciones
 import systemRoutes from './routes/systemRoutes.js'; // Actualizaciones del sistema
 
-// Importar modelos para endpoints de debug
-import Return from './models/Return.js';
-import Sale from './models/Sale.js';
-
 // Importar middleware de manejo de errores global
 import { errorHandler } from './middleware/errorMiddleware.js';
 // Importar middleware de logging
@@ -326,6 +322,9 @@ app.get('/api/version', (req, res) => {
 // Endpoint de debug para verificar devoluciones
 app.get('/api/debug/returns', async (req, res) => {
   try {
+    const Return = require('./models/Return.js').default;
+    const Sale = require('./models/Sale.js').default;
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -352,7 +351,7 @@ app.get('/api/debug/returns', async (req, res) => {
     res.json(debug);
   } catch (error) {
     console.error('Error en debug:', error);
-    res.status(500).json({ error: error.message, stack: error.stack });
+    res.status(500).json({ error: error.message });
   }
 });
 

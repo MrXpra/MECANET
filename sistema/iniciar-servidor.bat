@@ -98,8 +98,8 @@ if %STARTUP_CODE% equ 2 (
         goto :CLEANUP_AND_START
     )
     
-    REM Copiar el resto de archivos
-    robocopy "%UPDATE_PATH%" "." /E /XO /XD ".git" "node_modules" "temp_source_update" "distribucion" /XF ".env" ".gitignore" "package-lock.json" /NFL /NDL /NJH /NJS
+    REM Copiar el resto de archivos (sin /XO para sobrescribir todo)
+    robocopy "%UPDATE_PATH%" "." /E /XD ".git" "node_modules" "temp_source_update" "distribucion" "client\dist" /XF ".env" ".gitignore" "package-lock.json" /NFL /NDL /NJH /NJS
     
     echo [OK] Archivos copiados exitosamente
     
@@ -116,6 +116,12 @@ if %STARTUP_CODE% equ 2 (
     )
     
     echo.
+    echo Limpiando build anterior del frontend...
+    if exist "client\dist" (
+        rmdir /s /q "client\dist"
+        echo [OK] Build anterior eliminado
+    )
+    
     echo Compilando frontend actualizado...
     if exist "node\node.exe" (
         cd client
