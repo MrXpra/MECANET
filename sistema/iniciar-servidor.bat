@@ -46,6 +46,46 @@ if %errorlevel% equ 0 (
     exit /b 0
 )
 
+REM ========================================================
+REM VERIFICAR ACTUALIZACIONES
+REM ========================================================
+echo Verificando actualizaciones...
+%NODE_CMD% scripts/smart-startup.js
+
+set STARTUP_CODE=%errorlevel%
+
+if %STARTUP_CODE% equ 2 (
+    cls
+    echo.
+    echo Aplicando actualizacion...
+    
+    set /p UPDATE_PATH=<.update-pending
+    
+    if not exist "%UPDATE_PATH%" (
+        echo Error: Carpeta de actualizacion no encontrada
+        pause
+        goto :START_SERVER
+    )
+
+    robocopy "%UPDATE_PATH%" "." /E /XO /XD ".git" "node_modules" "temp_source_update" "distribucion" /XF ".env" ".gitignore" "package-lock.json" >nul
+    copy /Y "%UPDATE_PATH%\package.json" "." >nul
+    rmdir /s /q "temp_source_update"
+    del ".update-pending"
+
+    echo Actualizando dependencias...
+    if exist "node\node.exe" (
+        "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --production
+    ) else (
+        call npm install --production
+    )
+
+    echo.
+    echo Actualizacion completada. Reiniciando servidor...
+    timeout /t 2 >nul
+    cls
+)
+
+:START_SERVER
 REM Iniciar el servidor mostrando logs en pantalla
 echo.
 echo Iniciando servidor...
