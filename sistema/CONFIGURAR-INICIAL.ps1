@@ -138,14 +138,45 @@ Write-Host "============================================`n" -ForegroundColor Cya
 
 # Detectar Node.js
 $nodePath = "node"
+$npmPath = "npm"
+$isPortable = $false
+
 if (Test-Path "node\node.exe") {
     $nodePath = "node\node.exe"
+    $npmPath = "node\node_modules\npm\bin\npm-cli.js"
+    $isPortable = $true
 } else {
     try {
         $null = & node --version 2>&1
     } catch {
         Write-Host "ERROR: Node.js no instalado" -ForegroundColor Red
         Read-Host "`nPresiona Enter"
+        exit 1
+    }
+}
+
+# Instalar dependencias si es necesario
+if (-not (Test-Path "node_modules")) {
+    Write-Host "Instalando dependencias necesarias..." -ForegroundColor Yellow
+    Write-Host "Esto puede tomar unos minutos, por favor espera..." -ForegroundColor Gray
+    
+    try {
+        if ($isPortable) {
+            & $nodePath $npmPath install --omit=dev
+        } else {
+            & npm install --omit=dev
+        }
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "[OK] Dependencias instaladas correctamente" -ForegroundColor Green
+        } else {
+            Write-Host "[ERROR] Falló la instalación de dependencias" -ForegroundColor Red
+            Write-Host "Intenta ejecutar 'npm install' manualmente" -ForegroundColor Yellow
+            Read-Host "Presiona Enter para salir"
+            exit 1
+        }
+    } catch {
+        Write-Host "[ERROR] Ocurrió un error instalando dependencias: $_" -ForegroundColor Red
         exit 1
     }
 }
