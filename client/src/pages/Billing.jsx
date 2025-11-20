@@ -73,6 +73,7 @@ import {
 } from '../services/api';
 import toast from 'react-hot-toast';
 import { BillingSkeleton } from '../components/SkeletonLoader';
+import PaymentModal from '../components/POS/PaymentModal';
 import {
   Search,
   Trash2,
@@ -339,30 +340,24 @@ const Billing = () => {
     setShowPaymentModal(true);
   };
 
-  const handleCompleteSale = async () => {
+  const handleCompleteSale = async (modalSaleData) => {
     try {
-      // Validar monto recibido para efectivo
-      if (paymentMethod === 'Efectivo') {
-        const received = parseFloat(amountReceived) || 0;
-        const total = getTotal();
-        if (received < total) {
-          toast.error('El monto recibido debe ser mayor o igual al total');
-          return;
-        }
-      }
-
       setIsLoading(true);
 
       const saleData = {
-        items: items.map((item) => ({
+        items: modalSaleData.items.map((item) => ({
           product: item.product._id,
           quantity: item.quantity,
           discountApplied: item.customDiscount,
         })),
-        paymentMethod,
-        customer: selectedCustomer?._id || null,
-        globalDiscount: globalDiscount || 0,
-        globalDiscountAmount: globalDiscountAmount || 0,
+        paymentMethod: modalSaleData.paymentMethod,
+        customer: modalSaleData.client?._id || selectedCustomer?._id || null,
+        globalDiscount: 0, // El modal ya calcula el total con descuento
+        globalDiscountAmount: modalSaleData.discount, // Pasamos el monto del descuento
+        amountPaid: modalSaleData.amountPaid,
+        change: modalSaleData.change,
+        note: modalSaleData.note,
+        receiptType: modalSaleData.receiptType
       };
 
       const response = await createSale(saleData);
@@ -376,7 +371,14 @@ const Billing = () => {
       toast.success('¡Venta completada exitosamente!');
       
       // Guardar la venta para el modal de impresión
-      setCompletedSale(response.data);
+      // Combinamos la respuesta con datos locales útiles para la impresión
+      setCompletedSale({
+        ...response.data,
+        paymentMethod: modalSaleData.paymentMethod,
+        amountPaid: modalSaleData.amountPaid,
+        change: modalSaleData.change
+      });
+      
       setShowPaymentModal(false);
       setShowPrintModal(true);
       
@@ -890,21 +892,9 @@ const Billing = () => {
       {/* Payment Modal */}
       {showPaymentModal && (
         <PaymentModal
-          subtotal={getSubtotal()}
-          itemsDiscount={getTotalDiscount()}
-          globalDiscount={globalDiscount}
-          setGlobalDiscount={setGlobalDiscount}
-          globalDiscountAmount={globalDiscountAmount}
-          setGlobalDiscountAmount={setGlobalDiscountAmount}
-          total={getTotal()}
-          paymentMethod={paymentMethod}
-          setPaymentMethod={setPaymentMethod}
-          amountReceived={amountReceived}
-          setAmountReceived={setAmountReceived}
-          change={change}
-          onConfirm={handleCompleteSale}
+          isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
-          isLoading={isLoading}
+          onConfirm={handleCompleteSale}
         />
       )}
 
@@ -1257,297 +1247,7 @@ const CartItem = ({
   );
 };
 
-// Payment Modal Component
-const PaymentModal = ({
-  subtotal,
-  itemsDiscount,
-  globalDiscount,
-  setGlobalDiscount,
-  globalDiscountAmount,
-  setGlobalDiscountAmount,
-  total,
-  paymentMethod,
-  setPaymentMethod,
-  amountReceived,
-  setAmountReceived,
-  change,
-  onConfirm,
-  onClose,
-  isLoading,
-}) => {
-  const [discountType, setDiscountType] = React.useState('percentage'); // 'percentage' or 'finalPrice'
-  const [finalPriceInput, setFinalPriceInput] = React.useState('');
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('es-DO', {
-      style: 'currency',
-      currency: 'DOP',
-    }).format(value);
-  };
-
-  const calculateFinalTotal = () => {
-    if (discountType === 'finalPrice' && finalPriceInput) {
-      return parseFloat(finalPriceInput) || 0;
-    }
-    const discountAmount = (globalDiscount / 100) * (subtotal - itemsDiscount);
-    return total - discountAmount;
-  };
-
-  const handleFinalPriceChange = (value) => {
-    setFinalPriceInput(value);
-    const targetPrice = parseFloat(value) || 0;
-    const currentTotal = subtotal - itemsDiscount;
-    if (targetPrice < currentTotal && targetPrice >= 0) {
-      const discountAmount = currentTotal - targetPrice;
-      const discountPercentage = (discountAmount / currentTotal) * 100;
-      // Guardar el monto exacto del descuento para evitar errores de redondeo
-      setGlobalDiscountAmount(discountAmount);
-      setGlobalDiscount(discountPercentage);
-    } else {
-      setGlobalDiscount(0);
-      setGlobalDiscountAmount(0);
-    }
-  };
-
-  const handlePercentageChange = (value) => {
-    setGlobalDiscount(value);
-    setFinalPriceInput('');
-    // En modo porcentaje, calcular el monto
-    const currentTotal = subtotal - itemsDiscount;
-    setGlobalDiscountAmount((value / 100) * currentTotal);
-  };
-
-  return createPortal(
-    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style={{ zIndex: 100000 }}>
-      <div className="glass-strong rounded-2xl p-6 w-full max-w-md animate-scale-in" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-            Completar Venta
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <div className="mb-6 space-y-3">
-          {/* Resumen de totales */}
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
-              <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(subtotal)}</span>
-            </div>
-            {itemsDiscount > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Descuentos por ítem:</span>
-                <span className="font-medium text-red-600 dark:text-red-400">-{formatCurrency(itemsDiscount)}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Campo de descuento global */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Descuento Adicional
-            </label>
-            
-            {/* Tabs para seleccionar tipo de descuento */}
-            <div className="flex gap-2 mb-3">
-              <button
-                onClick={() => setDiscountType('percentage')}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                  discountType === 'percentage'
-                    ? 'bg-primary-600 text-white shadow-md'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                Porcentaje
-              </button>
-              <button
-                onClick={() => setDiscountType('finalPrice')}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                  discountType === 'finalPrice'
-                    ? 'bg-primary-600 text-white shadow-md'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                Precio Final
-              </button>
-            </div>
-
-            {/* Input según tipo seleccionado */}
-            {discountType === 'percentage' ? (
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={globalDiscount === 0 ? '' : globalDiscount}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '' || val === null) {
-                      handlePercentageChange(0);
-                      return;
-                    }
-                    const value = Math.min(100, Math.max(0, parseFloat(val) || 0));
-                    handlePercentageChange(value);
-                  }}
-                  className="input pr-10"
-                  placeholder="0"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
-              </div>
-            ) : (
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={finalPriceInput}
-                  onChange={(e) => handleFinalPriceChange(e.target.value)}
-                  className="input pl-8"
-                  placeholder="Ingrese precio final"
-                />
-              </div>
-            )}
-            
-            {globalDiscount > 0 && (
-              <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
-                💰 Ahorro: {discountType === 'finalPrice' && finalPriceInput 
-                  ? formatCurrency((subtotal - itemsDiscount) - parseFloat(finalPriceInput))
-                  : formatCurrency((globalDiscount / 100) * (subtotal - itemsDiscount))
-                }
-              </p>
-            )}
-          </div>
-
-          {/* Total final */}
-          <div className="text-center p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Total a Pagar
-            </p>
-            <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">
-              {formatCurrency(calculateFinalTotal())}
-            </p>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Método de Pago
-          </label>
-          <div className="space-y-2">
-            {['Efectivo', 'Tarjeta', 'Transferencia'].map((method) => (
-              <button
-                key={method}
-                onClick={() => setPaymentMethod(method)}
-                className={`w-full p-3 rounded-lg border-2 transition-all shadow-sm ${
-                  paymentMethod === method
-                    ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20 shadow-primary-200 dark:shadow-primary-900/50'
-                    : 'border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-800/50 hover:border-primary-400 hover:shadow-md'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {method}
-                  </span>
-                  {paymentMethod === method && (
-                    <Check className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Monto Recibido y Cambio (solo para Efectivo) */}
-        {paymentMethod === 'Efectivo' && (
-          <div className="mb-6 space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Monto Recibido *
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min={calculateFinalTotal()}
-                  value={amountReceived}
-                  onChange={(e) => setAmountReceived(e.target.value)}
-                  className="input pl-8"
-                  placeholder={`Mínimo: ${formatCurrency(calculateFinalTotal())}`}
-                  required
-                />
-              </div>
-            </div>
-
-            {amountReceived && (
-              <div className={`p-4 rounded-lg border-2 ${
-                change >= 0 
-                  ? 'bg-green-50 dark:bg-green-900/20 border-green-500' 
-                  : 'bg-red-50 dark:bg-red-900/20 border-red-500'
-              }`}>
-                <div className="flex justify-between items-center">
-                  <span className={`text-lg font-semibold ${
-                    change >= 0 
-                      ? 'text-green-700 dark:text-green-300' 
-                      : 'text-red-700 dark:text-red-300'
-                  }`}>
-                    Cambio a Devolver:
-                  </span>
-                  <span className={`text-3xl font-bold ${
-                    change >= 0 
-                      ? 'text-green-600 dark:text-green-400' 
-                      : 'text-red-600 dark:text-red-400'
-                  }`}>
-                    {formatCurrency(change >= 0 ? change : 0)}
-                  </span>
-                </div>
-                {change < 0 && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    El monto recibido es menor al total
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="flex gap-3">
-          <button onClick={onClose} className="btn-secondary flex-1">
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isLoading}
-            className="btn-primary flex-1 flex items-center justify-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                Procesando...
-              </>
-            ) : (
-              <>
-                <Check className="w-5 h-5" />
-                Confirmar
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-};
+// Payment Modal Component removed (imported from ../components/POS/PaymentModal)
 
 // Customer Modal Component
 const CustomerModal = ({ onSelect, onClose }) => {
