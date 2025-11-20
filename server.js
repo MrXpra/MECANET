@@ -288,12 +288,31 @@ app.use('/api/system', systemRoutes); // /api/system (actualizaciones del sistem
 app.get('/api/version', (req, res) => {
   try {
     const versionPath = path.join(__dirname, 'version.json');
-    if (fs.existsSync(versionPath)) {
-      const versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
-      res.json(versionData);
-    } else {
-      res.status(404).json({ message: 'Archivo de versión no encontrado' });
+    const changelogPath = path.join(__dirname, 'CHANGELOG.md');
+    
+    if (!fs.existsSync(versionPath)) {
+      return res.status(404).json({ message: 'Archivo de versión no encontrado' });
     }
+    
+    const versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
+    
+    // Leer CHANGELOG.md y extraer notas de la versión actual
+    if (fs.existsSync(changelogPath)) {
+      const changelog = fs.readFileSync(changelogPath, 'utf8');
+      const versionRegex = new RegExp(`## \\[${versionData.version}\\][\\s\\S]*?(?=## \\[|$)`, 'i');
+      const match = changelog.match(versionRegex);
+      
+      if (match) {
+        // Limpiar el texto: remover el título de versión y formatear
+        let notes = match[0]
+          .replace(/## \[.*?\].*?\n/, '') // Remover título
+          .trim();
+        
+        versionData.releaseNotes = notes || versionData.releaseNotes;
+      }
+    }
+    
+    res.json(versionData);
   } catch (error) {
     console.error('Error al leer versión:', error);
     res.status(500).json({ message: 'Error al obtener versión' });
