@@ -130,6 +130,9 @@ if %STARTUP_CODE% equ 2 (
     )
     popd
     
+    REM Asegurar que estamos en el directorio raíz
+    cd /d "%~dp0\.."
+
     echo.
     echo ========================================================
     echo   ACTUALIZACION COMPLETADA
@@ -137,9 +140,6 @@ if %STARTUP_CODE% equ 2 (
     echo.
     timeout /t 2 >nul
 )
-
-REM Asegurar que SIEMPRE estamos en el directorio raíz antes de iniciar
-cd /d "%~dp0\.."
 
 :START_SERVER
 REM Iniciar el servidor mostrando logs en pantalla
