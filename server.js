@@ -112,8 +112,9 @@ try {
 
 // Determinar modo de aplicación (Cloud vs Desktop)
 // APP_MODE puede ser 'desktop' (local .exe) o 'cloud' (Railway/Web)
-// Si no está definido, asumimos 'cloud' por seguridad
-const APP_MODE = process.env.APP_MODE || 'cloud';
+// Detectar automáticamente: si hay RAILWAY_ENVIRONMENT o similar, es cloud; si no, es desktop
+const IS_CLOUD_ENV = process.env.RAILWAY_ENVIRONMENT || process.env.VERCEL || process.env.HEROKU_APP_NAME;
+const APP_MODE = process.env.APP_MODE || (IS_CLOUD_ENV ? 'cloud' : 'desktop');
 const IS_LOCAL_APP = APP_MODE === 'desktop';
 
 console.log(`🚀 Modo de Aplicación: ${APP_MODE.toUpperCase()}`);

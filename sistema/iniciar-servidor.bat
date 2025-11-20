@@ -46,6 +46,14 @@ if %errorlevel% equ 0 (
     exit /b 0
 )
 
+REM Crear archivo de log para capturar errores
+set "LOGFILE=%~dp0..\mecanet-server.log"
+echo ======================================== > "%LOGFILE%"
+echo MECANET SERVER LOG >> "%LOGFILE%"
+echo Fecha: %DATE% %TIME% >> "%LOGFILE%"
+echo ======================================== >> "%LOGFILE%"
+echo. >> "%LOGFILE%"
+
 REM Iniciar el servidor en PRIMER PLANO (para ver logs de error)
 echo.
 echo ========================================================
@@ -53,22 +61,29 @@ echo   INICIANDO SERVIDOR MECANET
 echo ========================================================
 echo.
 echo Puerto: 5000
+echo Log guardado en: mecanet-server.log
 echo Presiona Ctrl+C para detener el servidor
 echo.
 echo Logs del servidor:
 echo --------------------------------------------------------
 echo.
 
-REM Abrir navegador después de 5 segundos (en segundo plano)
-start /B cmd /c "timeout /t 5 >nul && start http://localhost:5000"
+REM Abrir navegador después de 8 segundos (darle tiempo al servidor)
+start /B cmd /c "timeout /t 8 >nul && start http://localhost:5000"
 
-REM Iniciar servidor en PRIMER PLANO para ver logs
-%NODE_CMD% server.js
+REM Iniciar servidor capturando TODA la salida al log Y mostrándola en pantalla
+%NODE_CMD% server.js 2>&1 | tee "%LOGFILE%"
 
-REM Si el servidor se detiene (por error o Ctrl+C), mantener la ventana abierta
+REM Capturar el código de salida
+set SERVER_EXIT=%errorlevel%
+
+REM Si el servidor se detiene, mantener la ventana abierta
 echo.
 echo ========================================================
-echo   SERVIDOR DETENIDO
+echo   SERVIDOR DETENIDO (Codigo: %SERVER_EXIT%)
 echo ========================================================
 echo.
-pause
+echo Revisa el archivo mecanet-server.log para mas detalles
+echo.
+echo Presiona cualquier tecla para cerrar...
+pause >nul
