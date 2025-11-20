@@ -86,7 +86,7 @@ export const getDashboardStats = async (req, res) => {
       }
     ]);
 
-    // Calcular devoluciones y beneficio perdido usando agregación
+    // Calcular devoluciones y beneficio perdido usando la FECHA DE LA VENTA ORIGINAL
     const returnsStats = await Return.aggregate([
       {
         $match: {
@@ -122,7 +122,9 @@ export const getDashboardStats = async (req, res) => {
               },
               0
             ]
-          }
+          },
+          // IMPORTANTE: Usar la fecha de la venta original, no la fecha de devolución
+          originalSaleDate: '$saleData.createdAt'
         }
       },
       {
@@ -144,7 +146,7 @@ export const getDashboardStats = async (req, res) => {
       {
         $group: {
           _id: '$_id',
-          createdAt: { $first: '$createdAt' },
+          originalSaleDate: { $first: '$originalSaleDate' }, // Fecha de venta original
           totalAmount: { $first: '$totalAmount' },
           totalReturnedProfit: { $sum: '$returnedProfit' }
         }
@@ -152,7 +154,7 @@ export const getDashboardStats = async (req, res) => {
       {
         $facet: {
           today: [
-            { $match: { createdAt: { $gte: today } } },
+            { $match: { originalSaleDate: { $gte: today } } }, // Filtrar por fecha de venta
             {
               $group: {
                 _id: null,
@@ -163,7 +165,7 @@ export const getDashboardStats = async (req, res) => {
             }
           ],
           week: [
-            { $match: { createdAt: { $gte: startOfWeek } } },
+            { $match: { originalSaleDate: { $gte: startOfWeek } } },
             {
               $group: {
                 _id: null,
@@ -174,7 +176,7 @@ export const getDashboardStats = async (req, res) => {
             }
           ],
           month: [
-            { $match: { createdAt: { $gte: startOfMonth } } },
+            { $match: { originalSaleDate: { $gte: startOfMonth } } },
             {
               $group: {
                 _id: null,
@@ -280,24 +282,39 @@ export const getSalesByDay = async (req, res) => {
       }
     ]);
 
-    // Obtener devoluciones aprobadas por día
+    // Obtener devoluciones aprobadas agrupadas por FECHA DE VENTA ORIGINAL
     const returns = await Return.aggregate([
       {
         $match: {
-          createdAt: { $gte: startDate },
           status: 'Aprobada'
         }
       },
       {
+        $lookup: {
+          from: 'sales',
+          localField: 'sale',
+          foreignField: '_id',
+          as: 'saleData'
+        }
+      },
+      {
+        $unwind: '$saleData'
+      },
+      {
+        $match: {
+          'saleData.createdAt': { $gte: startDate } // Filtrar por fecha de venta original
+        }
+      },
+      {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$saleData.createdAt' } }, // Agrupar por fecha de venta
           total: { $sum: '$totalAmount' },
           count: { $sum: 1 }
         }
       }
     ]);
 
-    // Crear mapa de devoluciones por fecha
+    // Crear mapa de devoluciones por fecha de venta original
     const returnsMap = {};
     returns.forEach(ret => {
       returnsMap[ret._id] = {
