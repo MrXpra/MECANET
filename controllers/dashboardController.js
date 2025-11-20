@@ -17,6 +17,26 @@ export const getDashboardStats = async (req, res) => {
 
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
+    console.log('📅 Dates for filtering:');
+    console.log('  Today:', today.toISOString());
+    console.log('  Week:', startOfWeek.toISOString());
+    console.log('  Month:', startOfMonth.toISOString());
+
+    // Primero, obtener todas las devoluciones aprobadas para debug
+    const allReturns = await Return.find({ status: 'Aprobada' })
+      .populate('sale', 'createdAt invoiceNumber total')
+      .limit(10)
+      .lean();
+    
+    console.log('🔍 All Approved Returns (first 10):');
+    allReturns.forEach(ret => {
+      console.log(`  - Return ID: ${ret._id}`);
+      console.log(`    Total: ${ret.totalAmount}`);
+      console.log(`    Sale: ${ret.sale?.invoiceNumber || 'N/A'}`);
+      console.log(`    Sale Date: ${ret.sale?.createdAt ? new Date(ret.sale.createdAt).toISOString() : 'N/A'}`);
+      console.log(`    Return Date: ${new Date(ret.createdAt).toISOString()}`);
+    });
+
     // Calcular ventas y beneficios usando agregación
     const salesStats = await Sale.aggregate([
       {
