@@ -1,5 +1,0 @@
-client/
-node_modules/
-.git/
-*.log
-.env
