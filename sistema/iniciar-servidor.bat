@@ -108,11 +108,25 @@ if %STARTUP_CODE% equ 2 (
     del ".update-pending" 2>nul
 
     echo.
-    echo Actualizando dependencias...
+    echo Actualizando dependencias del backend...
     if exist "node\node.exe" (
         "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --production
     ) else (
         call npm install --production
+    )
+    
+    echo.
+    echo Compilando frontend actualizado...
+    if exist "node\node.exe" (
+        cd client
+        "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" install --production=false
+        "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" run build
+        cd ..
+    ) else (
+        cd client
+        call npm install --production=false
+        call npm run build
+        cd ..
     )
 
     echo.
