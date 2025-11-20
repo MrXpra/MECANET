@@ -130,16 +130,13 @@ async function main() {
             fs.writeFileSync(clientPkgPath, JSON.stringify(clientPkg, null, 2));
         }
 
-        // 3. Build y Empaquetado
-        console.log('\n📦 [2/4] Generando paquete (Build & Zip)...');
-        // Ejecutamos el script que creamos anteriormente
-        execSync('npm run package:release', { stdio: 'inherit', cwd: rootDir });
-
-        const zipName = `MECANET-v${newVersion}.zip`;
-        const zipPath = path.join(rootDir, 'distribucion', zipName);
-
-        if (!fs.existsSync(zipPath)) {
-            throw new Error('El archivo ZIP no se generó correctamente.');
+        // 3. Build y Empaquetado (SOLO LOCAL)
+        // Aunque ya no subimos el ZIP a GitHub, lo generamos localmente por si acaso
+        console.log('\n📦 [2/4] Generando paquete local (Backup)...');
+        try {
+            execSync('npm run package:release', { stdio: 'inherit', cwd: rootDir });
+        } catch (e) {
+            console.warn('⚠️  Error generando ZIP local. Continuando...');
         }
 
         // 4. Git Commit & Push
@@ -154,16 +151,15 @@ async function main() {
 
         console.log('   Bajando cambios remotos para evitar conflictos...');
         try {
-            // Intentar traer cambios remotos antes de subir
             execSync(`git pull origin ${currentBranch}`, { stdio: 'inherit', cwd: rootDir });
         } catch (e) {
-            console.warn(`⚠️  Advertencia: No se pudo hacer git pull de ${currentBranch}. Es posible que debas resolver conflictos manualmente.`);
+            console.warn(`⚠️  Advertencia: No se pudo hacer git pull de ${currentBranch}.`);
         }
 
         console.log(`   Subiendo cambios a ${currentBranch}...`);
         execSync(`git push origin ${currentBranch}`, { stdio: 'inherit', cwd: rootDir });
         
-        // Intentar subir a la otra rama principal también (sincronización básica)
+        // Sincronizar ramas
         const otherBranch = currentBranch === 'main' ? 'develop' : (currentBranch === 'develop' ? 'main' : null);
         if (otherBranch) {
             try {
@@ -171,19 +167,15 @@ async function main() {
                 execSync(`git push origin ${currentBranch}:${otherBranch}`, { stdio: 'inherit', cwd: rootDir });
                 console.log(`   ✅ ${otherBranch} actualizado.`);
             } catch (e) {
-                console.warn(`   ⚠️  No se pudo actualizar ${otherBranch} automáticamente (probablemente requiere merge).`);
+                console.warn(`   ⚠️  No se pudo actualizar ${otherBranch} automáticamente.`);
             }
         }
 
-        // Opcional: Tag en git
-        // execSync(`git tag v${newVersion}`, { stdio: 'inherit', cwd: rootDir });
-        // execSync(`git push origin v${newVersion}`, { stdio: 'inherit', cwd: rootDir });
-
-        // 5. GitHub Release (API)
+        // 5. GitHub Release (SOLO TAG, SIN ZIP)
         if (GITHUB_TOKEN) {
-            console.log('\n🚀 [4/4] Creando Release en GitHub...');
+            console.log('\n🚀 [4/4] Creando Tag en GitHub...');
             
-            // Crear Release
+            // Crear Release (Solo metadatos, sin adjuntos)
             const createReleaseUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases`;
             const releaseData = {
                 tag_name: `v${newVersion}`,
@@ -201,28 +193,11 @@ async function main() {
                 }
             });
 
-            const uploadUrl = releaseResponse.data.upload_url.replace('{?name,label}', '');
-            console.log('   Release creado. Subiendo asset...');
-
-            // Subir Asset
-            const fileContent = fs.readFileSync(zipPath);
-            
-            await axios.post(`${uploadUrl}?name=${zipName}`, fileContent, {
-                headers: {
-                    'Authorization': `token ${GITHUB_TOKEN}`,
-                    'Content-Type': 'application/zip',
-                    'Content-Length': fileContent.length
-                },
-                maxContentLength: Infinity,
-                maxBodyLength: Infinity
-            });
-
-            console.log('✅ Asset subido exitosamente!');
-            console.log(`🔗 Link: ${releaseResponse.data.html_url}`);
+            console.log('   ✅ Release (Tag) creado exitosamente!');
+            console.log(`   🔗 Link: ${releaseResponse.data.html_url}`);
+            console.log('   ℹ️  Nota: No se subió ningún ZIP. El sistema se actualizará desde el código fuente.');
         } else {
-            console.log('\n⚠️  Paso omitido: No hay GITHUB_TOKEN.');
-            console.log(`   Por favor, crea el release manualmente en GitHub y sube el archivo:`);
-            console.log(`   📂 ${zipPath}`);
+            console.log('\n⚠️  GITHUB_TOKEN no configurado. No se creó el release en GitHub.');
         }
 
         console.log('\n🎉 PROCESO COMPLETADO EXITOSAMENTE');
