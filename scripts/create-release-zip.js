@@ -17,13 +17,15 @@ console.log(`🚀 Preparando Release v${version} para GitHub...`);
 
 // 1. Compilar Frontend
 console.log('🏗️  Compilando Frontend...');
+console.log('   (Nota: Se instalarán dependencias TEMPORALES para compilar, pero NO se incluirán en el ZIP)');
+
 try {
     // Aseguramos que se instalen dependencias del cliente (incluyendo devDependencies para Vite)
     // Usamos --production=false para ignorar NODE_ENV=production si estuviera seteado
-    console.log('   Instalando dependencias del cliente...');
+    console.log('   Instalando dependencias de compilación...');
     execSync('cd client && npm install --production=false', { stdio: 'inherit', cwd: rootDir });
     
-    console.log('   Ejecutando build...');
+    console.log('   Generando archivos estáticos (dist)...');
     execSync('cd client && npm run build', { stdio: 'inherit', cwd: rootDir });
 } catch (e) {
     console.error('❌ Error compilando frontend:', e.message);

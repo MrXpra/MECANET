@@ -97,7 +97,22 @@ async function main() {
         // 4. Git Commit & Push
         console.log('\noctocat [3/4] Sincronizando con GitHub (Git)...');
         execSync('git add .', { stdio: 'inherit', cwd: rootDir });
-        execSync(`git commit -m "Release v${newVersion}"`, { stdio: 'inherit', cwd: rootDir });
+        
+        try {
+            execSync(`git commit -m "Release v${newVersion}"`, { stdio: 'inherit', cwd: rootDir });
+        } catch (e) {
+            console.log('   No hay cambios para commitear (o error en commit). Continuando...');
+        }
+
+        console.log('   Bajando cambios remotos para evitar conflictos...');
+        try {
+            // Intentar traer cambios remotos antes de subir
+            execSync('git pull origin develop', { stdio: 'inherit', cwd: rootDir });
+        } catch (e) {
+            console.warn('⚠️  Advertencia: No se pudo hacer git pull. Es posible que debas resolver conflictos manualmente.');
+        }
+
+        console.log('   Subiendo cambios...');
         execSync('git push origin develop', { stdio: 'inherit', cwd: rootDir }); // Asumiendo develop
         
         // Opcional: Tag en git
