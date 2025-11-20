@@ -300,6 +300,19 @@ app.get('/api/version', (req, res) => {
     
     const versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
     
+    // Obtener commit hash actual
+    try {
+      const { execSync } = require('child_process');
+      const commitHash = execSync('git rev-parse --short HEAD', { 
+        cwd: __dirname,
+        encoding: 'utf8' 
+      }).trim();
+      versionData.commit = commitHash;
+    } catch (err) {
+      // Si falla git, usar un valor por defecto
+      versionData.commit = 'unknown';
+    }
+    
     // Leer CHANGELOG.md y extraer notas de la versión actual
     if (fs.existsSync(changelogPath)) {
       const changelog = fs.readFileSync(changelogPath, 'utf8');

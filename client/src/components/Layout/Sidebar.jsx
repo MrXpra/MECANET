@@ -625,6 +625,12 @@ const Sidebar = () => {
                   </p>
                 </div>
 
+                {versionInfo.commit && (
+                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+                    <code className="font-mono">Commit: {versionInfo.commit}</code>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-100 dark:border-green-900/30">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Su sistema está actualizado y funcionando correctamente.</span>

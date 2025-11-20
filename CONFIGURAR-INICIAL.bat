@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
 cd /d "%~dp0"
 title MECANET - Configuracion
@@ -10,7 +10,7 @@ echo ========================================================
 echo.
 
 REM ========================================================
-REM 1. INSTALACIÓN DE DEPENDENCIAS
+REM 1. INSTALACIÃ“N DE DEPENDENCIAS
 REM ========================================================
 if not exist "node_modules" (
     echo [1/3] Instalando dependencias...
@@ -76,7 +76,7 @@ if %STARTUP_CODE% equ 2 (
 
 :CONFIGURACION
 REM ========================================================
-REM 3. CONFIGURACIÓN DEL SISTEMA
+REM 3. CONFIGURACIÃ“N DEL SISTEMA
 REM ========================================================
 echo.
 echo [3/3] Configurando sistema...
