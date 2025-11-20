@@ -7,9 +7,14 @@ y este proyecto adhiere al [Versionado Semántico](https://semver.org/lang/es/).
 
 ---
 
+## [1.1.6] - 2025-11-20
+
+Corrección error 500 al iniciar
+
 ## [1.1.3] - 2025-11-19
 
 ### 🐛 Corregido
+- **Core:** Corregido un error crítico en `performanceMiddleware.js` que podía causar un desbordamiento de pila (Stack Overflow) y errores 500 al interceptar consultas de base de datos repetidamente.
 - **Instalación:** El script `CONFIGURAR-INICIAL.ps1` ahora instala automáticamente las dependencias (`npm install`) si no existen, antes de intentar verificar la conexión a la base de datos. Esto soluciona el error `ERR_MODULE_NOT_FOUND` en instalaciones limpias.
 - **Instalación:** El script `CONFIGURAR-INICIAL.ps1` ahora crea automáticamente `.env.example` si falta, evitando errores en instalaciones nuevas.
 - **Instalación:** Mejorada la verificación de conexión a MongoDB. Ahora muestra errores detallados (IP no permitida, credenciales, etc.) en lugar de un error genérico.

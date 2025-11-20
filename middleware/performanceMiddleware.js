@@ -13,6 +13,9 @@ export const performanceMonitor = (req, res, next) => {
   let dbQueryTime = 0;
   
   // Interceptar queries de mongoose (opcional, requiere configuración adicional)
+  // NOTA: Esto debe hacerse UNA SOLA VEZ al iniciar la app, no en cada request.
+  // Se ha movido la lógica para evitar reescrituras múltiples y stack overflow.
+  /*
   if (global.mongoose) {
     const originalQuery = global.mongoose.Query.prototype.exec;
     global.mongoose.Query.prototype.exec = async function() {
@@ -23,6 +26,7 @@ export const performanceMonitor = (req, res, next) => {
       return result;
     };
   }
+  */
   
   // Guardar el método original de res.json
   const originalJson = res.json;
