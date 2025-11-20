@@ -82,13 +82,18 @@ if %STARTUP_CODE% equ 2 (
     echo [OK] Carpeta encontrada: %UPDATE_PATH%
     echo.
     echo Copiando archivos...
-    robocopy "%UPDATE_PATH%" "." /E /XO /XD ".git" "node_modules" "temp_source_update" "distribucion" /XF ".env" ".gitignore" "package-lock.json" >nul
+    robocopy "%UPDATE_PATH%" "." /E /XO /XD ".git" "node_modules" "temp_source_update" "distribucion" /XF ".env" ".gitignore" "package-lock.json" /NFL /NDL /NJH /NJS
     
+    REM Robocopy: 0-7 = exito, 8+ = error
     if %errorlevel% geq 8 (
         echo [ERROR] Error al copiar archivos (Codigo: %errorlevel%)
         pause
+        rmdir /s /q "temp_source_update" 2>nul
+        del ".update-pending" 2>nul
         goto :START_SERVER
     )
+    
+    echo [OK] Archivos copiados
     
     echo Copiando package.json...
     copy /Y "%UPDATE_PATH%\package.json" "." >nul
@@ -97,20 +102,19 @@ if %STARTUP_CODE% equ 2 (
     rmdir /s /q "temp_source_update" 2>nul
     del ".update-pending" 2>nul
 
-    echo Actualizando dependencias...
+    echo Actualizando dependencias (esto puede tardar un momento)...
     if exist "node\node.exe" (
-        "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --production >nul 2>&1
+        "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --production
     ) else (
-        call npm install --production >nul 2>&1
+        call npm install --production
     )
 
     echo.
     echo ========================================================
-    echo [OK] ACTUALIZACION COMPLETADA
+    echo   ACTUALIZACION COMPLETADA EXITOSAMENTE
     echo ========================================================
     echo.
-    echo El servidor se iniciara con la nueva version...
-    timeout /t 3 >nul
+    timeout /t 2 >nul
 )
 
 :START_SERVER
