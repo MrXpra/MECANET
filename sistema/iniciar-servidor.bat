@@ -81,28 +81,27 @@ if %STARTUP_CODE% equ 2 (
 
     echo [OK] Carpeta encontrada: %UPDATE_PATH%
     echo.
-    echo Copiando archivos...
-    robocopy "%UPDATE_PATH%" "." /E /XO /XD ".git" "node_modules" "temp_source_update" "distribucion" /XF ".env" ".gitignore" "package-lock.json" /NFL /NDL /NJH /NJS
+    echo Copiando archivos del sistema...
     
-    REM Robocopy: 0-7 = exito, 8+ = error
-    if %errorlevel% geq 8 (
-        echo [ERROR] Error al copiar archivos (Codigo: %errorlevel%)
+    REM Copiar package.json primero
+    copy /Y "%UPDATE_PATH%\package.json" "." >nul
+    if %errorlevel% neq 0 (
+        echo [ERROR] No se pudo copiar package.json
         pause
-        rmdir /s /q "temp_source_update" 2>nul
-        del ".update-pending" 2>nul
-        goto :START_SERVER
+        goto :CLEANUP_AND_START
     )
     
-    echo [OK] Archivos copiados
+    REM Copiar el resto de archivos
+    robocopy "%UPDATE_PATH%" "." /E /XO /XD ".git" "node_modules" "temp_source_update" "distribucion" /XF ".env" ".gitignore" "package-lock.json" /NFL /NDL /NJH /NJS
     
-    echo Copiando package.json...
-    copy /Y "%UPDATE_PATH%\package.json" "." >nul
+    echo [OK] Archivos copiados exitosamente
     
     echo Limpiando archivos temporales...
     rmdir /s /q "temp_source_update" 2>nul
     del ".update-pending" 2>nul
 
-    echo Actualizando dependencias (esto puede tardar un momento)...
+    echo.
+    echo Actualizando dependencias...
     if exist "node\node.exe" (
         "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --production
     ) else (
@@ -111,10 +110,15 @@ if %STARTUP_CODE% equ 2 (
 
     echo.
     echo ========================================================
-    echo   ACTUALIZACION COMPLETADA EXITOSAMENTE
+    echo   ACTUALIZACION COMPLETADA
     echo ========================================================
     echo.
     timeout /t 2 >nul
+    goto :START_SERVER
+    
+    :CLEANUP_AND_START
+    rmdir /s /q "temp_source_update" 2>nul
+    del ".update-pending" 2>nul
 )
 
 :START_SERVER

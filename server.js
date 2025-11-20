@@ -100,7 +100,7 @@ try {
   }
   
   APP_VERSION = packageJson.version;
-  console.log(`\n🚀 MECANET v${APP_VERSION} - Sistema Listo`);
+  console.log(`\n🚀 MECANET v${APP_VERSION}`);
 } catch (error) {
   console.error('❌ Error leyendo versión:', error.message);
   if (process.env.NODE_ENV === 'production') process.exit(1);
