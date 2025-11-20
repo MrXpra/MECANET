@@ -90,4 +90,9 @@ REM ========================================================
 REM 3. INICIAR CONFIGURACIÓN
 REM ========================================================
 powershell -ExecutionPolicy Bypass -File "sistema\CONFIGURAR-INICIAL.ps1"
-if %errorlevel% neq 0 pause
+
+echo.
+echo ========================================================
+echo PROCESO FINALIZADO
+echo ========================================================
+pause
