@@ -198,6 +198,14 @@ export const getDashboardStats = async (req, res) => {
     const weekReturns = returnsStats[0].week[0] || { total: 0, profit: 0, count: 0 };
     const monthReturns = returnsStats[0].month[0] || { total: 0, profit: 0, count: 0 };
 
+    // DEBUG: Log para verificar cálculos
+    console.log('📊 Dashboard Stats Debug:');
+    console.log('Today:', today.toISOString());
+    console.log('Sales Today:', todayData);
+    console.log('Returns Today:', todayReturns);
+    console.log('Net Total Today:', todayData.total - todayReturns.total);
+
+
     // Calcular totales netos (ventas - devoluciones)
     const todayNetTotal = todayData.total - todayReturns.total;
     const weekNetTotal = weekData.total - weekReturns.total;
