@@ -49,6 +49,13 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+
+  // ===== SISTEMA Y ACTUALIZACIONES =====
+  // Permite que el sistema busque y aplique actualizaciones automáticamente
+  autoUpdate: {
+    type: Boolean,
+    default: true
+  },
   
   // ===== CONFIGURACIÓN DE EMAIL/SMTP =====
   // Configuración del servidor SMTP para envío de emails

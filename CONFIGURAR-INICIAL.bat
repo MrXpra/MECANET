@@ -26,40 +26,57 @@ if not exist "node_modules" (
 )
 
 REM ========================================================
-REM 2. VERIFICAR ACTUALIZACIONES
+REM 2. SMART STARTUP (Verificar actualizaciones)
 REM ========================================================
 echo.
-echo Verificando actualizaciones en la nube...
+echo Ejecutando Smart Startup...
 
-REM Ejecutar script de chequeo usando node portable o global
+REM Ejecutar script de inicio inteligente
 if exist "node\node.exe" (
-    "node\node.exe" scripts/startup-check.js
+    "node\node.exe" scripts/smart-startup.js
 ) else (
-    node scripts/startup-check.js
+    node scripts/smart-startup.js
 )
 
 REM Verificar el código de salida (Exit Code)
-REM Si es 2, significa que se descargó una actualización en ./temp_update
+REM Si es 2, significa que hay una actualización pendiente
 if %errorlevel% equ 2 (
     cls
     echo.
-    echo [ACTUALIZADOR] Aplicando nueva version...
+    echo [ACTUALIZADOR] Aplicando nueva version desde codigo fuente...
     echo Por favor espere, no cierre esta ventana.
     echo.
 
-    REM Copiar archivos nuevos sobre los viejos (Sobrescribir todo /s /y)
-    REM Se asume que el ZIP no trae .env para no borrar la config del cliente
-    xcopy /s /y ".\temp_update\*" "." >nul
+    REM Leer la ruta de la actualización desde el archivo bandera
+    set /p UPDATE_PATH=<.update-pending
+    
+    if not exist "%UPDATE_PATH%" (
+        echo [ERROR] No se encontro la carpeta de actualizacion.
+        goto :CONFIGURACION
+    )
 
-    REM Limpiar basura
-    rmdir /s /q ".\temp_update"
+    echo Copiando archivos desde: %UPDATE_PATH%
+
+    REM Copiar archivos nuevos sobre los viejos
+    REM Excluir .env y node_modules (aunque el zip no trae node_modules)
+    REM Usamos robocopy por ser mas robusto que xcopy para exclusiones
+    
+    REM 1. Copiar todo EXCEPTO carpetas protegidas y archivos protegidos
+    robocopy "%UPDATE_PATH%" "." /E /XO /XD ".git" "node_modules" "temp_source_update" "distribucion" /XF ".env" ".gitignore" "package-lock.json" >nul
+
+    REM 2. Forzar copia de package.json si cambio
+    copy /Y "%UPDATE_PATH%\package.json" "." >nul
+
+    REM Limpiar temporales
+    rmdir /s /q "temp_source_update"
+    del ".update-pending"
 
     echo.
-    echo [ACTUALIZADOR] Actualizando dependencias...
+    echo [ACTUALIZADOR] Actualizando dependencias (npm install)...
     if exist "node\node.exe" (
-        "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --omit=dev
+        "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --production
     ) else (
-        call npm install --omit=dev
+        call npm install --production
     )
 
     echo.
