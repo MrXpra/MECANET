@@ -150,19 +150,27 @@ if (Test-Path "node\node.exe") {
     }
 }
 
-# Iniciar servidor temporalmente
-Write-Host "Iniciando servidor..." -ForegroundColor Yellow
-$serverProcess = Start-Process -FilePath $nodePath -ArgumentList "server.js" -PassThru -WindowStyle Hidden
-Start-Sleep -Seconds 10
+# Verificar conexión usando script dedicado
+Write-Host "Verificando conexión a MongoDB..." -ForegroundColor Yellow
 
-# Verificar conexión
 try {
-    $null = Invoke-RestMethod -Uri "http://localhost:$port/" -Method Get -TimeoutSec 10 -ErrorAction Stop
-    Write-Host "[OK] Conexion a MongoDB exitosa!" -ForegroundColor Green
-    $connectionOk = $true
+    $testOutput = & $nodePath "scripts\test-db-connection.js" 2>&1
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "[OK] Conexion a MongoDB exitosa!" -ForegroundColor Green
+        $connectionOk = $true
+    } else {
+        Write-Host "[ERROR] No se pudo conectar a MongoDB" -ForegroundColor Red
+        Write-Host "Detalles del error:" -ForegroundColor Gray
+        $testOutput | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+        Write-Host "`nVerifica:" -ForegroundColor Yellow
+        Write-Host "  1. Tu usuario y contraseña en la URL" -ForegroundColor Gray
+        Write-Host "  2. Que tu IP actual esté permitida en MongoDB Atlas (Network Access)" -ForegroundColor Gray
+        $connectionOk = $false
+    }
 } catch {
-    Write-Host "[ERROR] No se pudo conectar a MongoDB" -ForegroundColor Red
-    Write-Host "Verifica tu configuracion de MongoDB Atlas" -ForegroundColor Yellow
+    Write-Host "[ERROR] Falló la ejecución del script de prueba" -ForegroundColor Red
+    Write-Host $_ -ForegroundColor Red
     $connectionOk = $false
 }
 
@@ -211,7 +219,6 @@ if ($connectionOk) {
                 }
                 
                 Write-Host "`n⚠️  IMPORTANTE: Cambia las contraseñas tras el primer login" -ForegroundColor Yellow
-                $serverProcess = $null
             } else {
                 Write-Host "[ERROR] No se pudo crear el usuario" -ForegroundColor Red
                 Write-Host "Podras crearlo desde la interfaz web" -ForegroundColor Yellow
@@ -222,12 +229,6 @@ if ($connectionOk) {
             Write-Host "Podras crear usuarios desde la interfaz web" -ForegroundColor Yellow
         }
     }
-}
-
-# Detener servidor si aún está corriendo
-if ($serverProcess) {
-    Stop-Process -Id $serverProcess.Id -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 2
 }
 
 # Crear marca de configuración

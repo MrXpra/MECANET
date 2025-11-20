@@ -7,6 +7,14 @@ y este proyecto adhiere al [Versionado Semántico](https://semver.org/lang/es/).
 
 ---
 
+## [1.1.3] - 2025-11-19
+
+### 🐛 Corregido
+- **Instalación:** El script `CONFIGURAR-INICIAL.ps1` ahora crea automáticamente `.env.example` si falta, evitando errores en instalaciones nuevas.
+- **Instalación:** Mejorada la verificación de conexión a MongoDB. Ahora muestra errores detallados (IP no permitida, credenciales, etc.) en lugar de un error genérico.
+- **Release:** Corregido el script `automated-release.js` para detectar automáticamente la rama actual y hacer push correctamente.
+- **Distribución:** Agregadas validaciones en scripts de empaquetado para asegurar que `.env.example` se incluya en el ZIP.
+
 ## [1.0.0] - 2025-10-07
 
 ### 🎉 Primera Versión Estable
