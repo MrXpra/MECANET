@@ -145,6 +145,8 @@ cd /d "%~dp0\.."
 REM Iniciar el servidor mostrando logs en pantalla
 echo.
 echo Iniciando servidor...
+echo DEBUG: Directorio actual: %CD%
+echo DEBUG: NODE_CMD=%NODE_CMD%
 echo.
 
 REM NO abrir navegador desde aquí, el servidor lo abre automáticamente
