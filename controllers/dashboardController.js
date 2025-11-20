@@ -451,9 +451,9 @@ export const getAllDashboardData = async (req, res) => {
     const days7Ago = new Date();
     days7Ago.setDate(days7Ago.getDate() - 7);
 
-    // Ejecutar TODAS las queries en paralelo
-    const [salesStats, salesByDay, topProducts, salesByPayment, counts, lowStockItems] = await Promise.all([
-      // Stats
+    // Ejecutar TODAS las queries en paralelo (incluyendo devoluciones)
+    const [salesStats, returnsStats, salesByDay, topProducts, salesByPayment, counts, lowStockItems] = await Promise.all([
+      // Stats de ventas
       Sale.aggregate([
         { $match: { status: 'Completada', total: { $ne: null, $exists: true } } },
         {
@@ -469,6 +469,71 @@ export const getAllDashboardData = async (req, res) => {
             month: [
               { $match: { createdAt: { $gte: startOfMonth } } },
               { $group: { _id: null, total: { $sum: '$total' }, count: { $sum: 1 } } }
+            ]
+          }
+        }
+      ]),
+      
+      // Stats de devoluciones (por fecha de venta original)
+      Return.aggregate([
+        {
+          $match: {
+            status: 'Aprobada',
+            totalAmount: { $ne: null, $exists: true }
+          }
+        },
+        {
+          $lookup: {
+            from: 'sales',
+            localField: 'sale',
+            foreignField: '_id',
+            as: 'originalSale'
+          }
+        },
+        {
+          $unwind: {
+            path: '$originalSale',
+            preserveNullAndEmptyArrays: false
+          }
+        },
+        {
+          $project: {
+            _id: 1,
+            totalAmount: 1,
+            saleDate: '$originalSale.createdAt'
+          }
+        },
+        {
+          $facet: {
+            today: [
+              { $match: { saleDate: { $gte: today } } },
+              {
+                $group: {
+                  _id: null,
+                  total: { $sum: '$totalAmount' },
+                  count: { $sum: 1 }
+                }
+              }
+            ],
+            week: [
+              { $match: { saleDate: { $gte: startOfWeek } } },
+              {
+                $group: {
+                  _id: null,
+                  total: { $sum: '$totalAmount' },
+                  count: { $sum: 1 }
+                }
+              }
+            ],
+            month: [
+              { $match: { saleDate: { $gte: startOfMonth } } },
+              {
+                $group: {
+                  _id: null,
+                  total: { $sum: '$totalAmount' },
+                  count: { $sum: 1 }
+                }
+              }
             ]
           }
         }
@@ -552,6 +617,15 @@ export const getAllDashboardData = async (req, res) => {
     const weekData = salesStats[0].week[0] || { total: 0, count: 0 };
     const monthData = salesStats[0].month[0] || { total: 0, count: 0 };
 
+    const todayReturns = returnsStats[0].today[0] || { total: 0, count: 0 };
+    const weekReturns = returnsStats[0].week[0] || { total: 0, count: 0 };
+    const monthReturns = returnsStats[0].month[0] || { total: 0, count: 0 };
+
+    // Calcular totales netos (ventas - devoluciones)
+    const todayNetTotal = todayData.total - todayReturns.total;
+    const weekNetTotal = weekData.total - weekReturns.total;
+    const monthNetTotal = monthData.total - monthReturns.total;
+
     // Normalizar métodos de pago respetando capitalización correcta y mantener orden
     const paymentMethodMap = {
       'efectivo': 'Efectivo',
@@ -596,17 +670,23 @@ export const getAllDashboardData = async (req, res) => {
     res.json({
       stats: {
         today: {
-          total: todayData.total,
+          total: todayNetTotal,
           transactions: todayData.count,
-          avgTicket: todayData.count > 0 ? todayData.total / todayData.count : 0
+          avgTicket: todayData.count > 0 ? todayNetTotal / todayData.count : 0,
+          returns: todayReturns.count,
+          returnsAmount: todayReturns.total
         },
         week: {
-          total: weekData.total,
-          transactions: weekData.count
+          total: weekNetTotal,
+          transactions: weekData.count,
+          returns: weekReturns.count,
+          returnsAmount: weekReturns.total
         },
         month: {
-          total: monthData.total,
-          transactions: monthData.count
+          total: monthNetTotal,
+          transactions: monthData.count,
+          returns: monthReturns.count,
+          returnsAmount: monthReturns.total
         },
         inventory: {
           totalProducts: counts[1],
