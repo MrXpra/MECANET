@@ -24,8 +24,10 @@ export const errorHandler = (err, req, res, next) => {
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   
   // Loguear error en consola del servidor para debugging
-  console.error('Error:', err.message);
-  console.error('Stack:', err.stack);
+  console.error('\n❌ ERROR CAPTURADO POR ERROR HANDLER:');
+  console.error('   URL:', req.method, req.originalUrl);
+  console.error('   Error:', err.message);
+  console.error('   Stack:', err.stack);
 
   // Enviar respuesta JSON con el error
   res.status(statusCode).json({
