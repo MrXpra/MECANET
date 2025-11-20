@@ -54,6 +54,7 @@ export const createSale = async (req, res) => {
         product: product._id,
         quantity: item.quantity,
         priceAtSale: product.sellingPrice,
+        purchasePriceAtSale: product.purchasePrice || 0, // Guardar costo para calcular beneficio
         discountApplied: product.discountPercentage + additionalDiscount,
         subtotal: itemSubtotal
       });

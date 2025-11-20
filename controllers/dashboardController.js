@@ -17,7 +17,7 @@ export const getDashboardStats = async (req, res) => {
 
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    // Calcular ventas usando agregación
+    // Calcular ventas y beneficios usando agregación
     const salesStats = await Sale.aggregate([
       {
         $match: {
@@ -26,6 +26,28 @@ export const getDashboardStats = async (req, res) => {
         }
       },
       {
+        $unwind: '$items' // Descomponer array de items
+      },
+      {
+        $addFields: {
+          // Calcular beneficio por item: (precioVenta - precioCompra) * cantidad
+          itemProfit: {
+            $multiply: [
+              { $subtract: ['$items.priceAtSale', { $ifNull: ['$items.purchasePriceAtSale', 0] }] },
+              '$items.quantity'
+            ]
+          }
+        }
+      },
+      {
+        $group: {
+          _id: '$_id',
+          createdAt: { $first: '$createdAt' },
+          total: { $first: '$total' },
+          totalProfit: { $sum: '$itemProfit' } // Sumar beneficio de todos los items
+        }
+      },
+      {
         $facet: {
           today: [
             { $match: { createdAt: { $gte: today } } },
@@ -33,6 +55,7 @@ export const getDashboardStats = async (req, res) => {
               $group: {
                 _id: null,
                 total: { $sum: '$total' },
+                profit: { $sum: '$totalProfit' },
                 count: { $sum: 1 }
               }
             }
@@ -43,6 +66,7 @@ export const getDashboardStats = async (req, res) => {
               $group: {
                 _id: null,
                 total: { $sum: '$total' },
+                profit: { $sum: '$totalProfit' },
                 count: { $sum: 1 }
               }
             }
@@ -53,6 +77,7 @@ export const getDashboardStats = async (req, res) => {
               $group: {
                 _id: null,
                 total: { $sum: '$total' },
+                profit: { $sum: '$totalProfit' },
                 count: { $sum: 1 }
               }
             }
@@ -61,12 +86,67 @@ export const getDashboardStats = async (req, res) => {
       }
     ]);
 
-    // Calcular devoluciones aprobadas usando agregación
+    // Calcular devoluciones y beneficio perdido usando agregación
     const returnsStats = await Return.aggregate([
       {
         $match: {
           status: 'Aprobada',
           totalAmount: { $ne: null, $exists: true }
+        }
+      },
+      {
+        $lookup: {
+          from: 'sales',
+          localField: 'sale',
+          foreignField: '_id',
+          as: 'saleData'
+        }
+      },
+      {
+        $unwind: '$saleData'
+      },
+      {
+        $unwind: '$items'
+      },
+      {
+        $addFields: {
+          // Encontrar el item original de la venta
+          saleItem: {
+            $arrayElemAt: [
+              {
+                $filter: {
+                  input: '$saleData.items',
+                  as: 'si',
+                  cond: { $eq: ['$$si.product', '$items.product'] }
+                }
+              },
+              0
+            ]
+          }
+        }
+      },
+      {
+        $addFields: {
+          // Calcular beneficio perdido: (precioVenta - precioCompra) * cantidadDevuelta
+          returnedProfit: {
+            $multiply: [
+              { 
+                $subtract: [
+                  { $ifNull: ['$saleItem.priceAtSale', 0] },
+                  { $ifNull: ['$saleItem.purchasePriceAtSale', 0] }
+                ]
+              },
+              '$items.quantity'
+            ]
+          }
+        }
+      },
+      {
+        $group: {
+          _id: '$_id',
+          createdAt: { $first: '$createdAt' },
+          totalAmount: { $first: '$totalAmount' },
+          totalReturnedProfit: { $sum: '$returnedProfit' }
         }
       },
       {
@@ -77,6 +157,7 @@ export const getDashboardStats = async (req, res) => {
               $group: {
                 _id: null,
                 total: { $sum: '$totalAmount' },
+                profit: { $sum: '$totalReturnedProfit' },
                 count: { $sum: 1 }
               }
             }
@@ -87,6 +168,7 @@ export const getDashboardStats = async (req, res) => {
               $group: {
                 _id: null,
                 total: { $sum: '$totalAmount' },
+                profit: { $sum: '$totalReturnedProfit' },
                 count: { $sum: 1 }
               }
             }
@@ -97,6 +179,7 @@ export const getDashboardStats = async (req, res) => {
               $group: {
                 _id: null,
                 total: { $sum: '$totalAmount' },
+                profit: { $sum: '$totalReturnedProfit' },
                 count: { $sum: 1 }
               }
             }
@@ -105,18 +188,23 @@ export const getDashboardStats = async (req, res) => {
       }
     ]);
 
-    const todayData = salesStats[0].today[0] || { total: 0, count: 0 };
-    const weekData = salesStats[0].week[0] || { total: 0, count: 0 };
-    const monthData = salesStats[0].month[0] || { total: 0, count: 0 };
+    const todayData = salesStats[0].today[0] || { total: 0, profit: 0, count: 0 };
+    const weekData = salesStats[0].week[0] || { total: 0, profit: 0, count: 0 };
+    const monthData = salesStats[0].month[0] || { total: 0, profit: 0, count: 0 };
 
-    const todayReturns = returnsStats[0].today[0] || { total: 0, count: 0 };
-    const weekReturns = returnsStats[0].week[0] || { total: 0, count: 0 };
-    const monthReturns = returnsStats[0].month[0] || { total: 0, count: 0 };
+    const todayReturns = returnsStats[0].today[0] || { total: 0, profit: 0, count: 0 };
+    const weekReturns = returnsStats[0].week[0] || { total: 0, profit: 0, count: 0 };
+    const monthReturns = returnsStats[0].month[0] || { total: 0, profit: 0, count: 0 };
 
     // Calcular totales netos (ventas - devoluciones)
     const todayNetTotal = todayData.total - todayReturns.total;
     const weekNetTotal = weekData.total - weekReturns.total;
     const monthNetTotal = monthData.total - monthReturns.total;
+
+    // Calcular beneficio neto (beneficio ventas - beneficio perdido por devoluciones)
+    const todayNetProfit = todayData.profit - todayReturns.profit;
+    const weekNetProfit = weekData.profit - weekReturns.profit;
+    const monthNetProfit = monthData.profit - monthReturns.profit;
 
     // Ejecutar queries de conteo en paralelo
     const [lowStockCount, totalProducts, totalCustomers, activeUsers] = await Promise.all([
@@ -129,6 +217,7 @@ export const getDashboardStats = async (req, res) => {
     res.json({
       today: {
         total: todayNetTotal,
+        profit: todayNetProfit,
         transactions: todayData.count,
         avgTicket: todayData.count > 0 ? todayNetTotal / todayData.count : 0,
         returns: todayReturns.count,
@@ -136,12 +225,14 @@ export const getDashboardStats = async (req, res) => {
       },
       week: {
         total: weekNetTotal,
+        profit: weekNetProfit,
         transactions: weekData.count,
         returns: weekReturns.count,
         returnsAmount: weekReturns.total
       },
       month: {
         total: monthNetTotal,
+        profit: monthNetProfit,
         transactions: monthData.count,
         returns: monthReturns.count,
         returnsAmount: monthReturns.total

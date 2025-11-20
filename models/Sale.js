@@ -59,6 +59,12 @@ const saleSchema = new mongoose.Schema({
       required: true,
       min: 0
     },
+    // Precio de compra/costo al momento de la venta (para calcular beneficio)
+    purchasePriceAtSale: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
     // Descuento aplicado a este item (porcentaje o monto)
     discountApplied: {
       type: Number,
