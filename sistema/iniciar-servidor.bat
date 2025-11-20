@@ -120,17 +120,15 @@ if %STARTUP_CODE% equ 2 (
     if exist "client\dist" rmdir /s /q "client\dist" 2>nul
     
     echo Compilando frontend actualizado...
-    if exist "node\node.exe" (
-        cd /d "%~dp0\..\client"
-        "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" install --production=false 2>nul
-        "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" run build 2>nul
-        cd /d "%~dp0\.."
+    pushd "%~dp0\..\client"
+    if exist "..\node\node.exe" (
+        "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" install --production=false >nul 2>&1
+        "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" run build
     ) else (
-        cd /d "%~dp0\..\client"
-        call npm install --production=false 2>nul
-        call npm run build 2>nul
-        cd /d "%~dp0\.."
+        call npm install --production=false >nul 2>&1
+        call npm run build
     )
+    popd
 
     echo.
     echo ========================================================
