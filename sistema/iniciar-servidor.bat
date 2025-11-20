@@ -55,22 +55,29 @@ echo Verificando actualizaciones...
 set STARTUP_CODE=%errorlevel%
 
 if %STARTUP_CODE% equ 2 (
-    cls
     echo.
-    echo Aplicando actualizacion...
+    echo ========================================================
+    echo    APLICANDO ACTUALIZACION
+    echo ========================================================
+    echo.
     
     set /p UPDATE_PATH=<.update-pending
     
     if not exist "%UPDATE_PATH%" (
-        echo Error: Carpeta de actualizacion no encontrada
+        echo [ERROR] Carpeta de actualizacion no encontrada
+        echo [DEBUG] Buscando en: %UPDATE_PATH%
+        echo [DEBUG] Archivo .update-pending contiene:
+        type .update-pending
+        echo.
         pause
         goto :START_SERVER
     )
 
+    echo Copiando archivos...
     robocopy "%UPDATE_PATH%" "." /E /XO /XD ".git" "node_modules" "temp_source_update" "distribucion" /XF ".env" ".gitignore" "package-lock.json" >nul
     copy /Y "%UPDATE_PATH%\package.json" "." >nul
-    rmdir /s /q "temp_source_update"
-    del ".update-pending"
+    rmdir /s /q "temp_source_update" 2>nul
+    del ".update-pending" 2>nul
 
     echo Actualizando dependencias...
     if exist "node\node.exe" (
@@ -80,9 +87,8 @@ if %STARTUP_CODE% equ 2 (
     )
 
     echo.
-    echo Actualizacion completada. Reiniciando servidor...
+    echo [OK] Actualizacion completada
     timeout /t 2 >nul
-    cls
 )
 
 :START_SERVER
