@@ -110,28 +110,27 @@ if %STARTUP_CODE% equ 2 (
     echo.
     echo Actualizando dependencias del backend...
     if exist "node\node.exe" (
-        "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --production
+        "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --production 2>nul
     ) else (
-        call npm install --production
+        call npm install --production 2>nul
     )
     
     echo.
     echo Limpiando build anterior del frontend...
-    if exist "client\dist" (
-        rmdir /s /q "client\dist"
-        echo [OK] Build anterior eliminado
-    )
+    if exist "client\dist" rmdir /s /q "client\dist" 2>nul
     
     echo Compilando frontend actualizado...
-    cd client
-    if exist "..\node\node.exe" (
+    if exist "node\node.exe" (
+        cd /d "%~dp0\..\client"
         "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" install --production=false 2>nul
-        "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" run build
+        "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" run build 2>nul
+        cd /d "%~dp0\.."
     ) else (
+        cd /d "%~dp0\..\client"
         call npm install --production=false 2>nul
-        call npm run build
+        call npm run build 2>nul
+        cd /d "%~dp0\.."
     )
-    cd ..
 
     echo.
     echo ========================================================
