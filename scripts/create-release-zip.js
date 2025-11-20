@@ -72,7 +72,8 @@ const folders = [
     'routes', 
     'services', 
     'scripts', 
-    'docs'
+    'docs',
+    'sistema'
 ];
 
 folders.forEach(folder => {
