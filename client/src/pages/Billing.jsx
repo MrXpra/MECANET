@@ -142,21 +142,6 @@ const Billing = () => {
     searchInputRef.current?.focus();
   }, [pagination.page, selectedCategory]);
 
-  // Calcular cambio automáticamente basado en el total final con descuentos
-  useEffect(() => {
-    if (paymentMethod === 'Efectivo' && amountReceived) {
-      const received = parseFloat(amountReceived) || 0;
-      // Calcular total con descuento global aplicado
-      const baseTotal = getTotal();
-      const discountAmount = (globalDiscount / 100) * (getSubtotal() - getTotalDiscount());
-      const finalTotal = baseTotal - discountAmount - globalDiscountAmount;
-      setChange(received - finalTotal);
-    } else {
-      setChange(0);
-      setAmountReceived('');
-    }
-  }, [amountReceived, paymentMethod, items, globalDiscount, globalDiscountAmount]);
-
   // Cerrar modales con tecla ESC
   useEffect(() => {
     const handleEscape = (e) => {
@@ -1295,6 +1280,14 @@ const PaymentModal = ({
     const discountAmount = (globalDiscount / 100) * (subtotal - itemsDiscount);
     return total - discountAmount;
   };
+  
+  // Calcular cambio basado en el total final
+  const calculatedChange = React.useMemo(() => {
+    if (paymentMethod !== 'Efectivo' || !amountReceived) return 0;
+    const received = parseFloat(amountReceived) || 0;
+    const finalTotal = calculateFinalTotal();
+    return received - finalTotal;
+  }, [amountReceived, paymentMethod, finalPriceInput, discountType, globalDiscount, subtotal, itemsDiscount, total]);
 
   const handleFinalPriceChange = (value) => {
     setFinalPriceInput(value);
@@ -1491,27 +1484,27 @@ const PaymentModal = ({
 
             {amountReceived && (
               <div className={`p-4 rounded-lg border-2 ${
-                change >= 0 
+                calculatedChange >= 0 
                   ? 'bg-green-50 dark:bg-green-900/20 border-green-500' 
                   : 'bg-red-50 dark:bg-red-900/20 border-red-500'
               }`}>
                 <div className="flex justify-between items-center">
                   <span className={`text-lg font-semibold ${
-                    change >= 0 
+                    calculatedChange >= 0 
                       ? 'text-green-700 dark:text-green-300' 
                       : 'text-red-700 dark:text-red-300'
                   }`}>
                     Cambio a Devolver:
                   </span>
                   <span className={`text-3xl font-bold ${
-                    change >= 0 
+                    calculatedChange >= 0 
                       ? 'text-green-600 dark:text-green-400' 
                       : 'text-red-600 dark:text-red-400'
                   }`}>
-                    {formatCurrency(change >= 0 ? change : 0)}
+                    {formatCurrency(calculatedChange >= 0 ? calculatedChange : 0)}
                   </span>
                 </div>
-                {change < 0 && (
+                {calculatedChange < 0 && (
                   <p className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center gap-2">
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
