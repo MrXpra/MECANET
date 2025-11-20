@@ -86,7 +86,7 @@ export const getDashboardStats = async (req, res) => {
       }
     ]);
 
-    // Calcular devoluciones y beneficio perdido usando la FECHA DE LA VENTA ORIGINAL
+    // Calcular devoluciones SIMPLIFICADO - usar fecha de venta directamente
     const returnsStats = await Return.aggregate([
       {
         $match: {
@@ -96,93 +96,66 @@ export const getDashboardStats = async (req, res) => {
       },
       {
         $lookup: {
-          from: 'sales',
+          from: 'sales', // Colección de ventas en MongoDB
           localField: 'sale',
           foreignField: '_id',
-          as: 'saleData'
+          as: 'originalSale'
         }
       },
       {
-        $unwind: '$saleData'
-      },
-      {
-        $unwind: '$items'
-      },
-      {
-        $addFields: {
-          // Encontrar el item original de la venta
-          saleItem: {
-            $arrayElemAt: [
-              {
-                $filter: {
-                  input: '$saleData.items',
-                  as: 'si',
-                  cond: { $eq: ['$$si.product', '$items.product'] }
-                }
-              },
-              0
-            ]
-          },
-          // IMPORTANTE: Usar la fecha de la venta original, no la fecha de devolución
-          originalSaleDate: '$saleData.createdAt'
+        $unwind: {
+          path: '$originalSale',
+          preserveNullAndEmptyArrays: false // Solo incluir si encuentra la venta
         }
       },
       {
-        $addFields: {
-          // Calcular beneficio perdido: (precioVenta - precioCompra) * cantidadDevuelta
-          returnedProfit: {
-            $multiply: [
-              { 
-                $subtract: [
-                  { $ifNull: ['$saleItem.priceAtSale', 0] },
-                  { $ifNull: ['$saleItem.purchasePriceAtSale', 0] }
-                ]
-              },
-              '$items.quantity'
-            ]
-          }
-        }
-      },
-      {
-        $group: {
-          _id: '$_id',
-          originalSaleDate: { $first: '$originalSaleDate' }, // Fecha de venta original
-          totalAmount: { $first: '$totalAmount' },
-          totalReturnedProfit: { $sum: '$returnedProfit' }
+        $project: {
+          _id: 1,
+          totalAmount: 1,
+          saleDate: '$originalSale.createdAt', // Fecha de la venta original
+          items: 1,
+          'originalSale.items': 1
         }
       },
       {
         $facet: {
           today: [
-            { $match: { originalSaleDate: { $gte: today } } }, // Filtrar por fecha de venta
+            { $match: { saleDate: { $gte: today } } },
             {
               $group: {
                 _id: null,
                 total: { $sum: '$totalAmount' },
-                profit: { $sum: '$totalReturnedProfit' },
                 count: { $sum: 1 }
               }
             }
           ],
           week: [
-            { $match: { originalSaleDate: { $gte: startOfWeek } } },
+            { $match: { saleDate: { $gte: startOfWeek } } },
             {
               $group: {
                 _id: null,
                 total: { $sum: '$totalAmount' },
-                profit: { $sum: '$totalReturnedProfit' },
                 count: { $sum: 1 }
               }
             }
           ],
           month: [
-            { $match: { originalSaleDate: { $gte: startOfMonth } } },
+            { $match: { saleDate: { $gte: startOfMonth } } },
             {
               $group: {
                 _id: null,
                 total: { $sum: '$totalAmount' },
-                profit: { $sum: '$totalReturnedProfit' },
                 count: { $sum: 1 }
+              }
+            }
+          ],
+          debug: [
+            { $limit: 5 },
+            {
+              $project: {
+                totalAmount: 1,
+                saleDate: 1,
+                status: 1
               }
             }
           ]
@@ -190,13 +163,16 @@ export const getDashboardStats = async (req, res) => {
       }
     ]);
 
+    // DEBUG: Verificar qué devuelve la consulta
+    console.log('🔍 Returns Query Debug:', JSON.stringify(returnsStats[0].debug, null, 2));
+
     const todayData = salesStats[0].today[0] || { total: 0, profit: 0, count: 0 };
     const weekData = salesStats[0].week[0] || { total: 0, profit: 0, count: 0 };
     const monthData = salesStats[0].month[0] || { total: 0, profit: 0, count: 0 };
 
-    const todayReturns = returnsStats[0].today[0] || { total: 0, profit: 0, count: 0 };
-    const weekReturns = returnsStats[0].week[0] || { total: 0, profit: 0, count: 0 };
-    const monthReturns = returnsStats[0].month[0] || { total: 0, profit: 0, count: 0 };
+    const todayReturns = returnsStats[0].today[0] || { total: 0, count: 0 };
+    const weekReturns = returnsStats[0].week[0] || { total: 0, count: 0 };
+    const monthReturns = returnsStats[0].month[0] || { total: 0, count: 0 };
 
     // DEBUG: Log para verificar cálculos
     console.log('📊 Dashboard Stats Debug:');
@@ -211,10 +187,10 @@ export const getDashboardStats = async (req, res) => {
     const weekNetTotal = weekData.total - weekReturns.total;
     const monthNetTotal = monthData.total - monthReturns.total;
 
-    // Calcular beneficio neto (beneficio ventas - beneficio perdido por devoluciones)
-    const todayNetProfit = todayData.profit - todayReturns.profit;
-    const weekNetProfit = weekData.profit - weekReturns.profit;
-    const monthNetProfit = monthData.profit - monthReturns.profit;
+    // Calcular beneficio neto (solo de ventas, las devoluciones ya no tienen profit calculado)
+    const todayNetProfit = todayData.profit;
+    const weekNetProfit = weekData.profit;
+    const monthNetProfit = monthData.profit;
 
     // Ejecutar queries de conteo en paralelo
     const [lowStockCount, totalProducts, totalCustomers, activeUsers] = await Promise.all([
