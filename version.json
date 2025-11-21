@@ -1,5 +1,5 @@
 {
-  "version": "1.5.13",
+  "version": "1.6.0",
   "lastUpdated": "2025-11-21",
-  "releaseNotes": "Mejorar manejo de errores en limpieza de logs - verificar JSON antes de parsear"
+  "releaseNotes": "Agregado: Product Warranties, Barcodes y Seller Signature"
 }

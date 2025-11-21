@@ -50,12 +50,12 @@
  */
 
 import { useState, useEffect } from 'react';
-import { 
-  ArrowLeft, 
-  Package, 
-  DollarSign, 
-  AlertCircle, 
-  CheckCircle, 
+import {
+  ArrowLeft,
+  Package,
+  DollarSign,
+  AlertCircle,
+  CheckCircle,
   XCircle,
   Search,
   Filter,
@@ -65,6 +65,7 @@ import {
   Eye,
   Printer
 } from 'lucide-react';
+import JsBarcode from 'jsbarcode';
 import { toast } from 'react-hot-toast';
 import { getReturns, getReturnStats, createReturn, getSales } from '../services/api';
 import { ReportsSkeleton } from '../components/SkeletonLoader';
@@ -108,14 +109,14 @@ const Returns = () => {
         getReturns({ ...filters, page: pagination.page, limit: pagination.limit }),
         getReturnStats(filters),
       ]);
-      
+
       // Backend ahora devuelve { returns, pagination }
       const returnsData = returnsResponse?.data?.returns || returnsResponse?.returns || [];
       const paginationData = returnsResponse?.data?.pagination || returnsResponse?.pagination || {};
-      
+
       // Asegurar que statsData tiene la estructura correcta
       const statsData = statsResponse?.data || statsResponse || null;
-      
+
       setReturns(returnsData);
       setPagination(prev => ({
         ...prev,
@@ -183,14 +184,30 @@ const Returns = () => {
   };
 
   const handlePrintReturn = (returnData) => {
+    // Generar código de barras
+    const canvas = document.createElement('canvas');
+    try {
+      JsBarcode(canvas, returnData.returnNumber, {
+        format: "CODE128",
+        displayValue: true,
+        fontSize: 14,
+        margin: 0,
+        height: 40,
+        width: 1.5
+      });
+    } catch (error) {
+      console.error("Error generating barcode:", error);
+    }
+    const barcodeDataUrl = canvas.toDataURL("image/png");
+
     const printWindow = window.open('', '_blank');
-    
+
     // Calcular total de items devueltos
     const returnTotal = returnData.items.reduce((sum, item) => sum + item.returnAmount, 0);
-    
+
     // Calcular total de items de cambio
     const exchangeTotal = returnData.exchangeItems?.reduce((sum, item) => sum + (item.quantity * item.price), 0) || 0;
-    
+
     printWindow.document.write(`
       <html>
         <head>
@@ -290,13 +307,13 @@ const Returns = () => {
           
           <div class="info-section">
             <div><strong>No. Devolución:</strong> ${returnData.returnNumber}</div>
-            <div><strong>Fecha:</strong> ${new Date(returnData.createdAt).toLocaleString('es-DO', { 
-              day: '2-digit', 
-              month: '2-digit', 
-              year: 'numeric', 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}</div>
+            <div><strong>Fecha:</strong> ${new Date(returnData.createdAt).toLocaleString('es-DO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}</div>
             <div><strong>Factura Original:</strong> ${returnData.sale?.invoiceNumber || 'N/A'}</div>
             ${returnData.customer ? `<div><strong>Cliente:</strong> ${returnData.customer.fullName || returnData.customer.name || 'Cliente General'}</div>` : '<div><strong>Cliente:</strong> Cliente General</div>'}
             ${returnData.customer?.cedula ? `<div><strong>Cédula:</strong> ${returnData.customer.cedula}</div>` : ''}
@@ -414,6 +431,12 @@ const Returns = () => {
           </div>
           
           <div class="line"></div>
+          <div class="line"></div>
+          
+          <div style="text-align: center; margin-top: 15px;">
+            <img src="${barcodeDataUrl}" style="width: 100%; max-width: 200px;" />
+          </div>
+
           <p class="center bold">Gracias por su comprensión</p>
           <p class="center small">Este documento no tiene validez fiscal</p>
         </body>
@@ -613,7 +636,7 @@ const Returns = () => {
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {Array.isArray(returns) && returns.map((returnItem) => (
-                <tr 
+                <tr
                   key={returnItem._id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
@@ -698,11 +721,10 @@ const Returns = () => {
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                 disabled={!pagination.hasPrevPage}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pagination.hasPrevPage
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasPrevPage
                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                     : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 Anterior
               </button>
@@ -712,11 +734,10 @@ const Returns = () => {
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                 disabled={!pagination.hasNextPage}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pagination.hasNextPage
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasNextPage
                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                     : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 Siguiente
               </button>
@@ -763,7 +784,7 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
   const [notes, setNotes] = useState('');
   const [refundMethod, setRefundMethod] = useState('Efectivo');
   const [isSearching, setIsSearching] = useState(false);
-  
+
   // Estados para cambio de productos
   const [exchangeItems, setExchangeItems] = useState([]);
   const [availableProducts, setAvailableProducts] = useState([]);
@@ -794,12 +815,12 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
       setIsLoadingProducts(true);
       const { getProducts } = await import('../services/api');
       const response = await getProducts();
-      const productsData = Array.isArray(response?.data) 
-        ? response.data 
-        : Array.isArray(response) 
-          ? response 
+      const productsData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response)
+          ? response
           : [];
-      
+
       // Filtrar productos con stock disponible
       const availableProds = productsData.filter(p => p.stock > 0);
       setAvailableProducts(availableProds);
@@ -858,26 +879,26 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
       toast.error('Ingrese un número de factura');
       return;
     }
-    
+
     try {
       setIsSearching(true);
       // Limpiar el término de búsqueda (remover espacios y hacer trim)
       const cleanSearch = searchTerm.trim().replace(/\s+/g, '');
       const response = await getSales({ search: cleanSearch });
-      
+
       // El backend devuelve { sales: [...], pagination: {...} }
       const salesData = response?.data?.sales || response?.sales || [];
-      
+
       console.log('🔍 Sales search response:', response?.data);
       console.log('🔍 Sales found:', salesData);
-      
+
       // Filtrar ventas válidas para devolución
-      const validSales = salesData.filter(sale => 
+      const validSales = salesData.filter(sale =>
         sale.status !== 'Cancelada' && sale.status !== 'Devuelta'
       );
-      
+
       setSales(validSales);
-      
+
       if (validSales.length === 0) {
         if (salesData.length > 0) {
           toast.error('La venta encontrada ya fue cancelada o devuelta');
@@ -900,72 +921,72 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
       const { getSaleById } = await import('../services/api');
       const response = await getSaleById(sale._id);
       const fullSale = response.data || response;
-      
+
       console.log('🔍 Full sale with return info:', fullSale);
       console.log('📦 Items with availability:', fullSale.items);
-      
+
       setSelectedSale(fullSale);
-      
+
       // Validar que la venta tenga items
       if (!fullSale.items || fullSale.items.length === 0) {
         setModalError('Esta venta no tiene productos registrados.');
         return;
       }
-      
+
       // Filtrar items válidos (que tengan producto)
       const validItems = fullSale.items.filter(item => {
-      // Verificar si el producto existe (puede ser objeto o ID string)
-      if (typeof item.product === 'object' && item.product !== null) {
-        return item.product._id; // Producto poblado
-      } else if (typeof item.product === 'string') {
-        // Producto como ID string, verificar que no sea null/undefined
-        return item.product;
+        // Verificar si el producto existe (puede ser objeto o ID string)
+        if (typeof item.product === 'object' && item.product !== null) {
+          return item.product._id; // Producto poblado
+        } else if (typeof item.product === 'string') {
+          // Producto como ID string, verificar que no sea null/undefined
+          return item.product;
+        }
+        return false;
+      });
+
+      if (validItems.length === 0) {
+        setModalError('Esta venta no tiene productos válidos para devolver. Los productos pueden haber sido eliminados del sistema.');
+        // No mostrar toast cuando hay modalError, solo mostrar en el modal
+        return;
       }
-      return false;
-    });
-    
-    if (validItems.length === 0) {
-      setModalError('Esta venta no tiene productos válidos para devolver. Los productos pueden haber sido eliminados del sistema.');
-      // No mostrar toast cuando hay modalError, solo mostrar en el modal
-      return;
-    }
-    
-    // Mapear items válidos
-    const mappedItems = validItems.map(item => {
-      // Manejar tanto productos poblados como IDs
-      const productId = typeof item.product === 'object' 
-        ? item.product._id 
-        : item.product;
-      
-      const productName = typeof item.product === 'object' && item.product.name
-        ? item.product.name 
-        : 'Producto (eliminado)';
-      
-      // Usar availableToReturn si está disponible, sino usar quantity original
-      const maxAvailable = item.availableToReturn !== undefined 
-        ? item.availableToReturn 
-        : item.quantity;
-      
-      return {
-        productId: productId,
-        productName: productName,
-        maxQuantity: maxAvailable,
-        originalQuantity: item.quantity,
-        returnedQuantity: item.returnedQuantity || 0,
-        priceAtSale: item.priceAtSale || 0,
-        quantity: 0,
-        selected: false,
-      };
-    });
-    
-    setReturnItems(mappedItems);
-    
-    // Advertir si algunos productos no están disponibles
-    if (validItems.length < fullSale.items.length) {
-      toast.warning(`${fullSale.items.length - validItems.length} producto(s) no disponible(s) para devolución (eliminados del sistema)`);
-    }
-    
-    setStep(2);
+
+      // Mapear items válidos
+      const mappedItems = validItems.map(item => {
+        // Manejar tanto productos poblados como IDs
+        const productId = typeof item.product === 'object'
+          ? item.product._id
+          : item.product;
+
+        const productName = typeof item.product === 'object' && item.product.name
+          ? item.product.name
+          : 'Producto (eliminado)';
+
+        // Usar availableToReturn si está disponible, sino usar quantity original
+        const maxAvailable = item.availableToReturn !== undefined
+          ? item.availableToReturn
+          : item.quantity;
+
+        return {
+          productId: productId,
+          productName: productName,
+          maxQuantity: maxAvailable,
+          originalQuantity: item.quantity,
+          returnedQuantity: item.returnedQuantity || 0,
+          priceAtSale: item.priceAtSale || 0,
+          quantity: 0,
+          selected: false,
+        };
+      });
+
+      setReturnItems(mappedItems);
+
+      // Advertir si algunos productos no están disponibles
+      if (validItems.length < fullSale.items.length) {
+        toast.warning(`${fullSale.items.length - validItems.length} producto(s) no disponible(s) para devolución (eliminados del sistema)`);
+      }
+
+      setStep(2);
     } catch (error) {
       console.error('Error al obtener detalles de la venta:', error);
       toast.error('Error al cargar detalles de la venta');
@@ -1007,7 +1028,7 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
 
   const handleSubmit = () => {
     const selectedItems = returnItems.filter(item => item.selected && item.quantity > 0);
-    
+
     if (selectedItems.length === 0) {
       toast.error('Debe seleccionar al menos un producto');
       return;
@@ -1136,9 +1157,9 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
                       }
                       return false;
                     }).length;
-                    
+
                     const hasInvalidItems = validItemsCount < sale.items.length;
-                    
+
                     return (
                       <div
                         key={sale._id}
@@ -1309,7 +1330,7 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
                         🔄 Cambio de Productos
                       </p>
                       <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                        {exchangeItems.length > 0 
+                        {exchangeItems.length > 0
                           ? `${exchangeItems.length} producto(s) seleccionado(s) para cambio`
                           : 'Seleccione los productos por los que desea cambiar'
                         }
@@ -1322,7 +1343,7 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
                   >
                     {exchangeItems.length > 0 ? 'Modificar productos de cambio' : 'Seleccionar productos de cambio'}
                   </button>
-                  
+
                   {exchangeItems.length > 0 && (
                     <div className="mt-3 space-y-2">
                       {exchangeItems.map(item => (
@@ -1343,7 +1364,7 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
                           </span>
                         </div>
                         <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                          {getPriceDifference() > 0 
+                          {getPriceDifference() > 0
                             ? `Cliente debe pagar ${formatCurrency(getPriceDifference())}`
                             : getPriceDifference() < 0
                               ? `Se le devolvió ${formatCurrency(Math.abs(getPriceDifference()))}`
@@ -1392,20 +1413,19 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
                   <span className="text-gray-700 dark:text-gray-300">
                     {reason === 'Cambio' ? 'Diferencia a pagar/devolver:' : 'Total a devolver:'}
                   </span>
-                  <span className={`text-2xl font-bold ${
-                    reason === 'Cambio' 
-                      ? getPriceDifference() > 0 
-                        ? 'text-red-600 dark:text-red-400' 
+                  <span className={`text-2xl font-bold ${reason === 'Cambio'
+                      ? getPriceDifference() > 0
+                        ? 'text-red-600 dark:text-red-400'
                         : 'text-green-600 dark:text-green-400'
                       : 'text-red-600 dark:text-red-400'
-                  }`}>
+                    }`}>
                     {reason === 'Cambio' ? formatCurrency(Math.abs(getPriceDifference())) : formatCurrency(getTotalAmount())}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {reason === 'Cambio' 
-                    ? getPriceDifference() > 0 
-                      ? 'Cliente debe pagar la diferencia' 
+                  {reason === 'Cambio'
+                    ? getPriceDifference() > 0
+                      ? 'Cliente debe pagar la diferencia'
                       : getPriceDifference() < 0
                         ? 'Se le devuelve al cliente'
                         : 'No hay diferencia de precio'
@@ -1418,8 +1438,8 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
                 <button onClick={onClose} className="btn btn-secondary flex-1">
                   Cancelar
                 </button>
-                <button 
-                  onClick={handleSubmit} 
+                <button
+                  onClick={handleSubmit}
                   className="btn-primary flex-1 flex items-center justify-center gap-2"
                   disabled={reason === 'Cambio' && exchangeItems.length === 0}
                 >
@@ -1526,7 +1546,7 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
                           </span>
                         </div>
                         <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
-                          {getPriceDifference() > 0 
+                          {getPriceDifference() > 0
                             ? `El cliente debe pagar ${formatCurrency(getPriceDifference())} adicional`
                             : getPriceDifference() < 0
                               ? `Se le devolverá ${formatCurrency(Math.abs(getPriceDifference()))} al cliente`
@@ -1546,8 +1566,8 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
                     </p>
                   ) : (
                     availableProducts
-                      .filter(p => 
-                        !productSearchTerm || 
+                      .filter(p =>
+                        !productSearchTerm ||
                         p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
                         p.sku.toLowerCase().includes(productSearchTerm.toLowerCase())
                       )
@@ -1622,13 +1642,13 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
 
   const handlePrintReturn = () => {
     const printWindow = window.open('', '_blank');
-    
+
     // Calcular total de items devueltos
     const returnTotal = returnData.items.reduce((sum, item) => sum + item.returnAmount, 0);
-    
+
     // Calcular total de items de cambio
     const exchangeTotal = returnData.exchangeItems?.reduce((sum, item) => sum + (item.quantity * item.price), 0) || 0;
-    
+
     printWindow.document.write(`
       <html>
         <head>
@@ -1728,13 +1748,13 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
           
           <div class="info-section">
             <div><strong>No. Devolución:</strong> ${returnData.returnNumber}</div>
-            <div><strong>Fecha:</strong> ${new Date(returnData.createdAt).toLocaleString('es-DO', { 
-              day: '2-digit', 
-              month: '2-digit', 
-              year: 'numeric', 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}</div>
+            <div><strong>Fecha:</strong> ${new Date(returnData.createdAt).toLocaleString('es-DO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}</div>
             <div><strong>Factura Original:</strong> ${returnData.sale?.invoiceNumber || 'N/A'}</div>
             ${returnData.customer ? `<div><strong>Cliente:</strong> ${returnData.customer.fullName || returnData.customer.name || 'Cliente General'}</div>` : '<div><strong>Cliente:</strong> Cliente General</div>'}
             ${returnData.customer?.cedula ? `<div><strong>Cédula:</strong> ${returnData.customer.cedula}</div>` : ''}
@@ -1965,29 +1985,26 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
                   </div>
                 ))}
               </div>
-              
+
               {/* Diferencia de precio */}
               {returnData.priceDifference !== undefined && returnData.priceDifference !== 0 && (
-                <div className={`mt-4 p-4 rounded-lg ${
-                  returnData.priceDifference > 0 
-                    ? 'bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800' 
+                <div className={`mt-4 p-4 rounded-lg ${returnData.priceDifference > 0
+                    ? 'bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800'
                     : 'bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800'
-                }`}>
+                  }`}>
                   <div className="flex items-center justify-between">
-                    <span className={`text-sm font-medium ${
-                      returnData.priceDifference > 0 
-                        ? 'text-red-700 dark:text-red-300' 
+                    <span className={`text-sm font-medium ${returnData.priceDifference > 0
+                        ? 'text-red-700 dark:text-red-300'
                         : 'text-green-700 dark:text-green-300'
-                    }`}>
-                      {returnData.priceDifference > 0 
-                        ? 'Cliente pagó diferencia:' 
+                      }`}>
+                      {returnData.priceDifference > 0
+                        ? 'Cliente pagó diferencia:'
                         : 'Se devolvió al cliente:'}
                     </span>
-                    <span className={`text-lg font-bold ${
-                      returnData.priceDifference > 0 
-                        ? 'text-red-600 dark:text-red-400' 
+                    <span className={`text-lg font-bold ${returnData.priceDifference > 0
+                        ? 'text-red-600 dark:text-red-400'
                         : 'text-green-600 dark:text-green-400'
-                    }`}>
+                      }`}>
                       {formatCurrency(Math.abs(returnData.priceDifference))}
                     </span>
                   </div>

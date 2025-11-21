@@ -90,6 +90,7 @@ import {
   List,
   TrendingUp,
 } from 'lucide-react';
+import JsBarcode from 'jsbarcode';
 
 const Billing = () => {
   const { invalidateCache } = useProductStore();
@@ -151,7 +152,7 @@ const Billing = () => {
         if (showPrintModal) setShowPrintModal(false);
       }
     };
-    
+
     if (showPaymentModal || showCustomerModal || showPrintModal) {
       window.addEventListener('keydown', handleEscape);
       return () => window.removeEventListener('keydown', handleEscape);
@@ -161,21 +162,21 @@ const Billing = () => {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const response = await getProducts({ 
-        page: pagination.page, 
+      const response = await getProducts({
+        page: pagination.page,
         limit: pagination.limit,
         category: selectedCategory || undefined
       });
-      
+
       const productsData = response?.data?.products || response?.data || [];
       const paginationData = response?.data?.pagination || {};
-      
+
       setProducts(productsData);
       setPagination(prev => ({
         ...prev,
         ...paginationData
       }));
-      
+
       // Extraer categorías únicas (solo en primera carga)
       if (pagination.page === 1 && !selectedCategory) {
         const uniqueCategories = [...new Set(productsData.map(p => p.category).filter(Boolean))];
@@ -253,10 +254,10 @@ const Billing = () => {
     }
 
     addItem(product);
-    
+
     // Agregar animación al item
     setHighlightedItems(prev => new Set(prev).add(product._id));
-    
+
     // Scroll al item agregado después de un pequeño delay
     setTimeout(() => {
       const itemElement = document.getElementById(`cart-item-${product._id}`);
@@ -264,7 +265,7 @@ const Billing = () => {
         itemElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     }, 100);
-    
+
     // Remover la animación después de 2 segundos
     setTimeout(() => {
       setHighlightedItems(prev => {
@@ -273,24 +274,24 @@ const Billing = () => {
         return newSet;
       });
     }, 2000);
-    
+
     toast.success(`${product.name} añadido`);
   };
 
   const handleQuantityChange = (productId, newQuantity) => {
     const product = items.find((item) => item.product._id === productId)?.product;
-    
+
     // Permitir valores vacíos temporalmente
     if (newQuantity === '' || newQuantity === null || newQuantity === undefined) {
       updateQuantity(productId, '');
       return;
     }
-    
+
     const qty = parseInt(newQuantity);
     if (isNaN(qty) || qty < 1) {
       return;
     }
-    
+
     if (qty > product.stock) {
       toast.error('Stock insuficiente');
       return;
@@ -310,7 +311,7 @@ const Billing = () => {
       updateDiscount(productId, 0);
       return;
     }
-    
+
     const disc = parseFloat(discount);
     if (isNaN(disc) || disc < 0 || disc > 100) {
       toast.error('El descuento debe estar entre 0 y 100');
@@ -354,27 +355,27 @@ const Billing = () => {
       };
 
       const response = await createSale(saleData);
-      
+
       // Invalidar caché de productos para que el inventario se actualice
       invalidateCache();
-      
+
       // Recargar productos locales para actualizar stock en pantalla de ventas
       fetchProducts();
-      
+
       toast.success('¡Venta completada exitosamente!');
-      
+
       // Guardar la venta para el modal de impresión
       setCompletedSale(response.data);
       setShowPaymentModal(false);
       setShowPrintModal(true);
-      
+
       // Limpiar carrito y estados de pago
       clearCart();
       setGlobalDiscount(0);
       setGlobalDiscountAmount(0);
       setAmountReceived('');
       setChange(0);
-      
+
       // Recargar productos para actualizar stock
       fetchProducts();
     } catch (error) {
@@ -386,12 +387,28 @@ const Billing = () => {
   };
 
   const printInvoice = (sale) => {
+    // Generar código de barras
+    const canvas = document.createElement('canvas');
+    try {
+      JsBarcode(canvas, sale.invoiceNumber, {
+        format: "CODE128",
+        displayValue: true,
+        fontSize: 14,
+        margin: 0,
+        height: 40,
+        width: 1.5
+      });
+    } catch (error) {
+      console.error("Error generating barcode:", error);
+    }
+    const barcodeDataUrl = canvas.toDataURL("image/png");
+
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       toast.error('Error: No se pudo abrir la ventana de impresión. Verifica que los pop-ups estén permitidos.');
       return;
     }
-    
+
     printWindow.document.write(`
       <html>
         <head>
@@ -492,13 +509,13 @@ const Billing = () => {
           
           <div class="info-section">
             <div><strong>Factura:</strong> ${sale.invoiceNumber}</div>
-            <div><strong>Fecha:</strong> ${new Date(sale.createdAt).toLocaleString('es-DO', { 
-              day: '2-digit', 
-              month: '2-digit', 
-              year: 'numeric', 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}</div>
+            <div><strong>Fecha:</strong> ${new Date(sale.createdAt).toLocaleString('es-DO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}</div>
             ${sale.customer ? `<div><strong>Cliente:</strong> ${sale.customer.fullName || sale.customer.name || 'N/A'}</div>` : ''}
             ${sale.customer?.cedula ? `<div><strong>Cédula:</strong> ${sale.customer.cedula}</div>` : ''}
             ${sale.customer?.phone ? `<div><strong>Teléfono:</strong> ${sale.customer.phone}</div>` : ''}
@@ -520,7 +537,10 @@ const Billing = () => {
               ${sale.items.map((item, index) => `
                 <tr class="item-row">
                   <td>${index + 1}</td>
-                  <td>${item.product.name}</td>
+                  <td>
+                    ${item.product.name}
+                    ${item.product.warranty ? `<div style="font-size: 8px; font-style: italic; margin-top: 2px;">Garantía: ${item.product.warranty}</div>` : ''}
+                  </td>
                   <td class="center">${item.quantity}</td>
                   <td class="right">${formatCurrency(item.subtotal)}</td>
                 </tr>
@@ -567,19 +587,33 @@ const Billing = () => {
           </table>
           
           <div class="line"></div>
-          <p class="center bold" style="margin: 3px 0;">¡Gracias por su compra!</p>
+          
+          <div style="margin-top: 40px; text-align: center;">
+            <div style="border-top: 1px solid #000; width: 80%; margin: 0 auto; padding-top: 5px;">
+              Firma del Vendedor
+            </div>
+            <div style="font-size: 10px; margin-top: 2px;">
+              ${sale.user ? (sale.user.name || sale.user.username || '') : ''}
+            </div>
+          </div>
+
+          <div style="text-align: center; margin-top: 15px;">
+            <img src="${barcodeDataUrl}" style="width: 100%; max-width: 200px;" />
+          </div>
+
+          <p class="center bold" style="margin: 10px 0 3px 0;">¡Gracias por su compra!</p>
           <p class="center small" style="margin: 2px 0 3px 0;">Este documento no tiene validez fiscal</p>
         </body>
       </html>
     `);
     printWindow.document.close();
-    
+
     // Esperar a que se cargue el contenido antes de imprimir
     setTimeout(() => {
       try {
         printWindow.focus();
         printWindow.print();
-        
+
         // Cerrar la ventana después de imprimir (opcional)
         setTimeout(() => {
           printWindow.close();
@@ -662,22 +696,20 @@ const Billing = () => {
             <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex-shrink-0">
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded transition-colors ${
-                  viewMode === 'list'
+                className={`p-2 rounded transition-colors ${viewMode === 'list'
                     ? 'bg-white dark:bg-gray-700 text-primary-600 shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                  }`}
                 title="Vista de lista"
               >
                 <List className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded transition-colors ${
-                  viewMode === 'grid'
+                className={`p-2 rounded transition-colors ${viewMode === 'grid'
                     ? 'bg-white dark:bg-gray-700 text-primary-600 shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
+                  }`}
                 title="Vista de tarjetas"
               >
                 <LayoutGrid className="w-5 h-5" />
@@ -735,22 +767,20 @@ const Billing = () => {
                 <button
                   onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                   disabled={!pagination.hasPrevPage}
-                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                    pagination.hasPrevPage
+                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${pagination.hasPrevPage
                       ? 'bg-primary-600 text-white hover:bg-primary-700'
                       : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   Ant
                 </button>
                 <button
                   onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                   disabled={!pagination.hasNextPage}
-                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                    pagination.hasNextPage
+                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${pagination.hasNextPage
                       ? 'bg-primary-600 text-white hover:bg-primary-700'
                       : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   Sig
                 </button>
@@ -994,9 +1024,8 @@ const ProductCard = ({ product, onAdd }) => {
 
         <div className="text-right">
           <p
-            className={`text-xs font-semibold ${
-              isLowStock ? 'text-red-600' : 'text-gray-600 dark:text-gray-400'
-            }`}
+            className={`text-xs font-semibold ${isLowStock ? 'text-red-600' : 'text-gray-600 dark:text-gray-400'
+              }`}
           >
             Stock: {product.stock}
           </p>
@@ -1099,13 +1128,12 @@ const ProductListItem = ({ product, onAdd }) => {
             Stock
           </p>
           <p
-            className={`text-base font-bold ${
-              isOutOfStock
+            className={`text-base font-bold ${isOutOfStock
                 ? 'text-red-600 dark:text-red-400'
                 : isLowStock
                   ? 'text-amber-600 dark:text-amber-400'
                   : 'text-gray-900 dark:text-white'
-            }`}
+              }`}
           >
             {product.stock}
           </p>
@@ -1114,9 +1142,8 @@ const ProductListItem = ({ product, onAdd }) => {
 
       {/* Botón de agregar */}
       <button
-        className={`btn-primary px-4 py-2 flex items-center gap-2 shrink-0 ${
-          isOutOfStock ? 'opacity-60 cursor-not-allowed' : ''
-        }`}
+        className={`btn-primary px-4 py-2 flex items-center gap-2 shrink-0 ${isOutOfStock ? 'opacity-60 cursor-not-allowed' : ''
+          }`}
         disabled={isOutOfStock}
         onClick={(e) => {
           e.stopPropagation();
@@ -1148,13 +1175,12 @@ const CartItem = ({
   };
 
   return (
-    <div 
+    <div
       id={`cart-item-${item.product._id}`}
-      className={`p-2 rounded-lg bg-gray-50 dark:bg-gray-800 transition-all duration-500 ${
-      isHighlighted 
-        ? 'ring-4 ring-green-400 dark:ring-green-500 shadow-lg shadow-green-200 dark:shadow-green-900/50 scale-[1.02] animate-pulse-gentle' 
-        : ''
-    }`}>
+      className={`p-2 rounded-lg bg-gray-50 dark:bg-gray-800 transition-all duration-500 ${isHighlighted
+          ? 'ring-4 ring-green-400 dark:ring-green-500 shadow-lg shadow-green-200 dark:shadow-green-900/50 scale-[1.02] animate-pulse-gentle'
+          : ''
+        }`}>
       <div className="flex justify-between items-start mb-1.5">
         <div className="flex-1">
           <h4 className="font-semibold text-base text-gray-900 dark:text-white leading-tight">
@@ -1280,7 +1306,7 @@ const PaymentModal = ({
     const discountAmount = (globalDiscount / 100) * (subtotal - itemsDiscount);
     return total - discountAmount;
   };
-  
+
   // Calcular cambio basado en el total final
   const calculatedChange = React.useMemo(() => {
     if (paymentMethod !== 'Efectivo' || !amountReceived) return 0;
@@ -1348,26 +1374,24 @@ const PaymentModal = ({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Descuento Adicional
             </label>
-            
+
             {/* Tabs para seleccionar tipo de descuento */}
             <div className="flex gap-2 mb-3">
               <button
                 onClick={() => setDiscountType('percentage')}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                  discountType === 'percentage'
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${discountType === 'percentage'
                     ? 'bg-primary-600 text-white shadow-md'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
+                  }`}
               >
                 Porcentaje
               </button>
               <button
                 onClick={() => setDiscountType('finalPrice')}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                  discountType === 'finalPrice'
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${discountType === 'finalPrice'
                     ? 'bg-primary-600 text-white shadow-md'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
+                  }`}
               >
                 Precio Final
               </button>
@@ -1410,10 +1434,10 @@ const PaymentModal = ({
                 />
               </div>
             )}
-            
+
             {globalDiscount > 0 && (
               <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
-                💰 Ahorro: {discountType === 'finalPrice' && finalPriceInput 
+                💰 Ahorro: {discountType === 'finalPrice' && finalPriceInput
                   ? formatCurrency((subtotal - itemsDiscount) - parseFloat(finalPriceInput))
                   : formatCurrency((globalDiscount / 100) * (subtotal - itemsDiscount))
                 }
@@ -1441,11 +1465,10 @@ const PaymentModal = ({
               <button
                 key={method}
                 onClick={() => setPaymentMethod(method)}
-                className={`w-full p-3 rounded-lg border-2 transition-all shadow-sm ${
-                  paymentMethod === method
+                className={`w-full p-3 rounded-lg border-2 transition-all shadow-sm ${paymentMethod === method
                     ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20 shadow-primary-200 dark:shadow-primary-900/50'
                     : 'border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-800/50 hover:border-primary-400 hover:shadow-md'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-900 dark:text-white">
@@ -1483,24 +1506,21 @@ const PaymentModal = ({
             </div>
 
             {amountReceived && (
-              <div className={`p-4 rounded-lg border-2 ${
-                calculatedChange >= 0 
-                  ? 'bg-green-50 dark:bg-green-900/20 border-green-500' 
+              <div className={`p-4 rounded-lg border-2 ${calculatedChange >= 0
+                  ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
                   : 'bg-red-50 dark:bg-red-900/20 border-red-500'
-              }`}>
+                }`}>
                 <div className="flex justify-between items-center">
-                  <span className={`text-lg font-semibold ${
-                    calculatedChange >= 0 
-                      ? 'text-green-700 dark:text-green-300' 
+                  <span className={`text-lg font-semibold ${calculatedChange >= 0
+                      ? 'text-green-700 dark:text-green-300'
                       : 'text-red-700 dark:text-red-300'
-                  }`}>
+                    }`}>
                     Cambio a Devolver:
                   </span>
-                  <span className={`text-3xl font-bold ${
-                    calculatedChange >= 0 
-                      ? 'text-green-600 dark:text-green-400' 
+                  <span className={`text-3xl font-bold ${calculatedChange >= 0
+                      ? 'text-green-600 dark:text-green-400'
                       : 'text-red-600 dark:text-red-400'
-                  }`}>
+                    }`}>
                     {formatCurrency(calculatedChange >= 0 ? calculatedChange : 0)}
                   </span>
                 </div>

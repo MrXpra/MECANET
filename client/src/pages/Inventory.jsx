@@ -82,13 +82,13 @@ import {
 const Inventory = () => {
   const navigate = useNavigate();
   const { settings } = useSettingsStore();
-  
+
   // Usar el store global en lugar de estado local
-  const { 
-    products, 
-    fetchProducts, 
-    isLoading, 
-    invalidateCache 
+  const {
+    products,
+    fetchProducts,
+    isLoading,
+    invalidateCache
   } = useProductStore();
 
   // const [products, setProducts] = useState([]); // ELIMINADO
@@ -99,7 +99,7 @@ const Inventory = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showTooltip, setShowTooltip] = useState(null);
-  
+
   // Filters
   const [categoryFilter, setCategoryFilter] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
@@ -107,7 +107,7 @@ const Inventory = () => {
   const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'out'
   const [sortBy, setSortBy] = useState('name'); // 'name', 'stock', 'price'
   const [sortOrder, setSortOrder] = useState('asc');
-  
+
   // Categories, Brands and Suppliers
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
@@ -183,7 +183,7 @@ const Inventory = () => {
 
     // Supplier filter
     if (supplierFilter) {
-      filtered = filtered.filter((product) => 
+      filtered = filtered.filter((product) =>
         product.supplier?._id === supplierFilter || product.supplier === supplierFilter
       );
     }
@@ -198,7 +198,7 @@ const Inventory = () => {
     // Sort
     filtered.sort((a, b) => {
       let compareValue = 0;
-      
+
       switch (sortBy) {
         case 'name':
           compareValue = a.name.localeCompare(b.name);
@@ -212,7 +212,7 @@ const Inventory = () => {
         default:
           compareValue = 0;
       }
-      
+
       return sortOrder === 'asc' ? compareValue : -compareValue;
     });
 
@@ -622,11 +622,10 @@ const Inventory = () => {
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                 disabled={!pagination.hasPrevPage}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pagination.hasPrevPage
-                    ? 'bg-primary-600 text-white hover:bg-primary-700'
-                    : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
-                }`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasPrevPage
+                  ? 'bg-primary-600 text-white hover:bg-primary-700'
+                  : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
+                  }`}
               >
                 Anterior
               </button>
@@ -636,11 +635,10 @@ const Inventory = () => {
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                 disabled={!pagination.hasNextPage}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pagination.hasNextPage
-                    ? 'bg-primary-600 text-white hover:bg-primary-700'
-                    : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
-                }`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasNextPage
+                  ? 'bg-primary-600 text-white hover:bg-primary-700'
+                  : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
+                  }`}
               >
                 Siguiente
               </button>
@@ -658,7 +656,7 @@ const Inventory = () => {
             if (id) {
               // Necesitamos simular que editingProduct existe para que handleUpdateProduct funcione
               // O modificar handleUpdateProduct para aceptar ID
-              
+
               // Mejor opción: Llamar directamente a updateProduct aquí
               try {
                 await updateProduct(id, data);
@@ -748,6 +746,7 @@ const ProductModal = ({ product, onSave, onClose, categories, brands, allProduct
     lowStockThreshold: product?.lowStockThreshold || 5,
     discountPercentage: product?.discountPercentage || 0,
     supplier: product?.supplier?._id || product?.supplier || '',
+    warranty: product?.warranty || '',
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -786,7 +785,7 @@ const ProductModal = ({ product, onSave, onClose, categories, brands, allProduct
     // Solo buscar si no estamos editando un producto existente
     if (!product && skuValue) {
       const found = allProducts.find(p => p.sku.toLowerCase() === skuValue.toLowerCase());
-      
+
       if (found) {
         // Producto encontrado - Modo ReStock
         setExistingProduct(found);
@@ -802,10 +801,11 @@ const ProductModal = ({ product, onSave, onClose, categories, brands, allProduct
           stock: found.stock,
           lowStockThreshold: found.lowStockThreshold,
           discountPercentage: found.discountPercentage || 0,
+          warranty: found.warranty || '',
         });
         setRestockAmount(0);
         setTargetStock(found.stock);
-        
+
         // Hacer focus en el campo de cantidad después de cargar los datos
         setTimeout(() => {
           if (restockInputRef.current) {
@@ -813,7 +813,7 @@ const ProductModal = ({ product, onSave, onClose, categories, brands, allProduct
             restockInputRef.current.select();
           }
         }, 100);
-        
+
         toast.success(`Producto encontrado: ${found.name} - Modo ReStock activado`);
       } else {
         // SKU no existe - Modo normal
@@ -880,19 +880,19 @@ const ProductModal = ({ product, onSave, onClose, categories, brands, allProduct
         // En modo ReStock, siempre usamos updateProduct (onSave con ID)
         // Si onSave es handleCreateProduct, necesitamos llamar a handleUpdateProduct
         if (existingProduct._id) {
-            // Si tenemos el ID del producto existente, usamos updateProduct
-            // Pero necesitamos pasar el ID como segundo argumento si onSave lo espera
-            // O llamar directamente a la función de actualización si onSave es genérico
-            
-            // Hack: Si estamos en modo ReStock, significa que el usuario intentó crear un producto
-            // pero el sistema detectó que ya existe. Por lo tanto, 'onSave' probablemente sea 'handleCreateProduct'.
-            // Debemos forzar el uso de la lógica de actualización.
-            
-            // Si onSave es handleCreateProduct, fallará porque intentará hacer POST /api/products
-            // Necesitamos una forma de decirle al componente padre que use updateProduct
-            
-            // Solución: Pasamos el ID como segundo argumento, y el componente padre debe manejarlo
-            await onSave(updatedData, existingProduct._id);
+          // Si tenemos el ID del producto existente, usamos updateProduct
+          // Pero necesitamos pasar el ID como segundo argumento si onSave lo espera
+          // O llamar directamente a la función de actualización si onSave es genérico
+
+          // Hack: Si estamos en modo ReStock, significa que el usuario intentó crear un producto
+          // pero el sistema detectó que ya existe. Por lo tanto, 'onSave' probablemente sea 'handleCreateProduct'.
+          // Debemos forzar el uso de la lógica de actualización.
+
+          // Si onSave es handleCreateProduct, fallará porque intentará hacer POST /api/products
+          // Necesitamos una forma de decirle al componente padre que use updateProduct
+
+          // Solución: Pasamos el ID como segundo argumento, y el componente padre debe manejarlo
+          await onSave(updatedData, existingProduct._id);
         }
       } finally {
         setIsLoading(false);
@@ -916,8 +916,8 @@ const ProductModal = ({ product, onSave, onClose, categories, brands, allProduct
 
   const calculateProfit = () => {
     const profit = formData.sellingPrice - formData.purchasePrice;
-    const profitMargin = formData.purchasePrice > 0 
-      ? ((profit / formData.purchasePrice) * 100).toFixed(2) 
+    const profitMargin = formData.purchasePrice > 0
+      ? ((profit / formData.purchasePrice) * 100).toFixed(2)
       : 0;
     return { profit, profitMargin };
   };
@@ -1056,215 +1056,231 @@ const ProductModal = ({ product, onSave, onClose, categories, brands, allProduct
                 </div>
               </div>
 
-          {/* Category and Brand */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Categoría
-              </label>
-              <div className="relative">
-                <Grid className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-500" />
-                <input
-                  className="input pl-10"
-                  type="text"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  list="categories"
-                  placeholder="Ej: Filtros"
-                />
-                <datalist id="categories">
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat} />
-                  ))}
-                </datalist>
+              {/* Category and Brand */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Categoría
+                  </label>
+                  <div className="relative">
+                    <Grid className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-500" />
+                    <input
+                      className="input pl-10"
+                      type="text"
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      list="categories"
+                      placeholder="Ej: Filtros"
+                    />
+                    <datalist id="categories">
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Marca
+                  </label>
+                  <div className="relative">
+                    <Award className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-500" />
+                    <input
+                      className="input pl-10"
+                      type="text"
+                      name="brand"
+                      value={formData.brand}
+                      onChange={handleChange}
+                      list="brands"
+                      placeholder="Ej: Bosch"
+                    />
+                    <datalist id="brands">
+                      {brands.map((brand) => (
+                        <option key={brand} value={brand} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Marca
-              </label>
-              <div className="relative">
-                <Award className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-500" />
-                <input
-                  className="input pl-10"
-                  type="text"
-                  name="brand"
-                  value={formData.brand}
-                  onChange={handleChange}
-                  list="brands"
-                  placeholder="Ej: Bosch"
-                />
-                <datalist id="brands">
-                  {brands.map((brand) => (
-                    <option key={brand} value={brand} />
-                  ))}
-                </datalist>
+              {/* Supplier */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Proveedor
+                </label>
+                <div className="relative">
+                  <Truck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-500" />
+                  <select
+                    className="input pl-10 pr-10"
+                    name="supplier"
+                    value={formData.supplier}
+                    onChange={handleChange}
+                  >
+                    <option value="">Sin proveedor</option>
+                    {suppliers.map((supplier) => (
+                      <option key={supplier._id} value={supplier._id}>
+                        {supplier.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Supplier */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Proveedor
-            </label>
-            <div className="relative">
-              <Truck className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-500" />
-              <select
-                className="input pl-10 pr-10"
-                name="supplier"
-                value={formData.supplier}
-                onChange={handleChange}
-              >
-                <option value="">Sin proveedor</option>
-                {suppliers.map((supplier) => (
-                  <option key={supplier._id} value={supplier._id}>
-                    {supplier.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+              {/* Description and Warranty */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Descripción
+                  </label>
+                  <div className="relative">
+                    <FileText className="absolute left-3 top-3 w-5 h-5 text-gray-500" />
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      rows="3"
+                      className="input pl-10"
+                      placeholder="Descripción detallada del producto..."
+                    />
+                  </div>
+                </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Descripción
-            </label>
-            <div className="relative">
-              <FileText className="absolute left-3 top-3 w-5 h-5 text-gray-500" />
-              <textarea
-                className="input pl-10"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows="3"
-                placeholder="Descripción del producto..."
-              />
-            </div>
-          </div>
-
-          {/* Prices */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Precio de Compra *
-              </label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
-                <input
-                  type="number"
-                  name="purchasePrice"
-                  value={formData.purchasePrice}
-                  onChange={handleChange}
-                  step="0.01"
-                  className={`input pl-10 ${errors.purchasePrice ? 'border-red-500' : ''}`}
-                  placeholder="0.00"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Garantía
+                  </label>
+                  <textarea
+                    name="warranty"
+                    value={formData.warranty}
+                    onChange={handleChange}
+                    rows="3"
+                    className="input"
+                    placeholder="Ej: 30 días por defectos de fábrica..."
+                  />
+                </div>
               </div>
-              {errors.purchasePrice && (
-                <p className="text-xs text-red-600 mt-1">{errors.purchasePrice}</p>
+
+              {/* Prices */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Precio de Compra *
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
+                    <input
+                      type="number"
+                      name="purchasePrice"
+                      value={formData.purchasePrice}
+                      onChange={handleChange}
+                      step="0.01"
+                      className={`input pl-10 ${errors.purchasePrice ? 'border-red-500' : ''}`}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  {errors.purchasePrice && (
+                    <p className="text-xs text-red-600 mt-1">{errors.purchasePrice}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Precio de Venta *
+                  </label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                    <input
+                      type="number"
+                      name="sellingPrice"
+                      value={formData.sellingPrice}
+                      onChange={handleChange}
+                      step="0.01"
+                      className={`input pl-10 ${errors.sellingPrice ? 'border-red-500' : ''}`}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  {errors.sellingPrice && (
+                    <p className="text-xs text-red-600 mt-1">{errors.sellingPrice}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Descuento (%)
+                  </label>
+                  <div className="relative">
+                    <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
+                    <input
+                      type="number"
+                      name="discountPercentage"
+                      value={formData.discountPercentage}
+                      onChange={handleChange}
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      className={`input pl-10 ${errors.discountPercentage ? 'border-red-500' : ''}`}
+                      placeholder="0"
+                    />
+                  </div>
+                  {errors.discountPercentage && (
+                    <p className="text-xs text-red-600 mt-1">{errors.discountPercentage}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Profit Margin Display */}
+              {formData.purchasePrice > 0 && formData.sellingPrice > 0 && (
+                <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Ganancia:</span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      ${profit.toFixed(2)} ({profitMargin}%)
+                    </span>
+                  </div>
+                </div>
               )}
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Precio de Venta *
-              </label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
-                <input
-                  type="number"
-                  name="sellingPrice"
-                  value={formData.sellingPrice}
-                  onChange={handleChange}
-                  step="0.01"
-                  className={`input pl-10 ${errors.sellingPrice ? 'border-red-500' : ''}`}
-                  placeholder="0.00"
-                />
-              </div>
-              {errors.sellingPrice && (
-                <p className="text-xs text-red-600 mt-1">{errors.sellingPrice}</p>
-              )}
-            </div>
+              {/* Stock */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Stock Inicial *
+                  </label>
+                  <div className="relative">
+                    <Package className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-500" />
+                    <input
+                      type="number"
+                      name="stock"
+                      value={formData.stock}
+                      onChange={handleChange}
+                      min="0"
+                      className={`input pl-10 ${errors.stock ? 'border-red-500' : ''}`}
+                      placeholder="0"
+                    />
+                  </div>
+                  {errors.stock && <p className="text-xs text-red-600 mt-1">{errors.stock}</p>}
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Descuento (%)
-              </label>
-              <div className="relative">
-                <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
-                <input
-                  type="number"
-                  name="discountPercentage"
-                  value={formData.discountPercentage}
-                  onChange={handleChange}
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  className={`input pl-10 ${errors.discountPercentage ? 'border-red-500' : ''}`}
-                  placeholder="0"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Umbral de Bajo Stock
+                  </label>
+                  <div className="relative">
+                    <AlertTriangle className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500" />
+                    <input
+                      type="number"
+                      name="lowStockThreshold"
+                      value={formData.lowStockThreshold}
+                      onChange={handleChange}
+                      min="0"
+                      className="input pl-10"
+                      placeholder="5"
+                    />
+                  </div>
+                </div>
               </div>
-              {errors.discountPercentage && (
-                <p className="text-xs text-red-600 mt-1">{errors.discountPercentage}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Profit Margin Display */}
-          {formData.purchasePrice > 0 && formData.sellingPrice > 0 && (
-            <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Ganancia:</span>
-                <span className="font-semibold text-gray-900 dark:text-white">
-                  ${profit.toFixed(2)} ({profitMargin}%)
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Stock */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Stock Inicial *
-              </label>
-              <div className="relative">
-                <Package className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-500" />
-                <input
-                  type="number"
-                  name="stock"
-                  value={formData.stock}
-                  onChange={handleChange}
-                  min="0"
-                  className={`input pl-10 ${errors.stock ? 'border-red-500' : ''}`}
-                  placeholder="0"
-                />
-              </div>
-              {errors.stock && <p className="text-xs text-red-600 mt-1">{errors.stock}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Umbral de Bajo Stock
-              </label>
-              <div className="relative">
-                <AlertTriangle className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500" />
-                <input
-                  type="number"
-                  name="lowStockThreshold"
-                  value={formData.lowStockThreshold}
-                  onChange={handleChange}
-                  min="0"
-                  className="input pl-10"
-                  placeholder="5"
-                />
-              </div>
-            </div>
-          </div>
             </div>
           )}
 

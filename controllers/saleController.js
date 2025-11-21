@@ -32,18 +32,18 @@ export const createSale = async (req, res) => {
 
       // Verificar stock disponible
       if (product.stock < item.quantity) {
-        return res.status(400).json({ 
-          message: `Stock insuficiente para ${product.name}. Disponible: ${product.stock}` 
+        return res.status(400).json({
+          message: `Stock insuficiente para ${product.name}. Disponible: ${product.stock}`
         });
       }
 
       // Calcular precio con descuento del producto
       const priceWithDiscount = product.sellingPrice * (1 - product.discountPercentage / 100);
-      
+
       // Aplicar descuento adicional si se proporciona
       const additionalDiscount = item.discountApplied || 0;
       const finalPrice = priceWithDiscount * (1 - additionalDiscount / 100);
-      
+
       const itemSubtotal = finalPrice * item.quantity;
       const itemDiscount = (product.sellingPrice * item.quantity) - itemSubtotal;
 
@@ -68,8 +68,8 @@ export const createSale = async (req, res) => {
     // Aplicar descuento global
     const subtotalAfterItemDiscounts = subtotal - totalDiscount;
     // Si se proporciona el monto exacto del descuento, usar ese; si no, calcular desde el porcentaje
-    const finalGlobalDiscountAmount = globalDiscountAmount > 0 
-      ? globalDiscountAmount 
+    const finalGlobalDiscountAmount = globalDiscountAmount > 0
+      ? globalDiscountAmount
       : (globalDiscount / 100) * subtotalAfterItemDiscounts;
     totalDiscount += finalGlobalDiscountAmount;
 
@@ -103,7 +103,7 @@ export const createSale = async (req, res) => {
     const populatedSale = await Sale.findById(sale._id)
       .populate('user', 'name email')
       .populate('customer', 'fullName phone email')
-      .populate('items.product', 'name sku');
+      .populate('items.product', 'name sku purchasePrice warranty');
 
     // Log técnico del sistema
     await LogService.logAction({
@@ -144,7 +144,7 @@ export const createSale = async (req, res) => {
     res.status(201).json(populatedSale);
   } catch (error) {
     console.error('Error al crear venta:', error);
-    
+
     // Log de error
     await LogService.logError({
       module: 'sales',
@@ -155,7 +155,7 @@ export const createSale = async (req, res) => {
       req,
       details: { itemsCount: req.body.items?.length }
     });
-    
+
     res.status(500).json({ message: 'Error al crear venta', error: error.message });
   }
 };
@@ -166,7 +166,7 @@ export const createSale = async (req, res) => {
 export const getSales = async (req, res) => {
   try {
     const { startDate, endDate, user, paymentMethod, status, search, page = 1, limit = 50 } = req.query;
-    
+
     let query = {};
 
     // Filtro por búsqueda de número de factura
@@ -296,7 +296,7 @@ export const getSaleById = async (req, res) => {
 
     // Obtener devoluciones previas de esta venta para calcular cantidades disponibles
     const Return = mongoose.model('Return');
-    const previousReturns = await Return.find({ 
+    const previousReturns = await Return.find({
       sale: req.params.id,
       status: { $ne: 'Rechazada' } // Contar todas excepto rechazadas
     });
@@ -390,14 +390,14 @@ export const cancelSale = async (req, res) => {
     // Restaurar stock de los productos (solo si el producto aún existe)
     let restoredCount = 0;
     let skippedCount = 0;
-    
+
     for (const item of sale.items) {
       // Verificar que el producto existe antes de actualizar
       const productId = item.product?._id || item.product;
-      
+
       if (productId) {
         const productExists = await Product.findById(productId);
-        
+
         if (productExists) {
           await Product.findByIdAndUpdate(productId, {
             $inc: { stock: item.quantity }
@@ -462,7 +462,7 @@ export const cancelSale = async (req, res) => {
     res.json({ message: 'Venta cancelada exitosamente', sale });
   } catch (error) {
     console.error('Error al cancelar venta:', error);
-    
+
     // Log de error
     await LogService.logError({
       module: 'sales',
@@ -473,7 +473,7 @@ export const cancelSale = async (req, res) => {
       req,
       details: { saleId: req.params.id }
     });
-    
+
     res.status(500).json({ message: 'Error al cancelar venta', error: error.message });
   }
 };
@@ -494,12 +494,12 @@ export const closeCashRegister = async (req, res) => {
     // Obtener ventas del cajero del día actual (desde las 00:00:00 hasta ahora)
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
-    
+
     const now = new Date();
 
     const sales = await Sale.find({
       cashier: cashierId,
-      createdAt: { 
+      createdAt: {
         $gte: startOfDay,
         $lte: now
       },
@@ -531,7 +531,7 @@ export const closeCashRegister = async (req, res) => {
 
     sales.forEach(sale => {
       systemTotals.totalAmount += sale.total;
-      
+
       if (sale.paymentMethod === 'Efectivo') {
         systemTotals.cash += sale.total;
       } else if (sale.paymentMethod === 'Tarjeta') {
