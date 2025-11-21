@@ -229,7 +229,7 @@ export const getSales = async (req, res) => {
     const sales = await Sale.find(query)
       .populate('user', 'name email')
       .populate('customer', 'fullName phone')
-      .populate('items.product', 'name sku')
+      .populate('items.product', 'name sku warranty')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum)

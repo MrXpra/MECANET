@@ -431,8 +431,16 @@ const Returns = () => {
           </div>
           
           <div class="line"></div>
-          <div class="line"></div>
           
+          <div style="margin-top: 40px; text-align: center;">
+            <div style="border-top: 1px solid #000; width: 80%; margin: 0 auto; padding-top: 5px;">
+              Firma del Responsable
+            </div>
+            <div style="font-size: 10px; margin-top: 2px;">
+              ${returnData.processedBy?.name || ''}
+            </div>
+          </div>
+
           <div style="text-align: center; margin-top: 15px;">
             <img src="${barcodeDataUrl}" style="width: 100%; max-width: 200px;" />
           </div>
@@ -722,8 +730,8 @@ const Returns = () => {
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                 disabled={!pagination.hasPrevPage}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasPrevPage
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
                   }`}
               >
                 Anterior
@@ -735,8 +743,8 @@ const Returns = () => {
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                 disabled={!pagination.hasNextPage}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasNextPage
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
                   }`}
               >
                 Siguiente
@@ -1414,10 +1422,10 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
                     {reason === 'Cambio' ? 'Diferencia a pagar/devolver:' : 'Total a devolver:'}
                   </span>
                   <span className={`text-2xl font-bold ${reason === 'Cambio'
-                      ? getPriceDifference() > 0
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-green-600 dark:text-green-400'
-                      : 'text-red-600 dark:text-red-400'
+                    ? getPriceDifference() > 0
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400'
                     }`}>
                     {reason === 'Cambio' ? formatCurrency(Math.abs(getPriceDifference())) : formatCurrency(getTotalAmount())}
                   </span>
@@ -1641,6 +1649,22 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
   }, [onClose]);
 
   const handlePrintReturn = () => {
+    // Generar código de barras
+    const canvas = document.createElement('canvas');
+    try {
+      JsBarcode(canvas, returnData.returnNumber, {
+        format: "CODE128",
+        displayValue: true,
+        fontSize: 14,
+        margin: 0,
+        height: 40,
+        width: 1.5
+      });
+    } catch (error) {
+      console.error("Error generating barcode:", error);
+    }
+    const barcodeDataUrl = canvas.toDataURL("image/png");
+
     const printWindow = window.open('', '_blank');
 
     // Calcular total de items devueltos
@@ -1873,6 +1897,20 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
           
           
           <div class="line"></div>
+          
+          <div style="margin-top: 40px; text-align: center;">
+            <div style="border-top: 1px solid #000; width: 80%; margin: 0 auto; padding-top: 5px;">
+              Firma del Responsable
+            </div>
+            <div style="font-size: 10px; margin-top: 2px;">
+              ${returnData.processedBy?.name || ''}
+            </div>
+          </div>
+
+          <div style="text-align: center; margin-top: 15px;">
+            <img src="${barcodeDataUrl}" style="width: 100%; max-width: 200px;" />
+          </div>
+
           <p class="center bold">Gracias por su comprensión</p>
           <p class="center small">Este documento no tiene validez fiscal</p>
         </body>
@@ -1989,21 +2027,21 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
               {/* Diferencia de precio */}
               {returnData.priceDifference !== undefined && returnData.priceDifference !== 0 && (
                 <div className={`mt-4 p-4 rounded-lg ${returnData.priceDifference > 0
-                    ? 'bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800'
-                    : 'bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800'
+                  ? 'bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800'
+                  : 'bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800'
                   }`}>
                   <div className="flex items-center justify-between">
                     <span className={`text-sm font-medium ${returnData.priceDifference > 0
-                        ? 'text-red-700 dark:text-red-300'
-                        : 'text-green-700 dark:text-green-300'
+                      ? 'text-red-700 dark:text-red-300'
+                      : 'text-green-700 dark:text-green-300'
                       }`}>
                       {returnData.priceDifference > 0
                         ? 'Cliente pagó diferencia:'
                         : 'Se devolvió al cliente:'}
                     </span>
                     <span className={`text-lg font-bold ${returnData.priceDifference > 0
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-green-600 dark:text-green-400'
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-green-600 dark:text-green-400'
                       }`}>
                       {formatCurrency(Math.abs(returnData.priceDifference))}
                     </span>

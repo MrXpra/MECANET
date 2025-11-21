@@ -53,9 +53,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { 
-  Search, 
-  Filter, 
+import {
+  Search,
+  Filter,
   Calendar,
   DollarSign,
   FileText,
@@ -72,6 +72,7 @@ import {
   Check,
   XCircle
 } from 'lucide-react';
+import JsBarcode from 'jsbarcode';
 import { toast } from 'react-hot-toast';
 import { getSales, cancelSale } from '../services/api';
 import { useSettingsStore } from '../store/settingsStore';
@@ -121,18 +122,18 @@ const SalesHistory = () => {
     try {
       setIsLoading(true);
       const response = await getSales({ ...filters, page: pagination.page, limit: pagination.limit });
-      
+
       // El backend ahora devuelve { sales, pagination, stats }
       const salesData = response?.data?.sales || response?.sales || [];
       const paginationData = response?.data?.pagination || response?.pagination || {};
       const statsData = response?.data?.stats || response?.stats || null;
-      
+
       setSales(salesData);
       setPagination(prev => ({
         ...prev,
         ...paginationData
       }));
-      
+
       // Usar stats del backend si están disponibles, sino calcular localmente
       if (statsData) {
         setStats(statsData);
@@ -237,6 +238,22 @@ const SalesHistory = () => {
   };
 
   const handlePrintInvoice = (sale) => {
+    // Generar código de barras
+    const canvas = document.createElement('canvas');
+    try {
+      JsBarcode(canvas, sale.invoiceNumber, {
+        format: "CODE128",
+        displayValue: true,
+        fontSize: 14,
+        margin: 0,
+        height: 40,
+        width: 1.5
+      });
+    } catch (error) {
+      console.error("Error generating barcode:", error);
+    }
+    const barcodeDataUrl = canvas.toDataURL("image/png");
+
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
       <html>
@@ -304,13 +321,13 @@ const SalesHistory = () => {
           
           <div class="info-section">
             <div><strong>Factura:</strong> ${sale.invoiceNumber}</div>
-            <div><strong>Fecha:</strong> ${new Date(sale.createdAt).toLocaleString('es-DO', { 
-              day: '2-digit', 
-              month: '2-digit', 
-              year: 'numeric', 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}</div>
+            <div><strong>Fecha:</strong> ${new Date(sale.createdAt).toLocaleString('es-DO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}</div>
             ${sale.customer ? `<div><strong>Cliente:</strong> ${sale.customer.fullName || sale.customer.name || 'Cliente General'}</div>` : '<div><strong>Cliente:</strong> Cliente General</div>'}
             ${sale.customer?.cedula ? `<div><strong>Cédula:</strong> ${sale.customer.cedula}</div>` : ''}
             ${sale.customer?.phone ? `<div><strong>Teléfono:</strong> ${sale.customer.phone}</div>` : ''}
@@ -332,7 +349,10 @@ const SalesHistory = () => {
               ${sale.items.map((item, index) => `
                 <tr class="item-row">
                   <td>${index + 1}</td>
-                  <td>${item.product?.name || 'Producto'}</td>
+                  <td>
+                    ${item.product?.name || 'Producto'}
+                    ${item.product?.warranty ? `<div style="font-size: 8px; font-style: italic; margin-top: 2px;">Garantía: ${item.product.warranty}</div>` : ''}
+                  </td>
                   <td class="center">${item.quantity}</td>
                   <td class="right">${formatCurrency(item.subtotal)}</td>
                 </tr>
@@ -369,7 +389,22 @@ const SalesHistory = () => {
           </table>
           
           <div class="line"></div>
-          <p class="center bold">¡Gracias por su compra!</p>
+          <div class="line"></div>
+          
+          <div style="margin-top: 40px; text-align: center;">
+            <div style="border-top: 1px solid #000; width: 80%; margin: 0 auto; padding-top: 5px;">
+              Firma del Vendedor
+            </div>
+            <div style="font-size: 10px; margin-top: 2px;">
+              ${sale.user ? (sale.user.name || sale.user.username || '') : ''}
+            </div>
+          </div>
+
+          <div style="text-align: center; margin-top: 15px;">
+            <img src="${barcodeDataUrl}" style="width: 100%; max-width: 200px;" />
+          </div>
+
+          <p class="center bold" style="margin: 10px 0 3px 0;">¡Gracias por su compra!</p>
           <p class="center small">Este documento no tiene validez fiscal</p>
         </body>
       </html>
@@ -577,7 +612,7 @@ const SalesHistory = () => {
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {Array.isArray(sales) && sales.map((sale) => (
-                <tr 
+                <tr
                   key={sale._id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
@@ -588,7 +623,7 @@ const SalesHistory = () => {
                         {sale.invoiceNumber}
                       </span>
                       {sale.hasReturns && (
-                        <span 
+                        <span
                           className="px-2 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full flex items-center gap-1"
                           title={`${sale.returnsCount} devolución${sale.returnsCount > 1 ? 'es' : ''} • Total: ${formatCurrency(sale.totalReturned || 0)}`}
                         >
@@ -702,11 +737,10 @@ const SalesHistory = () => {
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                 disabled={!pagination.hasPrevPage}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pagination.hasPrevPage
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasPrevPage
                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                     : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 Anterior
               </button>
@@ -716,11 +750,10 @@ const SalesHistory = () => {
               <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                 disabled={!pagination.hasNextPage}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pagination.hasNextPage
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasNextPage
                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                     : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 Siguiente
               </button>
@@ -953,8 +986,8 @@ const SaleDetailModal = ({ sale, onClose, formatCurrency, formatDate, getStatusB
                   Cancelar
                 </button>
               )}
-              <button 
-                onClick={onClose} 
+              <button
+                onClick={onClose}
                 className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
               >
                 <X className="w-6 h-6" />
@@ -1084,13 +1117,12 @@ const SaleDetailModal = ({ sale, onClose, formatCurrency, formatDate, getStatusB
                       <p className="text-sm font-bold text-orange-600 dark:text-orange-400">
                         Reembolso: -{formatCurrency(returnItem.totalAmount || 0)}
                       </p>
-                      <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
-                        returnItem.status === 'Aprobada' || returnItem.status === 'Completada'
+                      <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${returnItem.status === 'Aprobada' || returnItem.status === 'Completada'
                           ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                           : returnItem.status === 'Rechazada'
-                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                          : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
-                      }`}>
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                        }`}>
                         {returnItem.status === 'Completada' ? 'Aprobada' : returnItem.status || 'Pendiente'}
                       </span>
                     </div>
