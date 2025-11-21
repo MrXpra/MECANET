@@ -269,6 +269,77 @@ app.use(performanceMonitor);
 // Registrar todas las peticiones HTTP
 app.use(requestLogger);
 
+// Endpoint para obtener versión del sistema (Definido al inicio para evitar conflictos)
+app.get('/api/version', (req, res) => {
+  try {
+    const versionPath = path.join(__dirname, 'version.json');
+    const changelogPath = path.join(__dirname, 'CHANGELOG.md');
+
+    let versionData = { version: '1.0.0', releaseNotes: 'Versión inicial' };
+
+    if (fs.existsSync(versionPath)) {
+      try {
+        versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
+      } catch (e) {
+        console.error('Error parseando version.json:', e);
+      }
+    }
+
+    // Obtener commit hash actual
+    try {
+      // Intentar obtener info de git solo si existe la carpeta .git
+      if (fs.existsSync(path.join(__dirname, '.git'))) {
+        const commitHash = execSync('git rev-parse --short HEAD', {
+          cwd: __dirname,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'] // Evitar que errores salgan a consola
+        }).trim();
+        versionData.commit = commitHash;
+
+        const commitMessage = execSync('git log -1 --pretty=%B', {
+          cwd: __dirname,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore']
+        }).trim();
+        versionData.commitMessage = commitMessage;
+      } else {
+        versionData.commit = 'build';
+        versionData.commitMessage = 'Production Build';
+      }
+    } catch (err) {
+      // Silencioso en producción
+      versionData.commit = 'unknown';
+      versionData.commitMessage = 'No disponible';
+    }
+
+    // Leer CHANGELOG.md y extraer notas de la versión actual
+    if (fs.existsSync(changelogPath)) {
+      try {
+        const changelog = fs.readFileSync(changelogPath, 'utf8');
+        const versionRegex = new RegExp(`## \\[${versionData.version}\\][\\s\\S]*?(?=## \\[|$)`, 'i');
+        const match = changelog.match(versionRegex);
+
+        if (match) {
+          // Limpiar el texto: remover el título de versión y formatear
+          let notes = match[0]
+            .replace(/## \[.*?\].*?\n/, '') // Remover título
+            .trim();
+
+          versionData.releaseNotes = notes || versionData.releaseNotes;
+        }
+      } catch (e) {
+        console.error('Error leyendo changelog:', e);
+      }
+    }
+
+    res.json(versionData);
+  } catch (error) {
+    console.error('Error al leer versión:', error);
+    // Enviar JSON incluso en error 500 para evitar SyntaxError en cliente
+    res.status(500).json({ message: 'Error al obtener versión', version: '0.0.0' });
+  }
+});
+
 // ========== REGISTRO DE RUTAS API ==========
 // Cada ruta tiene su prefijo y se delega a su archivo de rutas correspondiente
 app.use('/api/auth', authRoutes); // /api/auth/login, /api/auth/register, etc
@@ -287,63 +358,6 @@ app.use('/api/logs', logRoutes); // /api/logs (logs técnicos del sistema)
 app.use('/api/audit-logs', auditLogRoutes); // /api/audit-logs (auditoría de usuario)
 app.use('/api/quotations', quotationRoutes); // /api/quotations (cotizaciones)
 app.use('/api/system', systemRoutes); // /api/system (actualizaciones del sistema)
-app.use('/api/system', systemRoutes); // /api/system (actualizaciones del sistema)
-
-// Endpoint para obtener versión del sistema
-app.get('/api/version', (req, res) => {
-  try {
-    const versionPath = path.join(__dirname, 'version.json');
-    const changelogPath = path.join(__dirname, 'CHANGELOG.md');
-
-    if (!fs.existsSync(versionPath)) {
-      return res.status(404).json({ message: 'Archivo de versión no encontrado' });
-    }
-
-    const versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
-
-    // Obtener commit hash actual
-    try {
-      const commitHash = execSync('git rev-parse --short HEAD', {
-        cwd: __dirname,
-        encoding: 'utf8'
-      }).trim();
-      versionData.commit = commitHash;
-
-      // Obtener mensaje del último commit
-      const commitMessage = execSync('git log -1 --pretty=%B', {
-        cwd: __dirname,
-        encoding: 'utf8'
-      }).trim();
-      versionData.commitMessage = commitMessage;
-    } catch (err) {
-      console.error('Error obteniendo info de git:', err.message);
-      // Si falla git, usar un valor por defecto
-      versionData.commit = 'unknown';
-      versionData.commitMessage = 'No disponible';
-    }
-
-    // Leer CHANGELOG.md y extraer notas de la versión actual
-    if (fs.existsSync(changelogPath)) {
-      const changelog = fs.readFileSync(changelogPath, 'utf8');
-      const versionRegex = new RegExp(`## \\[${versionData.version}\\][\\s\\S]*?(?=## \\[|$)`, 'i');
-      const match = changelog.match(versionRegex);
-
-      if (match) {
-        // Limpiar el texto: remover el título de versión y formatear
-        let notes = match[0]
-          .replace(/## \[.*?\].*?\n/, '') // Remover título
-          .trim();
-
-        versionData.releaseNotes = notes || versionData.releaseNotes;
-      }
-    }
-
-    res.json(versionData);
-  } catch (error) {
-    console.error('Error al leer versión:', error);
-    res.status(500).json({ message: 'Error al obtener versión' });
-  }
-});
 
 // Endpoint de debug para verificar devoluciones
 app.get('/api/debug/returns', async (req, res) => {

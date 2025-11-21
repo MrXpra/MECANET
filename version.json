@@ -1,5 +1,5 @@
 {
-  "version": "1.6.2",
+  "version": "1.6.3",
   "lastUpdated": "2025-11-21",
-  "releaseNotes": "More fixes"
+  "releaseNotes": "fixed the issue where fetching the version resulted in a syntax error."
 }
