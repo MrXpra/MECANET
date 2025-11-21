@@ -1,5 +1,5 @@
 {
-  "version": "1.5.2",
+  "version": "1.5.3",
   "lastUpdated": "2025-11-21",
-  "releaseNotes": "Comentario de prueba"
+  "releaseNotes": "Fix encoding in CONFIGURAR-INICIAL.bat"
 }
