@@ -188,7 +188,7 @@ const Settings = ({ section = 'all' }) => {
   const [autoSaveTimeout, setAutoSaveTimeout] = useState(null);
   const smtpEnabled = formData.smtp?.enabled !== false;
   const isAdminUser = user?.role === 'admin';
-  const isDeveloper = user?.role === 'desarrollador';
+  const isDeveloper = user?.role === 'desarrollador' || user?.role === 'developer';
   const canManageSettings = ['admin', 'desarrollador'].includes(user?.role);
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 {
-  "version": "1.5.6",
+  "version": "1.5.7",
   "lastUpdated": "2025-11-21",
-  "releaseNotes": "Corregir visibilidad del modal de limpieza de logs"
+  "releaseNotes": "Corregir acceso de desarrolladores a logs (soporte para rol en inglés/español)"
 }
