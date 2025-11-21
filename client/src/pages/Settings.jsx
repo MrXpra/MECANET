@@ -1995,6 +1995,93 @@ const Settings = ({ section = 'all' }) => {
           </div>
         </div>
       )}
+      {/* Log Clean Modal */}
+      {showLogCleanModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" style={{ zIndex: 9999 }}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6 relative z-50">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                Limpiar Logs
+              </h3>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Tipo de Log
+                </label>
+                <select
+                  value={logCleanFilters.type}
+                  onChange={(e) => setLogCleanFilters({ ...logCleanFilters, type: e.target.value })}
+                  className="input"
+                >
+                  <option value="all">Todos los tipos</option>
+                  <option value="info">Info</option>
+                  <option value="warning">Warning</option>
+                  <option value="error">Error</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Severidad
+                </label>
+                <select
+                  value={logCleanFilters.severity}
+                  onChange={(e) => setLogCleanFilters({ ...logCleanFilters, severity: e.target.value })}
+                  className="input"
+                >
+                  <option value="all">Todas las severidades</option>
+                  <option value="low">Baja</option>
+                  <option value="medium">Media</option>
+                  <option value="high">Alta</option>
+                  <option value="critical">Crítica</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Antigüedad (Días)
+                </label>
+                <input
+                  type="number"
+                  value={logCleanFilters.days}
+                  onChange={(e) => setLogCleanFilters({ ...logCleanFilters, days: e.target.value })}
+                  className="input"
+                  placeholder="Ej: 30 (dejar vacío para borrar todo)"
+                  min="0"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Se borrarán logs más antiguos que X días. Dejar vacío para borrar sin límite de fecha.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowLogCleanModal(false)}
+                className="btn btn-secondary flex-1"
+                disabled={isCleaningLogs}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleCleanLogs}
+                className="btn btn-danger flex-1 flex items-center justify-center gap-2"
+                disabled={isCleaningLogs}
+              >
+                {isCleaningLogs ? 'Limpiando...' : 'Confirmar Limpieza'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -2131,95 +2218,7 @@ const AutoThemeToggle = () => {
         </div>
       </div>
 
-      {/* Log Clean Modal - Moved to end of component */}
-      {
-        showLogCleanModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" style={{ zIndex: 9999 }}>
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6 relative z-50">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                  <Trash2 className="w-6 h-6 text-slate-600 dark:text-slate-400" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Limpiar Logs
-                </h3>
-              </div>
 
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Tipo de Log
-                  </label>
-                  <select
-                    value={logCleanFilters.type}
-                    onChange={(e) => setLogCleanFilters({ ...logCleanFilters, type: e.target.value })}
-                    className="input"
-                  >
-                    <option value="all">Todos los tipos</option>
-                    <option value="info">Info</option>
-                    <option value="warning">Warning</option>
-                    <option value="error">Error</option>
-                    <option value="critical">Critical</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Severidad
-                  </label>
-                  <select
-                    value={logCleanFilters.severity}
-                    onChange={(e) => setLogCleanFilters({ ...logCleanFilters, severity: e.target.value })}
-                    className="input"
-                  >
-                    <option value="all">Todas las severidades</option>
-                    <option value="low">Baja</option>
-                    <option value="medium">Media</option>
-                    <option value="high">Alta</option>
-                    <option value="critical">Crítica</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Antigüedad (Días)
-                  </label>
-                  <input
-                    type="number"
-                    value={logCleanFilters.days}
-                    onChange={(e) => setLogCleanFilters({ ...logCleanFilters, days: e.target.value })}
-                    className="input"
-                    placeholder="Ej: 30 (dejar vacío para borrar todo)"
-                    min="0"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Se borrarán logs más antiguos que X días. Dejar vacío para borrar sin límite de fecha.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowLogCleanModal(false)}
-                  className="btn btn-secondary flex-1"
-                  disabled={isCleaningLogs}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCleanLogs}
-                  className="btn btn-danger flex-1 flex items-center justify-center gap-2"
-                  disabled={isCleaningLogs}
-                >
-                  {isCleaningLogs ? 'Limpiando...' : 'Confirmar Limpieza'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      }
     </div >
   );
 };
