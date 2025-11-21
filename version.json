@@ -1,5 +1,5 @@
 {
-  "version": "1.5.5",
+  "version": "1.5.6",
   "lastUpdated": "2025-11-21",
-  "releaseNotes": "Corregir build del frontend con UI completa de gestión de logs"
+  "releaseNotes": "Corregir visibilidad del modal de limpieza de logs"
 }
