@@ -588,21 +588,6 @@ const Settings = ({ section = 'all' }) => {
     return section === sectionId;
   };
 
-  if (section === 'system' && !isDeveloper) {
-    return (
-      <div className="space-y-6 animate-fade-in">
-        <div className="card-glass p-6 flex flex-col items-center text-center gap-3">
-          <AlertCircle className="w-12 h-12 text-amber-500" />
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Acceso restringido</h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Solo los desarrolladores pueden ver y editar la sección de configuración del sistema.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 animate-fade-in">

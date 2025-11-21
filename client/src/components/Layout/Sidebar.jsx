@@ -153,7 +153,7 @@ const Sidebar = () => {
   // Subsecciones de Configuración
   const configSections = [
     { path: '/configuracion/negocio', icon: Building2, label: 'Negocio', shortcut: 'Ctrl+,' },
-    { path: '/configuracion/sistema', icon: Globe, label: 'Sistema', developerOnly: true },
+    { path: '/configuracion/sistema', icon: Globe, label: 'Sistema' },
     { path: '/configuracion/notificaciones', icon: Bell, label: 'Notificaciones' },
     { path: '/configuracion/facturacion', icon: CreditCard, label: 'Facturación' },
     { path: '/configuracion/integraciones', icon: Cloud, label: 'Integraciones' },
@@ -219,11 +219,11 @@ const Sidebar = () => {
           <button
             onClick={() => setVentasExpanded(!ventasExpanded)}
             className={`w-full flex items-center gap-2 xl:gap-3 px-3 xl:px-4 py-2 xl:py-3 rounded-lg transition-all duration-200 text-sm xl:text-base ${location.pathname.includes('/facturacion') ||
-                location.pathname.includes('/historial-ventas') ||
-                location.pathname.includes('/cotizaciones') ||
-                location.pathname.includes('/devoluciones')
-                ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              location.pathname.includes('/historial-ventas') ||
+              location.pathname.includes('/cotizaciones') ||
+              location.pathname.includes('/devoluciones')
+              ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
           >
             <Receipt className="w-5 h-5" />
@@ -268,9 +268,9 @@ const Sidebar = () => {
           <button
             onClick={() => setInventarioExpanded(!inventarioExpanded)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname.includes('/inventario') ||
-                location.pathname.includes('/ordenes-compra')
-                ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              location.pathname.includes('/ordenes-compra')
+              ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
           >
             <Package className="w-5 h-5" />
@@ -315,9 +315,9 @@ const Sidebar = () => {
           <button
             onClick={() => setContactosExpanded(!contactosExpanded)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname.includes('/clientes') ||
-                location.pathname.includes('/proveedores')
-                ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              location.pathname.includes('/proveedores')
+              ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
           >
             <Users className="w-5 h-5" />
@@ -362,9 +362,9 @@ const Sidebar = () => {
           <button
             onClick={() => setCajaExpanded(!cajaExpanded)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname.includes('/cierre-caja') ||
-                location.pathname.includes('/retiros-caja')
-                ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+              location.pathname.includes('/retiros-caja')
+              ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
           >
             <DollarSign className="w-5 h-5" />
@@ -433,10 +433,10 @@ const Sidebar = () => {
                   <button
                     onClick={() => setSistemaExpanded(!sistemaExpanded)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname.includes('/logs') ||
-                        location.pathname.includes('/auditoria') ||
-                        location.pathname.includes('/monitoreo')
-                        ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      location.pathname.includes('/auditoria') ||
+                      location.pathname.includes('/monitoreo')
+                      ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                       }`}
                   >
                     <Activity className="w-5 h-5" />
@@ -478,8 +478,8 @@ const Sidebar = () => {
                 <button
                   onClick={() => setConfigExpanded(!configExpanded)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname.startsWith('/configuracion')
-                      ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                 >
                   <Settings className="w-5 h-5" />
