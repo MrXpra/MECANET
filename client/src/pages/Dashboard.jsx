@@ -84,13 +84,6 @@ const Dashboard = () => {
       const response = await getAllDashboardData();
       const data = response.data;
 
-      // DEBUG: Mostrar en consola las estadísticas recibidas
-      console.log('🎯 DASHBOARD v1.4.14+ - Datos recibidos:', {
-        ventasHoy: data.stats?.today?.total,
-        devolucionesHoy: data.stats?.today?.returns,
-        montoDevuelto: data.stats?.today?.returnsAmount
-      });
-
       setStats(data.stats);
       setSalesByDay(data.salesByDay);
       setTopProducts(data.topProducts);
@@ -147,7 +140,7 @@ const Dashboard = () => {
   }) => {
     // Solo mostrar si el porcentaje es significativo (mayor a 5%)
     if (percent < 0.05) return null;
-    
+
     const RADIAN = Math.PI / 180;
     // Posicionar en el centro del anillo (entre innerRadius y outerRadius)
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -161,7 +154,7 @@ const Dashboard = () => {
         fill="white"
         textAnchor="middle"
         dominantBaseline="central"
-        style={{ 
+        style={{
           fontSize: '14px',
           fontWeight: 'bold',
           textShadow: '0 2px 4px rgba(0,0,0,0.8)',
@@ -235,7 +228,7 @@ const Dashboard = () => {
                 <div className="absolute right-0 top-8 w-64 p-3 bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg shadow-xl z-50">
                   <p className="font-semibold mb-1">¿Qué muestra esta gráfica?</p>
                   <p className="text-xs leading-relaxed">
-                    Muestra el total de ventas diarias (ingresos) de los últimos 7 días. 
+                    Muestra el total de ventas diarias (ingresos) de los últimos 7 días.
                     Cada barra representa el monto total vendido en ese día. Pasa el cursor sobre las barras para ver detalles.
                   </p>
                 </div>
@@ -246,19 +239,19 @@ const Dashboard = () => {
             <AreaChart data={salesByDay}>
               <defs>
                 <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-              <XAxis 
-                dataKey="date" 
-                stroke="#6b7280" 
+              <XAxis
+                dataKey="date"
+                stroke="#6b7280"
                 fontSize={12}
                 tickMargin={10}
               />
-              <YAxis 
-                stroke="#6b7280" 
+              <YAxis
+                stroke="#6b7280"
                 fontSize={12}
                 tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
               />
@@ -274,12 +267,12 @@ const Dashboard = () => {
                 labelFormatter={(label) => `Fecha: ${label}`}
               />
               <Legend />
-              <Area 
-                type="monotone" 
-                dataKey="total" 
-                stroke="#3b82f6" 
+              <Area
+                type="monotone"
+                dataKey="total"
+                stroke="#3b82f6"
                 strokeWidth={3}
-                fill="url(#colorTotal)" 
+                fill="url(#colorTotal)"
                 name="Total de Ventas"
                 dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
                 activeDot={{ r: 6, strokeWidth: 2 }}
@@ -306,7 +299,7 @@ const Dashboard = () => {
                 <div className="absolute right-0 top-8 w-64 p-3 bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg shadow-xl z-50">
                   <p className="font-semibold mb-1">¿Qué muestra esta gráfica?</p>
                   <p className="text-xs leading-relaxed">
-                    Distribución de ventas de los últimos 30 días por método de pago (Efectivo, Tarjeta, Transferencia). 
+                    Distribución de ventas de los últimos 30 días por método de pago (Efectivo, Tarjeta, Transferencia).
                     Cada porción representa el porcentaje del total.
                   </p>
                 </div>
@@ -339,15 +332,15 @@ const Dashboard = () => {
                 animationDuration={800}
               >
                 {salesByPayment.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
+                  <Cell
+                    key={`cell-${index}`}
                     fill={`url(#gradient-${index % COLORS.length})`}
                     stroke="rgba(255,255,255,0.3)"
                     strokeWidth={2}
                   />
                 ))}
               </Pie>
-              <Tooltip 
+              <Tooltip
                 formatter={(value) => formatCurrency(value)}
                 contentStyle={{
                   backgroundColor: 'rgba(0, 0, 0, 0.85)',
@@ -356,17 +349,17 @@ const Dashboard = () => {
                   padding: '12px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 }}
-                labelStyle={{ 
-                  color: '#fff', 
+                labelStyle={{
+                  color: '#fff',
                   fontWeight: 'bold',
                   marginBottom: '4px'
                 }}
-                itemStyle={{ 
+                itemStyle={{
                   color: '#fff',
                   padding: '2px 0'
                 }}
               />
-              <Legend 
+              <Legend
                 verticalAlign="bottom"
                 height={36}
                 iconType="circle"
@@ -381,30 +374,30 @@ const Dashboard = () => {
               />
             </PieChart>
           </ResponsiveContainer>
-          
+
           {/* Estadísticas adicionales debajo de la gráfica */}
           <div className="mt-4 grid grid-cols-3 gap-3">
             {salesByPayment.map((payment, index) => {
               const methodName = payment.name || payment._id || 'Desconocido';
               return (
-              <div 
-                key={`${methodName}-${index}`}
-                className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600"
-              >
-                <div 
-                  className="w-3 h-3 rounded-full mx-auto mb-2"
-                  style={{ 
-                    background: `linear-gradient(180deg, ${COLORS[index % COLORS.length]} 0%, ${COLORS[index % COLORS.length]}99 100%)`
-                  }}
-                />
-                <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  {methodName}
-                </p>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">
-                  {formatCurrency(payment.total)}
-                </p>
-              </div>
-            );
+                <div
+                  key={`${methodName}-${index}`}
+                  className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600"
+                >
+                  <div
+                    className="w-3 h-3 rounded-full mx-auto mb-2"
+                    style={{
+                      background: `linear-gradient(180deg, ${COLORS[index % COLORS.length]} 0%, ${COLORS[index % COLORS.length]}99 100%)`
+                    }}
+                  />
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                    {methodName}
+                  </p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    {formatCurrency(payment.total)}
+                  </p>
+                </div>
+              );
             })}
           </div>
         </div>
@@ -498,7 +491,7 @@ const Dashboard = () => {
 // KPI Card Component
 const KPICard = ({ title, value, icon: Icon, color, subtitle, tooltip }) => {
   const [showTooltip, setShowTooltip] = useState(false);
-  
+
   const colorClasses = {
     blue: 'from-blue-500 to-blue-600',
     green: 'from-green-500 to-green-600',

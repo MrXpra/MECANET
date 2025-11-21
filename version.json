@@ -1,5 +1,5 @@
 {
-  "version": "1.6.4",
+  "version": "1.6.5",
   "lastUpdated": "2025-11-21",
-  "releaseNotes": "addressed the issue which persists in cloud mode"
+  "releaseNotes": "Fixed Cloud Mode Routing"
 }
