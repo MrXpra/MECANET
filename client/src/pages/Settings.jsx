@@ -76,11 +76,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  getSettings, 
-  updateSettings, 
-  exportSystemData, 
-  importSystemData, 
+import {
+  getSettings,
+  updateSettings,
+  exportSystemData,
+  importSystemData,
   cleanTestData,
   getNotificationPreferences,
   updateNotificationPreferences
@@ -148,7 +148,7 @@ const Settings = ({ section = 'all' }) => {
     paymentReminders: true
   });
   const fileInputRef = useRef(null);
-  
+
   const [formData, setFormData] = useState({
     businessName: '',
     businessLogoUrl: '',
@@ -176,6 +176,12 @@ const Settings = ({ section = 'all' }) => {
     requireOrderReception: true,
     autoOrderThreshold: 5,
     toastPosition: 'top-center',
+    logRetention: {
+      info: 7,
+      warning: 30,
+      error: 90,
+      critical: 180
+    }
   });
 
   const [originalData, setOriginalData] = useState({});
@@ -194,7 +200,7 @@ const Settings = ({ section = 'all' }) => {
     try {
       setIsLoading(true);
       const response = await getSettings();
-      
+
       const smtpDefaults = {
         enabled: true,
         host: 'smtp.gmail.com',
@@ -212,13 +218,20 @@ const Settings = ({ section = 'all' }) => {
         smtp: {
           ...smtpDefaults,
           ...(response.data.smtp || {})
+        },
+        logRetention: {
+          info: 7,
+          warning: 30,
+          error: 90,
+          critical: 180,
+          ...(response.data.logRetention || {})
         }
       };
 
       if (settingsData.requireOrderReception === undefined) {
         settingsData.requireOrderReception = true;
       }
-      
+
       setFormData(settingsData);
       setOriginalData(settingsData);
       // Actualizar store solo al cargar configuración
@@ -235,7 +248,7 @@ const Settings = ({ section = 'all' }) => {
   useEffect(() => {
     // No auto-guardar en la carga inicial
     if (Object.keys(originalData).length === 0) return;
-    
+
     // Verificar si hay cambios reales
     const hasRealChanges = JSON.stringify(formData) !== JSON.stringify(originalData);
     if (!hasRealChanges) {
@@ -325,7 +338,7 @@ const Settings = ({ section = 'all' }) => {
     try {
       const newPrefs = { ...notificationPrefs, [key]: value };
       setNotificationPrefs(newPrefs);
-      
+
       await updateNotificationPreferences(newPrefs);
       toast.success('Preferencia actualizada', { duration: 1500 });
     } catch (error) {
@@ -340,10 +353,10 @@ const Settings = ({ section = 'all' }) => {
     try {
       setIsExporting(true);
       toast.loading('Exportando datos...', { id: 'export' });
-      
+
       const response = await exportSystemData();
       const data = response.data;
-      
+
       // Crear blob y descargar
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
@@ -354,7 +367,7 @@ const Settings = ({ section = 'all' }) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
       toast.success(`✅ Datos exportados: ${data.metadata.totalRecords.products} productos, ${data.metadata.totalRecords.sales} ventas`, { id: 'export' });
     } catch (error) {
       console.error('Error al exportar datos:', error);
@@ -382,10 +395,10 @@ const Settings = ({ section = 'all' }) => {
       }
 
       // Confirmar importación
-      const confirmMsg = importMode === 'replace' 
-        ? '⚠️ MODO REEMPLAZAR: Se eliminarán datos existentes. ¿Continuar?' 
+      const confirmMsg = importMode === 'replace'
+        ? '⚠️ MODO REEMPLAZAR: Se eliminarán datos existentes. ¿Continuar?'
         : '¿Importar datos en modo COMBINAR?';
-      
+
       if (!window.confirm(confirmMsg)) {
         toast.dismiss('import');
         setIsImporting(false);
@@ -394,10 +407,10 @@ const Settings = ({ section = 'all' }) => {
 
       // Ejecutar importación
       const response = await importSystemData(importData, importMode);
-      
+
       if (response.data.success) {
         toast.success(`✅ ${response.data.message}`, { id: 'import', duration: 4000 });
-        
+
         // Recargar configuración
         setTimeout(() => {
           window.location.reload();
@@ -427,18 +440,18 @@ const Settings = ({ section = 'all' }) => {
       toast.loading('Limpiando datos de prueba...', { id: 'clean' });
 
       const response = await cleanTestData(cleanConfirmText);
-      
+
       if (response.data.success) {
         const { deleted } = response.data;
         const summary = Object.entries(deleted)
           .filter(([_, count]) => count > 0)
           .map(([key, count]) => `${count} ${key}`)
           .join(', ');
-        
+
         toast.success(`✅ ${response.data.message}\nEliminados: ${summary || 'ninguno'}`, { id: 'clean', duration: 5000 });
         setShowCleanConfirmModal(false);
         setCleanConfirmText('');
-        
+
         // Recargar después de 2 segundos
         setTimeout(() => {
           window.location.reload();
@@ -454,6 +467,47 @@ const Settings = ({ section = 'all' }) => {
     }
   };
 
+  const [isCleaningLogs, setIsCleaningLogs] = useState(false);
+  const [showLogCleanModal, setShowLogCleanModal] = useState(false);
+  const [logCleanFilters, setLogCleanFilters] = useState({
+    type: 'all',
+    severity: 'all',
+    days: ''
+  });
+
+  const handleCleanLogs = async () => {
+    try {
+      setIsCleaningLogs(true);
+      toast.loading('Limpiando logs...', { id: 'clean-logs' });
+
+      const response = await fetch('/api/logs/clean', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          ...logCleanFilters,
+          all: logCleanFilters.type === 'all' && logCleanFilters.severity === 'all' && !logCleanFilters.days
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(`✅ ${data.message}`, { id: 'clean-logs' });
+        setShowLogCleanModal(false);
+      } else {
+        throw new Error(data.message || 'Error al limpiar logs');
+      }
+    } catch (error) {
+      console.error('Error al limpiar logs:', error);
+      toast.error(error.message || 'Error al limpiar logs', { id: 'clean-logs' });
+    } finally {
+      setIsCleaningLogs(false);
+    }
+  };
+
   const handleTestEmail = async () => {
     if (!smtpEnabled) {
       toast.error('Activa el envío de correos para probar la conexión.');
@@ -462,7 +516,7 @@ const Settings = ({ section = 'all' }) => {
 
     try {
       setTestingEmail(true);
-      
+
       // Primero guardar si hay cambios pendientes
       if (hasChanges) {
         toast.loading('Guardando configuración...', { id: 'saving-smtp' });
@@ -472,7 +526,7 @@ const Settings = ({ section = 'all' }) => {
         updateSettingsStore(formData);
         toast.dismiss('saving-smtp');
       }
-      
+
       // Luego probar conexión
       const response = await fetch('/api/settings/smtp/test', {
         method: 'POST',
@@ -482,7 +536,7 @@ const Settings = ({ section = 'all' }) => {
         }
       });
       const data = await response.json();
-      
+
       if (data.success) {
         toast.success('✅ Configuración SMTP correcta. El email se puede enviar.');
       } else {
@@ -599,10 +653,9 @@ const Settings = ({ section = 'all' }) => {
                 key={tab.id}
                 to={tab.path}
                 className={({ isActive }) =>
-                  `flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 whitespace-nowrap ${
-                    isActive
-                      ? 'bg-primary-600 text-white shadow-lg'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  `flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 whitespace-nowrap ${isActive
+                    ? 'bg-primary-600 text-white shadow-lg'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`
                 }
               >
@@ -629,1074 +682,1153 @@ const Settings = ({ section = 'all' }) => {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Business Information */}
         {shouldShowSection('business') && (
-        <div className="card-glass p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Información del Negocio
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Datos generales de la empresa
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Business Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Nombre del Negocio *
-              </label>
-              <input
-                type="text"
-                value={formData.businessName}
-                onChange={(e) => handleChange('businessName', e.target.value)}
-                disabled={!canManageSettings}
-                className="input"
-                placeholder="MECANET"
-                required
-              />
+          <div className="card-glass p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Información del Negocio
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Datos generales de la empresa
+                </p>
+              </div>
             </div>
 
-            {/* Business Logo URL */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                URL del Logo
-              </label>
-              <div className="flex gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Business Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nombre del Negocio *
+                </label>
                 <input
                   type="text"
-                  value={formData.businessLogoUrl}
-                  onChange={(e) => handleChange('businessLogoUrl', e.target.value)}
+                  value={formData.businessName}
+                  onChange={(e) => handleChange('businessName', e.target.value)}
                   disabled={!canManageSettings}
-                  className="input flex-1"
-                  placeholder="/logo.png"
+                  className="input"
+                  placeholder="MECANET"
+                  required
                 />
-                <div className="relative">
-                  <Info
-                    className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-help mt-3"
-                    onMouseEnter={() => setShowTooltip('logo')}
-                    onMouseLeave={() => setShowTooltip(null)}
+              </div>
+
+              {/* Business Logo URL */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  URL del Logo
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.businessLogoUrl}
+                    onChange={(e) => handleChange('businessLogoUrl', e.target.value)}
+                    disabled={!canManageSettings}
+                    className="input flex-1"
+                    placeholder="/logo.png"
                   />
-                  {showTooltip === 'logo' && (
-                    <div className="absolute bottom-full right-0 mb-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-50">
-                      URL de la imagen del logo. Aparecerá en reportes y recibos impresos.
-                    </div>
-                  )}
+                  <div className="relative">
+                    <Info
+                      className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-help mt-3"
+                      onMouseEnter={() => setShowTooltip('logo')}
+                      onMouseLeave={() => setShowTooltip(null)}
+                    />
+                    {showTooltip === 'logo' && (
+                      <div className="absolute bottom-full right-0 mb-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-50">
+                        URL de la imagen del logo. Aparecerá en reportes y recibos impresos.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Business Phone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Teléfono
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={formData.businessPhone}
+                    onChange={(e) => handleChange('businessPhone', formatPhone(e.target.value))}
+                    disabled={!canManageSettings}
+                    className="input pl-10"
+                    placeholder="809-555-1234"
+                    maxLength={12}
+                  />
+                </div>
+              </div>
+
+              {/* Business Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="email"
+                    value={formData.businessEmail}
+                    onChange={(e) => handleChange('businessEmail', e.target.value)}
+                    disabled={!canManageSettings}
+                    className="input pl-10"
+                    placeholder="contacto@autoparts.com"
+                  />
+                </div>
+              </div>
+
+              {/* Business Address */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Dirección
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                  <textarea
+                    value={formData.businessAddress}
+                    onChange={(e) => handleChange('businessAddress', e.target.value)}
+                    disabled={!canManageSettings}
+                    className="input pl-10 min-h-[80px]"
+                    placeholder="Calle Principal #123, Santo Domingo, República Dominicana"
+                    rows={3}
+                  />
                 </div>
               </div>
             </div>
-
-            {/* Business Phone */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Teléfono
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={formData.businessPhone}
-                  onChange={(e) => handleChange('businessPhone', formatPhone(e.target.value))}
-                  disabled={!canManageSettings}
-                  className="input pl-10"
-                  placeholder="809-555-1234"
-                  maxLength={12}
-                />
-              </div>
-            </div>
-
-            {/* Business Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  value={formData.businessEmail}
-                  onChange={(e) => handleChange('businessEmail', e.target.value)}
-                  disabled={!canManageSettings}
-                  className="input pl-10"
-                  placeholder="contacto@autoparts.com"
-                />
-              </div>
-            </div>
-
-            {/* Business Address */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Dirección
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                <textarea
-                  value={formData.businessAddress}
-                  onChange={(e) => handleChange('businessAddress', e.target.value)}
-                  disabled={!canManageSettings}
-                  className="input pl-10 min-h-[80px]"
-                  placeholder="Calle Principal #123, Santo Domingo, República Dominicana"
-                  rows={3}
-                />
-              </div>
-            </div>
           </div>
-        </div>
         )}
 
         {/* Email/SMTP Configuration */}
         {shouldShowSection('business') && (
-        <div className="card-glass p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <div className="card-glass p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Configuración de Email (SMTP)
+                  </h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Configura el servidor SMTP para enviar órdenes de compra
+                  </p>
+                </div>
               </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-medium ${smtpEnabled ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                    {smtpEnabled ? 'Emails activados' : 'Emails desactivados'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={toggleSmtpEnabled}
+                    disabled={!canManageSettings}
+                    aria-pressed={smtpEnabled}
+                    className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors ${smtpEnabled ? 'bg-green-500' : 'bg-gray-400'} ${!canManageSettings ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${smtpEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+                    />
+                  </button>
+                </div>
+                <button
+                  onClick={handleTestEmail}
+                  disabled={testingEmail || !canManageSettings || !smtpEnabled}
+                  className="btn btn-secondary flex items-center gap-2"
+                >
+                  {testingEmail ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                      Probando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Probar Conexión
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {!smtpEnabled && (
+              <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold">El envío de correos está desactivado.</p>
+                  <p className="text-xs">No podrás enviar órdenes de compra ni probar la conexión hasta activarlo nuevamente.</p>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* SMTP Host */}
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Configuración de Email (SMTP)
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Configura el servidor SMTP para enviar órdenes de compra
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Servidor SMTP
+                </label>
+                <input
+                  type="text"
+                  value={formData.smtp?.host || ''}
+                  onChange={(e) => handleSmtpChange('host', e.target.value)}
+                  disabled={!canManageSettings || !smtpEnabled}
+                  className="input"
+                  placeholder="smtp.gmail.com"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Gmail: smtp.gmail.com | Outlook: smtp.office365.com
                 </p>
               </div>
-            </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-3">
-                <span className={`text-sm font-medium ${smtpEnabled ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
-                  {smtpEnabled ? 'Emails activados' : 'Emails desactivados'}
-                </span>
-                <button
-                  type="button"
-                  onClick={toggleSmtpEnabled}
-                  disabled={!canManageSettings}
-                  aria-pressed={smtpEnabled}
-                  className={`relative inline-flex h-6 w-12 items-center rounded-full transition-colors ${smtpEnabled ? 'bg-green-500' : 'bg-gray-400'} ${!canManageSettings ? 'opacity-60 cursor-not-allowed' : ''}`}
-                >
-                  <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${smtpEnabled ? 'translate-x-6' : 'translate-x-1'}`}
-                  />
-                </button>
-              </div>
-              <button
-                onClick={handleTestEmail}
-                disabled={testingEmail || !canManageSettings || !smtpEnabled}
-                className="btn btn-secondary flex items-center gap-2"
-              >
-                {testingEmail ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                    Probando...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    Probar Conexión
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
 
-          {!smtpEnabled && (
-            <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              {/* SMTP Port */}
               <div>
-                <p className="text-sm font-semibold">El envío de correos está desactivado.</p>
-                <p className="text-xs">No podrás enviar órdenes de compra ni probar la conexión hasta activarlo nuevamente.</p>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* SMTP Host */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Servidor SMTP
-              </label>
-              <input
-                type="text"
-                value={formData.smtp?.host || ''}
-                onChange={(e) => handleSmtpChange('host', e.target.value)}
-                disabled={!canManageSettings || !smtpEnabled}
-                className="input"
-                placeholder="smtp.gmail.com"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Gmail: smtp.gmail.com | Outlook: smtp.office365.com
-              </p>
-            </div>
-
-            {/* SMTP Port */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Puerto SMTP
-              </label>
-              <input
-                type="number"
-                value={formData.smtp?.port || 587}
-                onChange={(e) => handleSmtpChange('port', parseInt(e.target.value))}
-                disabled={!canManageSettings || !smtpEnabled}
-                className="input"
-                placeholder="587"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                TLS: 587 | SSL: 465
-              </p>
-            </div>
-
-            {/* SMTP User */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Usuario / Email
-              </label>
-              <input
-                type="email"
-                value={formData.smtp?.user || ''}
-                onChange={(e) => handleSmtpChange('user', e.target.value)}
-                disabled={!canManageSettings || !smtpEnabled}
-                className="input"
-                placeholder="tu-email@gmail.com"
-              />
-            </div>
-
-            {/* SMTP Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Contraseña de Aplicación
-              </label>
-              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Puerto SMTP
+                </label>
                 <input
-                  type={showSmtpPassword ? "text" : "password"}
-                  value={formData.smtp?.password || ''}
-                  onChange={(e) => handleSmtpChange('password', e.target.value)}
+                  type="number"
+                  value={formData.smtp?.port || 587}
+                  onChange={(e) => handleSmtpChange('port', parseInt(e.target.value))}
                   disabled={!canManageSettings || !smtpEnabled}
-                  className="input pr-10"
-                  placeholder="Escribe aquí la contraseña de 16 caracteres"
+                  className="input"
+                  placeholder="587"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowSmtpPassword(!showSmtpPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  {showSmtpPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  TLS: 587 | SSL: 465
+                </p>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                <strong>Gmail:</strong> Genera una contraseña de aplicación de 16 caracteres. Se guarda automáticamente al escribir.
-              </p>
-            </div>
 
-            {/* From Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Nombre del Remitente
-              </label>
-              <input
-                type="text"
-                value={formData.smtp?.fromName || ''}
-                onChange={(e) => handleSmtpChange('fromName', e.target.value)}
-                disabled={!canManageSettings || !smtpEnabled}
-                className="input"
-                placeholder="Mi Negocio"
-              />
-            </div>
+              {/* SMTP User */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Usuario / Email
+                </label>
+                <input
+                  type="email"
+                  value={formData.smtp?.user || ''}
+                  onChange={(e) => handleSmtpChange('user', e.target.value)}
+                  disabled={!canManageSettings || !smtpEnabled}
+                  className="input"
+                  placeholder="tu-email@gmail.com"
+                />
+              </div>
 
-            {/* From Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email del Remitente
-              </label>
-              <input
-                type="email"
-                value={formData.smtp?.fromEmail || ''}
-                onChange={(e) => handleSmtpChange('fromEmail', e.target.value)}
-                disabled={!canManageSettings || !smtpEnabled}
-                className="input"
-                placeholder="noreply@minegocio.com"
-              />
-            </div>
+              {/* SMTP Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Contraseña de Aplicación
+                </label>
+                <div className="relative">
+                  <input
+                    type={showSmtpPassword ? "text" : "password"}
+                    value={formData.smtp?.password || ''}
+                    onChange={(e) => handleSmtpChange('password', e.target.value)}
+                    disabled={!canManageSettings || !smtpEnabled}
+                    className="input pr-10"
+                    placeholder="Escribe aquí la contraseña de 16 caracteres"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSmtpPassword(!showSmtpPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    {showSmtpPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <strong>Gmail:</strong> Genera una contraseña de aplicación de 16 caracteres. Se guarda automáticamente al escribir.
+                </p>
+              </div>
 
-            {/* Info Box */}
-            <div className="md:col-span-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <div className="flex gap-3">
-                <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-900 dark:text-blue-100">
-                  <p className="font-semibold mb-1">📧 Cómo configurar Gmail:</p>
-                  <ol className="list-decimal list-inside space-y-1 text-blue-800 dark:text-blue-200">
-                    <li>Ve a tu cuenta de Google → Seguridad</li>
-                    <li>Activa la verificación en 2 pasos</li>
-                    <li>En "Contraseñas de aplicaciones", genera una nueva</li>
-                    <li>Copia la contraseña de 16 caracteres y pégala aquí</li>
-                  </ol>
+              {/* From Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nombre del Remitente
+                </label>
+                <input
+                  type="text"
+                  value={formData.smtp?.fromName || ''}
+                  onChange={(e) => handleSmtpChange('fromName', e.target.value)}
+                  disabled={!canManageSettings || !smtpEnabled}
+                  className="input"
+                  placeholder="Mi Negocio"
+                />
+              </div>
+
+              {/* From Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email del Remitente
+                </label>
+                <input
+                  type="email"
+                  value={formData.smtp?.fromEmail || ''}
+                  onChange={(e) => handleSmtpChange('fromEmail', e.target.value)}
+                  disabled={!canManageSettings || !smtpEnabled}
+                  className="input"
+                  placeholder="noreply@minegocio.com"
+                />
+              </div>
+
+              {/* Info Box */}
+              <div className="md:col-span-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="flex gap-3">
+                  <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-900 dark:text-blue-100">
+                    <p className="font-semibold mb-1">📧 Cómo configurar Gmail:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-blue-800 dark:text-blue-200">
+                      <li>Ve a tu cuenta de Google → Seguridad</li>
+                      <li>Activa la verificación en 2 pasos</li>
+                      <li>En "Contraseñas de aplicaciones", genera una nueva</li>
+                      <li>Copia la contraseña de 16 caracteres y pégala aquí</li>
+                    </ol>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
         )}
 
         {/* Financial Settings */}
         {shouldShowSection('system') && (
-        <div className="card-glass p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+          <div className="card-glass p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Configuración Financiera
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Impuestos y moneda
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Configuración Financiera
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Impuestos y moneda
-              </p>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Tax Rate */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Tasa de Impuesto (%)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={formData.taxRate}
-                  onChange={(e) => handleChange('taxRate', parseFloat(e.target.value) || 0)}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Tax Rate */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Tasa de Impuesto (%)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={formData.taxRate}
+                    onChange={(e) => handleChange('taxRate', parseFloat(e.target.value) || 0)}
+                    disabled={!canManageSettings}
+                    className="input"
+                    placeholder="0"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                  />
+                  <div className="relative">
+                    <Info
+                      className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-help mt-3"
+                      onMouseEnter={() => setShowTooltip('tax')}
+                      onMouseLeave={() => setShowTooltip(null)}
+                    />
+                    {showTooltip === 'tax' && (
+                      <div className="absolute bottom-full right-0 mb-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-50">
+                        Porcentaje de impuesto (ITBIS) que se aplicará a las ventas. Ejemplo: 18 para 18%
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {formData.taxRate > 0 ? `Se aplicará ${formData.taxRate}% de impuesto a las ventas` : 'Sin impuestos'}
+                </p>
+              </div>
+
+              {/* Currency */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Moneda
+                </label>
+                <select
+                  value={formData.currency}
+                  onChange={(e) => handleChange('currency', e.target.value)}
                   disabled={!canManageSettings}
                   className="input"
-                  placeholder="0"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                />
-                <div className="relative">
-                  <Info
-                    className="w-5 h-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-help mt-3"
-                    onMouseEnter={() => setShowTooltip('tax')}
-                    onMouseLeave={() => setShowTooltip(null)}
-                  />
-                  {showTooltip === 'tax' && (
-                    <div className="absolute bottom-full right-0 mb-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg z-50">
-                      Porcentaje de impuesto (ITBIS) que se aplicará a las ventas. Ejemplo: 18 para 18%
-                    </div>
-                  )}
-                </div>
+                >
+                  <option value="DOP">Peso Dominicano (DOP)</option>
+                  <option value="USD">Dólar Estadounidense (USD)</option>
+                  <option value="EUR">Euro (EUR)</option>
+                </select>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {formData.taxRate > 0 ? `Se aplicará ${formData.taxRate}% de impuesto a las ventas` : 'Sin impuestos'}
-              </p>
-            </div>
-
-            {/* Currency */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Moneda
-              </label>
-              <select
-                value={formData.currency}
-                onChange={(e) => handleChange('currency', e.target.value)}
-                disabled={!canManageSettings}
-                className="input"
-              >
-                <option value="DOP">Peso Dominicano (DOP)</option>
-                <option value="USD">Dólar Estadounidense (USD)</option>
-                <option value="EUR">Euro (EUR)</option>
-              </select>
             </div>
           </div>
-        </div>
         )}
 
         {/* Receipt Settings */}
         {shouldShowSection('billing') && (
-        <div className="card-glass p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Receipt className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+          <div className="card-glass p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                <Receipt className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Configuración de Recibos
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Personaliza los recibos impresos
+                </p>
+              </div>
             </div>
+
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Configuración de Recibos
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Personaliza los recibos impresos
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Mensaje de Pie de Recibo
+              </label>
+              <div className="relative">
+                <FileText className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <textarea
+                  value={formData.receiptFooter}
+                  onChange={(e) => handleChange('receiptFooter', e.target.value)}
+                  disabled={!canManageSettings}
+                  className="input pl-10 min-h-[100px]"
+                  placeholder="¡Gracias por su compra! Esperamos verle pronto."
+                  rows={4}
+                />
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Este mensaje aparecerá al final de cada recibo impreso
               </p>
             </div>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Mensaje de Pie de Recibo
-            </label>
-            <div className="relative">
-              <FileText className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <textarea
-                value={formData.receiptFooter}
-                onChange={(e) => handleChange('receiptFooter', e.target.value)}
-                disabled={!canManageSettings}
-                className="input pl-10 min-h-[100px]"
-                placeholder="¡Gracias por su compra! Esperamos verle pronto."
-                rows={4}
-              />
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Este mensaje aparecerá al final de cada recibo impreso
-            </p>
-          </div>
-        </div>
         )}
 
         {/* Mis Preferencias de Notificaciones */}
         {shouldShowSection('notifications') && (
-        <div className="card-glass p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <Bell className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="card-glass p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                <Bell className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Mis Preferencias de Notificaciones
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Elige qué alertas deseas recibir
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Mis Preferencias de Notificaciones
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Elige qué alertas deseas recibir
-              </p>
+
+            <div className="space-y-3">
+              {/* Low Stock Alerts */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      Alertas de Stock Bajo
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Notificaciones cuando productos estén por agotarse
+                    </p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.lowStockAlerts}
+                    onChange={(e) => handleNotificationPrefChange('lowStockAlerts', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                </label>
+              </div>
+
+              {/* Expiration Alerts */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      Alertas de Vencimiento
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Notificaciones sobre productos próximos a vencer
+                    </p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.expirationAlerts}
+                    onChange={(e) => handleNotificationPrefChange('expirationAlerts', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                </label>
+              </div>
+
+              {/* Sales Alerts */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      Alertas de Ventas
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Notificaciones sobre ventas importantes o hitos
+                    </p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.salesAlerts}
+                    onChange={(e) => handleNotificationPrefChange('salesAlerts', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                </label>
+              </div>
+
+              {/* Payment Reminders */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      Recordatorios de Pagos
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Notificaciones sobre pagos pendientes o vencidos
+                    </p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.paymentReminders}
+                    onChange={(e) => handleNotificationPrefChange('paymentReminders', e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                </label>
+              </div>
             </div>
           </div>
-
-          <div className="space-y-3">
-            {/* Low Stock Alerts */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    Alertas de Stock Bajo
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Notificaciones cuando productos estén por agotarse
-                  </p>
-                </div>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.lowStockAlerts}
-                  onChange={(e) => handleNotificationPrefChange('lowStockAlerts', e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-              </label>
-            </div>
-
-            {/* Expiration Alerts */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    Alertas de Vencimiento
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Notificaciones sobre productos próximos a vencer
-                  </p>
-                </div>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.expirationAlerts}
-                  onChange={(e) => handleNotificationPrefChange('expirationAlerts', e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-              </label>
-            </div>
-
-            {/* Sales Alerts */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    Alertas de Ventas
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Notificaciones sobre ventas importantes o hitos
-                  </p>
-                </div>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.salesAlerts}
-                  onChange={(e) => handleNotificationPrefChange('salesAlerts', e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-              </label>
-            </div>
-
-            {/* Payment Reminders */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <CreditCard className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    Recordatorios de Pagos
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Notificaciones sobre pagos pendientes o vencidos
-                  </p>
-                </div>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.paymentReminders}
-                  onChange={(e) => handleNotificationPrefChange('paymentReminders', e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-              </label>
-            </div>
-          </div>
-        </div>
         )}
 
         {/* Purchase Orders Automation */}
         {shouldShowSection('system') && (
-        <div className="card-glass p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-              <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Órdenes de Compra Automáticas
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Configuración de generación automática de órdenes
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {/* Toggle Órdenes Automáticas */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-              <div className="flex items-center gap-3">
+          <div className="card-glass p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
                 <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    Generación Automática de Órdenes
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Crear órdenes de compra automáticamente cuando el stock sea bajo
-                  </p>
-                </div>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.autoCreatePurchaseOrders}
-                  onChange={(e) => handleChange('autoCreatePurchaseOrders', e.target.checked)}
-                  disabled={!canManageSettings}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-              </label>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Órdenes de Compra Automáticas
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Configuración de generación automática de órdenes
+                </p>
+              </div>
             </div>
 
-            {/* Umbral de Stock */}
-            {formData.autoCreatePurchaseOrders && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Umbral de Stock para Orden Automática
+            <div className="space-y-4">
+              {/* Toggle Órdenes Automáticas */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      Generación Automática de Órdenes
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Crear órdenes de compra automáticamente cuando el stock sea bajo
+                    </p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.autoCreatePurchaseOrders}
+                    onChange={(e) => handleChange('autoCreatePurchaseOrders', e.target.checked)}
+                    disabled={!canManageSettings}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
                 </label>
-                <input
-                  type="number"
-                  value={formData.autoOrderThreshold}
-                  onChange={(e) => handleChange('autoOrderThreshold', parseInt(e.target.value) || 0)}
-                  disabled={!canManageSettings}
-                  className="input"
-                  placeholder="5"
-                  min="0"
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Se creará una orden automática cuando el stock llegue a este nivel
-                </p>
-                <div className="mt-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
-                  <p className="text-xs text-indigo-800 dark:text-indigo-300">
-                    <strong>💡 Ejemplo:</strong> Si estableces el umbral en 5, cuando un producto tenga 5 unidades o menos, el sistema generará automáticamente una orden de compra al proveedor asignado.
+              </div>
+
+              {/* Umbral de Stock */}
+              {formData.autoCreatePurchaseOrders && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Umbral de Stock para Orden Automática
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.autoOrderThreshold}
+                    onChange={(e) => handleChange('autoOrderThreshold', parseInt(e.target.value) || 0)}
+                    disabled={!canManageSettings}
+                    className="input"
+                    placeholder="5"
+                    min="0"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Se creará una orden automática cuando el stock llegue a este nivel
+                  </p>
+                  <div className="mt-3 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                    <p className="text-xs text-indigo-800 dark:text-indigo-300">
+                      <strong>💡 Ejemplo:</strong> Si estableces el umbral en 5, cuando un producto tenga 5 unidades o menos, el sistema generará automáticamente una orden de compra al proveedor asignado.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Información adicional */}
+              {!formData.autoCreatePurchaseOrders && (
+                <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    <strong>ℹ️ Nota:</strong> La generación automática de órdenes está desactivada. Las órdenes de compra deberán crearse manualmente desde el módulo de Órdenes de Compra.
                   </p>
                 </div>
-              </div>
-            )}
-
-            {/* Información adicional */}
-            {!formData.autoCreatePurchaseOrders && (
-              <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  <strong>ℹ️ Nota:</strong> La generación automática de órdenes está desactivada. Las órdenes de compra deberán crearse manualmente desde el módulo de Órdenes de Compra.
-                </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
         )}
 
         {shouldShowSection('system') && (
-        <div className="card-glass p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-              <Package className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          <div className="card-glass p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <Package className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Recepción de Órdenes
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Habilita o deshabilita el proceso formal de recepción
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Recepción de Órdenes
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Habilita o deshabilita el proceso formal de recepción
-              </p>
-            </div>
-          </div>
 
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="font-medium text-gray-900 dark:text-white">
-                Requerir confirmación de recepción
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Si lo desactivas, las órdenes podrán completarse sin capturar cantidades recibidas ni fecha de recepción.
-              </p>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  Requerir confirmación de recepción
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Si lo desactivas, las órdenes podrán completarse sin capturar cantidades recibidas ni fecha de recepción.
+                </p>
+              </div>
+              <label className={`relative inline-flex items-center cursor-pointer ${!canManageSettings ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={formData.requireOrderReception}
+                  onChange={(e) => handleChange('requireOrderReception', e.target.checked)}
+                  disabled={!canManageSettings}
+                />
+                <div className="w-12 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:bg-primary-600"></div>
+                <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                  {formData.requireOrderReception ? 'Activado' : 'Desactivado'}
+                </span>
+              </label>
             </div>
-            <label className={`relative inline-flex items-center cursor-pointer ${!canManageSettings ? 'opacity-50 cursor-not-allowed' : ''}`}>
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={formData.requireOrderReception}
-                onChange={(e) => handleChange('requireOrderReception', e.target.checked)}
-                disabled={!canManageSettings}
-              />
-              <div className="w-12 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:bg-primary-600"></div>
-              <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-                {formData.requireOrderReception ? 'Activado' : 'Desactivado'}
-              </span>
-            </label>
           </div>
-        </div>
         )}
 
         {/* Weather Settings */}
         {shouldShowSection('integrations') && (
-        <div className="card-glass p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Widget de Clima
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Muestra el clima en la barra superior
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {/* Mostrar Widget */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <Eye className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    Mostrar Widget de Clima
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Activa/desactiva la visualización del clima
-                  </p>
-                </div>
+          <div className="card-glass p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                </svg>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.showWeather}
-                  onChange={(e) => handleChange('showWeather', e.target.checked)}
-                  disabled={!canManageSettings}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-              </label>
-            </div>
-
-            {/* Ubicación */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Ubicación (Ciudad, Código de País)
-              </label>
-              <input
-                type="text"
-                value={formData.weatherLocation}
-                onChange={(e) => handleChange('weatherLocation', e.target.value)}
-                disabled={!canManageSettings}
-                className="input"
-                placeholder="Santo Domingo,DO"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Formato: Ciudad,CódigoPaís (ej: Santo Domingo,DO | Santiago,DO | New York,US)
-              </p>
-            </div>
-
-            {/* API Key */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                API Key de OpenWeatherMap
-              </label>
-              <div className="relative">
-                <input
-                  type={showApiKey ? "text" : "password"}
-                  value={formData.weatherApiKey}
-                  onChange={(e) => handleChange('weatherApiKey', e.target.value)}
-                  disabled={!canManageSettings}
-                  className="input pr-12"
-                  placeholder="Ingresa tu API key"
-                />
-                {formData.weatherApiKey && (
-                  <button
-                    type="button"
-                    onClick={() => setShowApiKey(!showApiKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
-                    title={showApiKey ? "Ocultar API key" : "Mostrar API key"}
-                  >
-                    {showApiKey ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </button>
-                )}
-              </div>
-              <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <p className="text-xs text-blue-800 dark:text-blue-300 mb-2">
-                  <strong>📌 Cómo obtener tu API Key gratuita:</strong>
-                </p>
-                <ol className="text-xs text-blue-700 dark:text-blue-400 space-y-1 list-decimal list-inside">
-                  <li>Ve a <a href="https://openweathermap.org/api" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-900 dark:hover:text-blue-200">openweathermap.org/api</a></li>
-                  <li>Crea una cuenta gratuita</li>
-                  <li>Genera tu API key en la sección "API keys"</li>
-                  <li>Copia y pega la key aquí</li>
-                </ol>
-                <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
-                  ⚡ El plan gratuito incluye 1,000 llamadas diarias (suficiente para este sistema)
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Widget de Clima
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Muestra el clima en la barra superior
                 </p>
               </div>
             </div>
 
-            {/* Vista Previa del Widget de Clima */}
-            {formData.showWeather && formData.weatherLocation && formData.weatherApiKey && (
-              <div className="mt-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800">
-                <div className="flex items-center gap-2 mb-4">
-                  <Cloud className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Vista Previa del Widget
-                  </h3>
+            <div className="space-y-4">
+              {/* Mostrar Widget */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Eye className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      Mostrar Widget de Clima
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Activa/desactiva la visualización del clima
+                    </p>
+                  </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
-                  <WeatherWidget 
-                    location={formData.weatherLocation} 
-                    apiKey={formData.weatherApiKey}
-                    detailed={true}
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.showWeather}
+                    onChange={(e) => handleChange('showWeather', e.target.checked)}
+                    disabled={!canManageSettings}
+                    className="sr-only peer"
                   />
+                  <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                </label>
+              </div>
+
+              {/* Ubicación */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Ubicación (Ciudad, Código de País)
+                </label>
+                <input
+                  type="text"
+                  value={formData.weatherLocation}
+                  onChange={(e) => handleChange('weatherLocation', e.target.value)}
+                  disabled={!canManageSettings}
+                  className="input"
+                  placeholder="Santo Domingo,DO"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Formato: Ciudad,CódigoPaís (ej: Santo Domingo,DO | Santiago,DO | New York,US)
+                </p>
+              </div>
+
+              {/* API Key */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  API Key de OpenWeatherMap
+                </label>
+                <div className="relative">
+                  <input
+                    type={showApiKey ? "text" : "password"}
+                    value={formData.weatherApiKey}
+                    onChange={(e) => handleChange('weatherApiKey', e.target.value)}
+                    disabled={!canManageSettings}
+                    className="input pr-12"
+                    placeholder="Ingresa tu API key"
+                  />
+                  {formData.weatherApiKey && (
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
+                      title={showApiKey ? "Ocultar API key" : "Mostrar API key"}
+                    >
+                      {showApiKey ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
                 </div>
-                <p className="text-xs text-blue-700 dark:text-blue-300 mt-3 flex items-center gap-1">
-                  <Info className="w-3 h-3" />
-                  Este es el widget que se mostrará en la barra superior del sistema
-                </p>
+                <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs text-blue-800 dark:text-blue-300 mb-2">
+                    <strong>📌 Cómo obtener tu API Key gratuita:</strong>
+                  </p>
+                  <ol className="text-xs text-blue-700 dark:text-blue-400 space-y-1 list-decimal list-inside">
+                    <li>Ve a <a href="https://openweathermap.org/api" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-900 dark:hover:text-blue-200">openweathermap.org/api</a></li>
+                    <li>Crea una cuenta gratuita</li>
+                    <li>Genera tu API key en la sección "API keys"</li>
+                    <li>Copia y pega la key aquí</li>
+                  </ol>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                    ⚡ El plan gratuito incluye 1,000 llamadas diarias (suficiente para este sistema)
+                  </p>
+                </div>
               </div>
-            )}
 
-            {/* Mensaje si el widget está desactivado */}
-            {!formData.showWeather && (
-              <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                <p className="text-sm text-yellow-800 dark:text-yellow-300 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  El widget de clima está desactivado. Actívalo arriba para ver la vista previa.
-                </p>
-              </div>
-            )}
+              {/* Vista Previa del Widget de Clima */}
+              {formData.showWeather && formData.weatherLocation && formData.weatherApiKey && (
+                <div className="mt-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Cloud className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Vista Previa del Widget
+                    </h3>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
+                    <WeatherWidget
+                      location={formData.weatherLocation}
+                      apiKey={formData.weatherApiKey}
+                      detailed={true}
+                    />
+                  </div>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-3 flex items-center gap-1">
+                    <Info className="w-3 h-3" />
+                    Este es el widget que se mostrará en la barra superior del sistema
+                  </p>
+                </div>
+              )}
 
-            {/* Mensaje si falta configuración */}
-            {formData.showWeather && (!formData.weatherLocation || !formData.weatherApiKey) && (
-              <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                <p className="text-sm text-orange-800 dark:text-orange-300 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  Completa la ubicación y el API Key para ver la vista previa del clima.
-                </p>
-              </div>
-            )}
+              {/* Mensaje si el widget está desactivado */}
+              {!formData.showWeather && (
+                <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-300 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    El widget de clima está desactivado. Actívalo arriba para ver la vista previa.
+                  </p>
+                </div>
+              )}
+
+              {/* Mensaje si falta configuración */}
+              {formData.showWeather && (!formData.weatherLocation || !formData.weatherApiKey) && (
+                <div className="mt-6 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <p className="text-sm text-orange-800 dark:text-orange-300 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    Completa la ubicación y el API Key para ver la vista previa del clima.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         )}
 
         {/* Toast Notifications Settings */}
         {shouldShowSection('notifications') && (
-        <div className="card-glass p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Bell className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+          <div className="card-glass p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                <Bell className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Notificaciones
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Configura la posición de las notificaciones en pantalla
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Notificaciones
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Configura la posición de las notificaciones en pantalla
-              </p>
-            </div>
-          </div>
 
-          <div className="space-y-4">
-            {/* Toast Position */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Posición de las Notificaciones
-              </label>
-              
-              {/* Visual Grid */}
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                {[
-                  { value: 'top-left', label: 'Arriba Izquierda', icon: '↖' },
-                  { value: 'top-center', label: 'Arriba Centro', icon: '↑' },
-                  { value: 'top-right', label: 'Arriba Derecha', icon: '↗' },
-                  { value: 'bottom-left', label: 'Abajo Izquierda', icon: '↙' },
-                  { value: 'bottom-center', label: 'Abajo Centro', icon: '↓' },
-                  { value: 'bottom-right', label: 'Abajo Derecha', icon: '↘' },
-                ].map((position) => (
-                  <button
-                    key={position.value}
-                    type="button"
-                    onClick={() => handleChange('toastPosition', position.value)}
-                    disabled={!canManageSettings}
-                    className={`
+            <div className="space-y-4">
+              {/* Toast Position */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Posición de las Notificaciones
+                </label>
+
+                {/* Visual Grid */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {[
+                    { value: 'top-left', label: 'Arriba Izquierda', icon: '↖' },
+                    { value: 'top-center', label: 'Arriba Centro', icon: '↑' },
+                    { value: 'top-right', label: 'Arriba Derecha', icon: '↗' },
+                    { value: 'bottom-left', label: 'Abajo Izquierda', icon: '↙' },
+                    { value: 'bottom-center', label: 'Abajo Centro', icon: '↓' },
+                    { value: 'bottom-right', label: 'Abajo Derecha', icon: '↘' },
+                  ].map((position) => (
+                    <button
+                      key={position.value}
+                      type="button"
+                      onClick={() => handleChange('toastPosition', position.value)}
+                      disabled={!canManageSettings}
+                      className={`
                       relative p-4 rounded-xl border-2 transition-all duration-200
                       ${formData.toastPosition === position.value
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700'
-                      }
+                          ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700'
+                        }
                       ${!canManageSettings ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                     `}
-                  >
-                    <div className="text-center">
-                      <div className="text-3xl mb-2">{position.icon}</div>
-                      <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                        {position.label}
+                    >
+                      <div className="text-center">
+                        <div className="text-3xl mb-2">{position.icon}</div>
+                        <div className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                          {position.label}
+                        </div>
                       </div>
-                    </div>
-                    {formData.toastPosition === position.value && (
-                      <div className="absolute top-2 right-2">
-                        <Check className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                      </div>
-                    )}
-                  </button>
-                ))}
+                      {formData.toastPosition === position.value && (
+                        <div className="absolute top-2 right-2">
+                          <Check className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Test Button */}
+                <button
+                  type="button"
+                  onClick={() => toast.success('¡Notificación de prueba! 🎉')}
+                  className="w-full btn btn-secondary flex items-center justify-center gap-2"
+                >
+                  <Bell className="w-4 h-4" />
+                  Probar Notificación
+                </button>
+
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                  💡 Haz clic en "Probar Notificación" para ver cómo se verá en la posición seleccionada
+                </p>
               </div>
-
-              {/* Test Button */}
-              <button
-                type="button"
-                onClick={() => toast.success('¡Notificación de prueba! 🎉')}
-                className="w-full btn btn-secondary flex items-center justify-center gap-2"
-              >
-                <Bell className="w-4 h-4" />
-                Probar Notificación
-              </button>
-
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-                💡 Haz clic en "Probar Notificación" para ver cómo se verá en la posición seleccionada
-              </p>
             </div>
           </div>
-        </div>
         )}
 
         {/* Data Management Section - Export/Import/Clean */}
         {(section === 'all' || section === 'system') && isDeveloper && (
-        <div className="card-glass p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
-              <Database className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Gestión de Datos
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Exportar, importar y limpiar datos del sistema
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {/* Export Data */}
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <FileDown className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                      Exportar Datos
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Descarga todos los datos del sistema en formato JSON
-                    </p>
-                  </div>
-                </div>
+          <div className="card-glass p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
+                <Database className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
               </div>
-              <button
-                onClick={handleExportData}
-                disabled={isExporting}
-                className="btn btn-success w-full flex items-center justify-center gap-2"
-              >
-                {isExporting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Exportando...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Exportar Datos
-                  </>
-                )}
-              </button>
-              <p className="text-xs text-green-700 dark:text-green-300 mt-2">
-                💾 Incluye: productos, ventas, clientes, proveedores, órdenes y configuración
-              </p>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Gestión de Datos
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Exportar, importar y limpiar datos del sistema
+                </p>
+              </div>
             </div>
 
-            {/* Import Data */}
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <FileUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                      Importar Datos
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Restaura datos desde un archivo JSON exportado
-                    </p>
+            <div className="space-y-4">
+              {/* Export Data */}
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <FileDown className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                        Exportar Datos
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Descarga todos los datos del sistema en formato JSON
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="mb-3">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Modo de Importación
-                </label>
-                <select
-                  value={importMode}
-                  onChange={(e) => setImportMode(e.target.value)}
-                  className="input mb-2"
+                <button
+                  onClick={handleExportData}
+                  disabled={isExporting}
+                  className="btn btn-success w-full flex items-center justify-center gap-2"
                 >
-                  <option value="merge">Combinar (mantener datos existentes)</option>
-                  <option value="replace">Reemplazar (eliminar datos existentes)</option>
-                </select>
-                <p className="text-xs text-blue-700 dark:text-blue-300">
-                  {importMode === 'merge' 
-                    ? '✓ Los datos se combinarán con los existentes' 
-                    : '⚠️ Se eliminarán los datos existentes antes de importar'}
+                  {isExporting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Exportando...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Exportar Datos
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-green-700 dark:text-green-300 mt-2">
+                  💾 Incluye: productos, ventas, clientes, proveedores, órdenes y configuración
                 </p>
               </div>
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleImportData}
-                className="hidden"
-                id="import-file-input"
-              />
-              <label
-                htmlFor="import-file-input"
-                className={`btn btn-primary w-full flex items-center justify-center gap-2 cursor-pointer ${isImporting ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isImporting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Importando...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    Seleccionar Archivo JSON
-                  </>
-                )}
-              </label>
-              <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
-                📂 Solo archivos JSON exportados desde este sistema
-              </p>
-            </div>
-
-            {/* Clean Test Data */}
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                      Limpiar Datos de Prueba
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Elimina productos, clientes y proveedores de prueba
-                    </p>
+              {/* Import Data */}
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <FileUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                        Importar Datos
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Restaura datos desde un archivo JSON exportado
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <button
-                onClick={() => setShowCleanConfirmModal(true)}
-                disabled={isCleaning}
-                className="btn btn-danger w-full flex items-center justify-center gap-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                Limpiar Datos de Prueba
-              </button>
-              <p className="text-xs text-red-700 dark:text-red-300 mt-2">
-                ⚠️ Elimina: productos test, clientes demo, proveedores prueba, órdenes antiguas
-              </p>
-            </div>
 
-            {/* Warning Box */}
-            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-1">
-                    ⚡ Recomendaciones Importantes
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Modo de Importación
+                  </label>
+                  <select
+                    value={importMode}
+                    onChange={(e) => setImportMode(e.target.value)}
+                    className="input mb-2"
+                  >
+                    <option value="merge">Combinar (mantener datos existentes)</option>
+                    <option value="replace">Reemplazar (eliminar datos existentes)</option>
+                  </select>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    {importMode === 'merge'
+                      ? '✓ Los datos se combinarán con los existentes'
+                      : '⚠️ Se eliminarán los datos existentes antes de importar'}
                   </p>
-                  <ul className="text-xs text-yellow-800 dark:text-yellow-200 space-y-1">
-                    <li>• Exporta los datos regularmente como respaldo</li>
-                    <li>• Verifica los archivos JSON antes de importar</li>
-                    <li>• La limpieza NO elimina usuarios ni ventas históricas</li>
-                    <li>• Haz pruebas en modo "Combinar" antes de "Reemplazar"</li>
-                  </ul>
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportData}
+                  className="hidden"
+                  id="import-file-input"
+                />
+                <label
+                  htmlFor="import-file-input"
+                  className={`btn btn-primary w-full flex items-center justify-center gap-2 cursor-pointer ${isImporting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {isImporting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Importando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Seleccionar Archivo JSON
+                    </>
+                  )}
+                </label>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                  📂 Solo archivos JSON exportados desde este sistema
+                </p>
+              </div>
+
+              {/* Clean Test Data */}
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                        Limpiar Datos de Prueba
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Elimina productos, clientes y proveedores de prueba
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCleanConfirmModal(true)}
+                  disabled={isCleaning}
+                  className="btn btn-danger w-full flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Limpiar Datos de Prueba
+                </button>
+                <p className="text-xs text-red-700 dark:text-red-300 mt-2">
+                  ⚠️ Elimina: productos test, clientes demo, proveedores prueba, órdenes antiguas
+                </p>
+              </div>
+
+              {/* Warning Box */}
+              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-1">
+                      ⚡ Recomendaciones Importantes
+                    </p>
+                    <ul className="text-xs text-yellow-800 dark:text-yellow-200 space-y-1">
+                      <li>• Exporta los datos regularmente como respaldo</li>
+                      <li>• Verifica los archivos JSON antes de importar</li>
+                      <li>• La limpieza NO elimina usuarios ni ventas históricas</li>
+                      <li>• Haz pruebas en modo "Combinar" antes de "Reemplazar"</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Log Management Section */}
+        {(section === 'all' || section === 'system') && isDeveloper && (
+          <div className="card-glass p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <FileText className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Gestión de Logs
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Configura la retención y limpieza de logs del sistema
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* Retention Settings */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">
+                  Retención Automática (Días)
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {['info', 'warning', 'error', 'critical'].map((type) => (
+                    <div key={type}>
+                      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 capitalize">
+                        {type}
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.logRetention?.[type] || 0}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          setFormData(prev => ({
+                            ...prev,
+                            logRetention: {
+                              ...prev.logRetention,
+                              [type]: val
+                            }
+                          }));
+                          setHasChanges(true);
+                        }}
+                        className="input"
+                        min="1"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Los logs más antiguos que estos días se eliminarán automáticamente cada 24 horas.
+                </p>
+              </div>
+
+              {/* Manual Clean Button */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium text-gray-900 dark:text-white">
+                      Limpieza Manual
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Eliminar logs bajo demanda con filtros específicos
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowLogCleanModal(true)}
+                    className="btn btn-secondary flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Limpiar Logs
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Clean Confirmation Modal */}
@@ -1773,27 +1905,115 @@ const Settings = ({ section = 'all' }) => {
           </div>
         )}
 
-        {/* Tema Automático Section */}
-        {(section === 'all' || section === 'system') && (
-        <div className="card-glass p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Tema Automático
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                El tema oscuro se activa automáticamente según la hora del día
-              </p>
+        {/* Log Clean Modal */}
+        {showLogCleanModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <Trash2 className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Limpiar Logs
+                </h3>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Tipo de Log
+                  </label>
+                  <select
+                    value={logCleanFilters.type}
+                    onChange={(e) => setLogCleanFilters({ ...logCleanFilters, type: e.target.value })}
+                    className="input"
+                  >
+                    <option value="all">Todos los tipos</option>
+                    <option value="info">Info</option>
+                    <option value="warning">Warning</option>
+                    <option value="error">Error</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Severidad
+                  </label>
+                  <select
+                    value={logCleanFilters.severity}
+                    onChange={(e) => setLogCleanFilters({ ...logCleanFilters, severity: e.target.value })}
+                    className="input"
+                  >
+                    <option value="all">Todas las severidades</option>
+                    <option value="low">Baja</option>
+                    <option value="medium">Media</option>
+                    <option value="high">Alta</option>
+                    <option value="critical">Crítica</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Antigüedad (Días)
+                  </label>
+                  <input
+                    type="number"
+                    value={logCleanFilters.days}
+                    onChange={(e) => setLogCleanFilters({ ...logCleanFilters, days: e.target.value })}
+                    className="input"
+                    placeholder="Ej: 30 (dejar vacío para borrar todo)"
+                    min="0"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Se borrarán logs más antiguos que X días. Dejar vacío para borrar sin límite de fecha.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowLogCleanModal(false)}
+                  className="btn btn-secondary flex-1"
+                  disabled={isCleaningLogs}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCleanLogs}
+                  className="btn btn-danger flex-1 flex items-center justify-center gap-2"
+                  disabled={isCleaningLogs}
+                >
+                  {isCleaningLogs ? 'Limpiando...' : 'Confirmar Limpieza'}
+                </button>
+              </div>
             </div>
           </div>
+        )}
 
-          <AutoThemeToggle />
-        </div>
+        {/* Tema Automático Section */}
+        {(section === 'all' || section === 'system') && (
+          <div className="card-glass p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-blue-600">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Tema Automático
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  El tema oscuro se activa automáticamente según la hora del día
+                </p>
+              </div>
+            </div>
+
+            <AutoThemeToggle />
+          </div>
         )}
 
       </form>
@@ -1827,7 +2047,7 @@ const Settings = ({ section = 'all' }) => {
               Vista Previa del Recibo
             </h3>
           </div>
-          
+
           <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 max-w-md mx-auto">
             <div className="text-center space-y-2">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -1845,15 +2065,15 @@ const Settings = ({ section = 'all' }) => {
                   {formData.businessEmail}
                 </p>
               )}
-              
+
               <div className="border-t border-gray-300 dark:border-gray-700 my-4" />
-              
+
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 [Detalles de la venta]
               </div>
-              
+
               <div className="border-t border-gray-300 dark:border-gray-700 my-4" />
-              
+
               <p className="text-sm italic text-gray-600 dark:text-gray-400">
                 {formData.receiptFooter || '¡Gracias por su compra!'}
               </p>
@@ -1948,11 +2168,10 @@ const AutoThemeToggle = () => {
       </div>
 
       {/* Estado actual */}
-      <div className={`p-4 rounded-xl border-2 ${
-        autoThemeEnabled && isDarkMode === shouldBeDark
+      <div className={`p-4 rounded-xl border-2 ${autoThemeEnabled && isDarkMode === shouldBeDark
           ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
           : 'border-gray-200 dark:border-gray-700'
-      }`}>
+        }`}>
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">

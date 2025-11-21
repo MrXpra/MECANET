@@ -25,25 +25,25 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: 'MECANET'
   },
-  
+
   // URL del logo (puede ser local o externa)
   businessLogoUrl: {
     type: String,
     default: '/default-logo.png'
   },
-  
+
   // Dirección física del negocio
   businessAddress: {
     type: String,
     default: ''
   },
-  
+
   // Teléfono de contacto
   businessPhone: {
     type: String,
     default: ''
   },
-  
+
   // Email de contacto
   businessEmail: {
     type: String,
@@ -56,7 +56,7 @@ const settingsSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  
+
   // ===== CONFIGURACIÓN DE EMAIL/SMTP =====
   // Configuración del servidor SMTP para envío de emails
   smtp: {
@@ -104,7 +104,7 @@ const settingsSchema = new mongoose.Schema({
       default: ''
     }
   },
-  
+
   // ===== CONFIGURACIÓN FISCAL =====
   // Tasa de impuesto (ITBIS en RD = 18%)
   taxRate: {
@@ -113,53 +113,53 @@ const settingsSchema = new mongoose.Schema({
     min: 0,
     max: 100
   },
-  
+
   // Moneda del sistema
   currency: {
     type: String,
     default: 'DOP' // Peso Dominicano
   },
-  
+
   // ===== CONFIGURACIÓN DE RECIBOS =====
   // Texto que aparece al pie del recibo
   receiptFooter: {
     type: String,
     default: '¡Gracias por su compra!'
   },
-  
+
   // ===== ALERTAS Y NOTIFICACIONES =====
   // Activar alertas de stock bajo
   lowStockAlert: {
     type: Boolean,
     default: true
   },
-  
+
   // ===== INTEGRACIÓN DE CLIMA =====
   // Ubicación para obtener clima (formato: Ciudad,País)
   weatherLocation: {
     type: String,
     default: 'Santo Domingo,DO'
   },
-  
+
   // API Key de OpenWeatherMap (opcional)
   weatherApiKey: {
     type: String,
     default: ''
   },
-  
+
   // Mostrar widget de clima en dashboard
   showWeather: {
     type: Boolean,
     default: true
   },
-  
+
   // ===== ÓRDENES AUTOMÁTICAS =====
   // Crear órdenes de compra automáticamente cuando stock es bajo
   autoCreatePurchaseOrders: {
     type: Boolean,
     default: false
   },
-  
+
   // Requerir proceso formal de recepción de órdenes de compra
   requireOrderReception: {
     type: Boolean,
@@ -172,7 +172,7 @@ const settingsSchema = new mongoose.Schema({
     default: 5,
     min: 0
   },
-  
+
   // ===== PREFERENCIAS DE UI =====
   // Posición de las notificaciones toast
   toastPosition: {
@@ -180,11 +180,20 @@ const settingsSchema = new mongoose.Schema({
     enum: ['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right'],
     default: 'top-center'
   },
-  
+
   // Fecha de última actualización
   updatedAt: {
     type: Date,
     default: Date.now
+  },
+
+  // ===== CONFIGURACIÓN DE LOGS =====
+  // Días de retención para cada tipo de log
+  logRetention: {
+    info: { type: Number, default: 7 },
+    warning: { type: Number, default: 30 },
+    error: { type: Number, default: 90 },
+    critical: { type: Number, default: 180 }
   }
 });
 
@@ -199,15 +208,15 @@ const settingsSchema = new mongoose.Schema({
  * Uso:
  * const settings = await Settings.getInstance();
  */
-settingsSchema.statics.getInstance = async function() {
+settingsSchema.statics.getInstance = async function () {
   // Buscar el documento de settings
   let settings = await this.findOne();
-  
+
   // Si no existe, crear uno con valores por defecto
   if (!settings) {
     settings = await this.create({});
   }
-  
+
   return settings;
 };
 

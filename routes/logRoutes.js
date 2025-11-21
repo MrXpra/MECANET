@@ -80,8 +80,25 @@ router.get('/stats', async (req, res) => {
  */
 router.delete('/clean', async (req, res) => {
   try {
-    const { daysToKeep = 90 } = req.body;
-    const deletedCount = await LogService.cleanOldLogs(parseInt(daysToKeep));
+    const { daysToKeep, severity, type, all } = req.body;
+
+    let deletedCount = 0;
+    let message = '';
+
+    if (daysToKeep) {
+      // Legacy support or specific "keep X days" request
+      deletedCount = await LogService.cleanOldLogs(parseInt(daysToKeep));
+      message = `${deletedCount} logs eliminados (antigüedad > ${daysToKeep} días)`;
+    } else {
+      // Advanced deletion
+      deletedCount = await LogService.deleteLogsByCriteria({
+        severity,
+        days: req.body.days, // "days" parameter for "older than X days"
+        type,
+        all
+      });
+      message = `${deletedCount} logs eliminados según criterios`;
+    }
 
     // Registrar la limpieza
     await LogService.logAction({
@@ -90,13 +107,13 @@ router.delete('/clean', async (req, res) => {
       user: req.user,
       req,
       entityName: 'Logs',
-      details: { daysToKeep, deletedCount },
+      details: { filters: req.body, deletedCount },
       success: true
     });
 
-    res.json({ 
-      message: `${deletedCount} logs eliminados exitosamente`,
-      deletedCount 
+    res.json({
+      message,
+      deletedCount
     });
   } catch (error) {
     console.error('Error al limpiar logs:', error);
@@ -162,10 +179,10 @@ router.get('/alerts', async (req, res) => {
 router.get('/audit', async (req, res) => {
   try {
     const { startDate, endDate, userId } = req.query;
-    
+
     const start = startDate ? new Date(startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const end = endDate ? new Date(endDate) : new Date();
-    
+
     const summary = await LogService.getAuditSummary(start, end, userId);
 
     res.json(summary);
@@ -183,11 +200,11 @@ router.get('/audit', async (req, res) => {
 router.patch('/:id/resolve', async (req, res) => {
   try {
     const { resolution } = req.body;
-    
+
     if (!resolution) {
       return res.status(400).json({ message: 'Se requiere una descripción de la resolución' });
     }
-    
+
     const log = await LogService.resolveLog(req.params.id, req.user._id, resolution);
 
     if (!log) {
@@ -209,7 +226,7 @@ router.patch('/:id/resolve', async (req, res) => {
 router.get('/monitoring/system', async (req, res) => {
   try {
     const systemInfo = LogService.getSystemInfo();
-    
+
     // Agregar métricas adicionales en tiempo real
     const metrics = {
       ...systemInfo,

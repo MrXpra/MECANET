@@ -1,5 +1,5 @@
 {
-  "version": "1.5.3",
+  "version": "1.5.4",
   "lastUpdated": "2025-11-21",
-  "releaseNotes": "Fix encoding in CONFIGURAR-INICIAL.bat"
+  "releaseNotes": "Implementada gestión avanzada de logs con retención configurable y limpieza por filtros"
 }
