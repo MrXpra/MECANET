@@ -492,7 +492,18 @@ const Settings = ({ section = 'all' }) => {
         })
       });
 
-      const data = await response.json();
+      // Check if response has content before parsing JSON
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Response is not JSON, might be an error from a proxy or auth issue
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        throw new Error('Respuesta inválida del servidor. Verifica tu conexión y autenticación.');
+      }
 
       if (response.ok) {
         toast.success(`✅ ${data.message}`, { id: 'clean-logs' });

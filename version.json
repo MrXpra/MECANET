@@ -1,5 +1,5 @@
 {
-  "version": "1.5.12",
+  "version": "1.5.13",
   "lastUpdated": "2025-11-21",
-  "releaseNotes": "Remover bloqueos de acceso a Sistema - admins deben tener acceso completo"
+  "releaseNotes": "Mejorar manejo de errores en limpieza de logs - verificar JSON antes de parsear"
 }
