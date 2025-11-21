@@ -351,7 +351,7 @@ const SalesHistory = () => {
                   <td>${index + 1}</td>
                   <td>
                     ${item.product?.name || 'Producto'}
-                    ${item.product?.warranty ? `<div style="font-size: 8px; font-style: italic; margin-top: 2px;">Garantía: ${item.product.warranty}</div>` : ''}
+                    ${item.product?.warranty ? `<div style="font-size: 10px; font-style: italic; margin-top: 2px;">Garantía: ${item.product.warranty}</div>` : ''}
                   </td>
                   <td class="center">${item.quantity}</td>
                   <td class="right">${formatCurrency(item.subtotal)}</td>
@@ -410,7 +410,10 @@ const SalesHistory = () => {
       </html>
     `);
     printWindow.document.close();
-    printWindow.print();
+    // Esperar a que la imagen se cargue antes de imprimir
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
   };
 
   const generateInvoiceHTML = (sale) => {
@@ -738,8 +741,8 @@ const SalesHistory = () => {
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                 disabled={!pagination.hasPrevPage}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasPrevPage
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
                   }`}
               >
                 Anterior
@@ -751,8 +754,8 @@ const SalesHistory = () => {
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                 disabled={!pagination.hasNextPage}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasNextPage
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
                   }`}
               >
                 Siguiente
@@ -1118,10 +1121,10 @@ const SaleDetailModal = ({ sale, onClose, formatCurrency, formatDate, getStatusB
                         Reembolso: -{formatCurrency(returnItem.totalAmount || 0)}
                       </p>
                       <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${returnItem.status === 'Aprobada' || returnItem.status === 'Completada'
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                          : returnItem.status === 'Rechazada'
-                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                        : returnItem.status === 'Rechazada'
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                          : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
                         }`}>
                         {returnItem.status === 'Completada' ? 'Aprobada' : returnItem.status || 'Pendiente'}
                       </span>

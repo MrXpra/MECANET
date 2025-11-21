@@ -539,7 +539,7 @@ const Billing = () => {
                   <td>${index + 1}</td>
                   <td>
                     ${item.product.name}
-                    ${item.product.warranty ? `<div style="font-size: 8px; font-style: italic; margin-top: 2px;">Garantía: ${item.product.warranty}</div>` : ''}
+                    ${item.product.warranty ? `<div style="font-size: 10px; font-style: italic; margin-top: 2px;">Garantía: ${item.product.warranty}</div>` : ''}
                   </td>
                   <td class="center">${item.quantity}</td>
                   <td class="right">${formatCurrency(item.subtotal)}</td>
@@ -697,8 +697,8 @@ const Billing = () => {
               <button
                 onClick={() => setViewMode('list')}
                 className={`p-2 rounded transition-colors ${viewMode === 'list'
-                    ? 'bg-white dark:bg-gray-700 text-primary-600 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-gray-700 text-primary-600 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 title="Vista de lista"
               >
@@ -707,8 +707,8 @@ const Billing = () => {
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 rounded transition-colors ${viewMode === 'grid'
-                    ? 'bg-white dark:bg-gray-700 text-primary-600 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-gray-700 text-primary-600 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 title="Vista de tarjetas"
               >
@@ -768,8 +768,8 @@ const Billing = () => {
                   onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                   disabled={!pagination.hasPrevPage}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${pagination.hasPrevPage
-                      ? 'bg-primary-600 text-white hover:bg-primary-700'
-                      : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
+                    ? 'bg-primary-600 text-white hover:bg-primary-700'
+                    : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
                     }`}
                 >
                   Ant
@@ -778,8 +778,8 @@ const Billing = () => {
                   onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                   disabled={!pagination.hasNextPage}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${pagination.hasNextPage
-                      ? 'bg-primary-600 text-white hover:bg-primary-700'
-                      : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
+                    ? 'bg-primary-600 text-white hover:bg-primary-700'
+                    : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
                     }`}
                 >
                   Sig
@@ -1129,10 +1129,10 @@ const ProductListItem = ({ product, onAdd }) => {
           </p>
           <p
             className={`text-base font-bold ${isOutOfStock
-                ? 'text-red-600 dark:text-red-400'
-                : isLowStock
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-gray-900 dark:text-white'
+              ? 'text-red-600 dark:text-red-400'
+              : isLowStock
+                ? 'text-amber-600 dark:text-amber-400'
+                : 'text-gray-900 dark:text-white'
               }`}
           >
             {product.stock}
@@ -1178,8 +1178,8 @@ const CartItem = ({
     <div
       id={`cart-item-${item.product._id}`}
       className={`p-2 rounded-lg bg-gray-50 dark:bg-gray-800 transition-all duration-500 ${isHighlighted
-          ? 'ring-4 ring-green-400 dark:ring-green-500 shadow-lg shadow-green-200 dark:shadow-green-900/50 scale-[1.02] animate-pulse-gentle'
-          : ''
+        ? 'ring-4 ring-green-400 dark:ring-green-500 shadow-lg shadow-green-200 dark:shadow-green-900/50 scale-[1.02] animate-pulse-gentle'
+        : ''
         }`}>
       <div className="flex justify-between items-start mb-1.5">
         <div className="flex-1">
@@ -1380,8 +1380,8 @@ const PaymentModal = ({
               <button
                 onClick={() => setDiscountType('percentage')}
                 className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${discountType === 'percentage'
-                    ? 'bg-primary-600 text-white shadow-md'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  ? 'bg-primary-600 text-white shadow-md'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
               >
                 Porcentaje
@@ -1389,8 +1389,8 @@ const PaymentModal = ({
               <button
                 onClick={() => setDiscountType('finalPrice')}
                 className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${discountType === 'finalPrice'
-                    ? 'bg-primary-600 text-white shadow-md'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  ? 'bg-primary-600 text-white shadow-md'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
               >
                 Precio Final
@@ -1466,8 +1466,8 @@ const PaymentModal = ({
                 key={method}
                 onClick={() => setPaymentMethod(method)}
                 className={`w-full p-3 rounded-lg border-2 transition-all shadow-sm ${paymentMethod === method
-                    ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20 shadow-primary-200 dark:shadow-primary-900/50'
-                    : 'border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-800/50 hover:border-primary-400 hover:shadow-md'
+                  ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20 shadow-primary-200 dark:shadow-primary-900/50'
+                  : 'border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-800/50 hover:border-primary-400 hover:shadow-md'
                   }`}
               >
                 <div className="flex items-center justify-between">
@@ -1507,19 +1507,19 @@ const PaymentModal = ({
 
             {amountReceived && (
               <div className={`p-4 rounded-lg border-2 ${calculatedChange >= 0
-                  ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
-                  : 'bg-red-50 dark:bg-red-900/20 border-red-500'
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                : 'bg-red-50 dark:bg-red-900/20 border-red-500'
                 }`}>
                 <div className="flex justify-between items-center">
                   <span className={`text-lg font-semibold ${calculatedChange >= 0
-                      ? 'text-green-700 dark:text-green-300'
-                      : 'text-red-700 dark:text-red-300'
+                    ? 'text-green-700 dark:text-green-300'
+                    : 'text-red-700 dark:text-red-300'
                     }`}>
                     Cambio a Devolver:
                   </span>
                   <span className={`text-3xl font-bold ${calculatedChange >= 0
-                      ? 'text-green-600 dark:text-green-400'
-                      : 'text-red-600 dark:text-red-400'
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400'
                     }`}>
                     {formatCurrency(calculatedChange >= 0 ? calculatedChange : 0)}
                   </span>

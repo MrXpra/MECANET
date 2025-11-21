@@ -27,7 +27,7 @@ export const getReturns = async (req, res) => {
     // Búsqueda por número de devolución o por código de factura
     if (search) {
       const cleanSearch = search.trim().replace(/[\s-]/g, '');
-      
+
       // Buscar ventas que coincidan con el invoiceNumber
       const Sale = mongoose.model('Sale');
       const matchingSales = await Sale.find({
@@ -36,9 +36,9 @@ export const getReturns = async (req, res) => {
           { invoiceNumber: cleanSearch.toUpperCase() }
         ]
       }).select('_id').lean();
-      
+
       const saleIds = matchingSales.map(s => s._id);
-      
+
       // Buscar por returnNumber o por sale ID
       query.$or = [
         { returnNumber: { $regex: search, $options: 'i' } },
@@ -57,7 +57,7 @@ export const getReturns = async (req, res) => {
     const returns = await Return.find(query)
       .populate('sale', 'invoiceNumber totalAmount')
       .populate('customer', 'fullName email phone')
-      .populate('items.product', 'name sku')
+      .populate('items.product', 'name sku warranty')
       .populate('processedBy', 'name email')
       .populate('approvedBy', 'name email')
       .sort({ createdAt: -1 })
@@ -125,7 +125,7 @@ export const createReturn = async (req, res) => {
     }
 
     // Obtener devoluciones previas de esta venta (excluir solo las rechazadas)
-    const previousReturns = await Return.find({ 
+    const previousReturns = await Return.find({
       sale: saleId,
       status: { $ne: 'Rechazada' } // Contar todas excepto rechazadas
     }).session(session);
@@ -155,21 +155,21 @@ export const createReturn = async (req, res) => {
         si => {
           // Manejar caso donde product puede ser null, undefined, o un objeto
           if (!si.product) return false;
-          
-          const productId = typeof si.product === 'object' 
-            ? si.product._id 
+
+          const productId = typeof si.product === 'object'
+            ? si.product._id
             : si.product;
-          
+
           if (!productId) return false;
-          
+
           return productId.toString() === item.productId.toString();
         }
       );
 
       if (!saleItem) {
         await session.abortTransaction();
-        return res.status(400).json({ 
-          message: `El producto ${item.productId} no está en la venta original o ha sido eliminado del sistema` 
+        return res.status(400).json({
+          message: `El producto ${item.productId} no está en la venta original o ha sido eliminado del sistema`
         });
       }
 
@@ -188,7 +188,7 @@ export const createReturn = async (req, res) => {
         await session.abortTransaction();
         const productName = saleItem.product?.name || 'este producto';
         console.log('❌ VALIDATION FAILED: Trying to return more than available');
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: `Solo puedes devolver ${availableToReturn} unidad(es) de ${productName}. Ya se devolvieron ${alreadyReturned} de ${saleItem.quantity} originales.`
         });
       }
@@ -211,7 +211,7 @@ export const createReturn = async (req, res) => {
 
       // Devolver productos al inventario (solo si el producto existe)
       const productExists = await Product.findById(item.productId).session(session);
-      
+
       if (productExists) {
         if (isDefective) {
           // Si es defectuoso, va a stock defectuoso
@@ -241,14 +241,14 @@ export const createReturn = async (req, res) => {
         const product = await Product.findById(exchangeItem.productId).session(session);
         if (!product) {
           await session.abortTransaction();
-          return res.status(400).json({ 
-            message: `Producto de cambio ${exchangeItem.productId} no encontrado` 
+          return res.status(400).json({
+            message: `Producto de cambio ${exchangeItem.productId} no encontrado`
           });
         }
         if (product.stock < exchangeItem.quantity) {
           await session.abortTransaction();
-          return res.status(400).json({ 
-            message: `No hay suficiente stock de ${product.name}. Disponible: ${product.stock}` 
+          return res.status(400).json({
+            message: `No hay suficiente stock de ${product.name}. Disponible: ${product.stock}`
           });
         }
 

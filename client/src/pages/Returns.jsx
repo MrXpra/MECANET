@@ -337,7 +337,10 @@ const Returns = () => {
               ${returnData.items.map((item, index) => `
                 <tr class="item-row">
                   <td>${index + 1}</td>
-                  <td>${item.product?.name || 'Producto'}</td>
+                  <td>
+                    ${item.product?.name || 'Producto'}
+                    ${item.product?.warranty ? `<div style="font-size: 10px; font-style: italic; margin-top: 2px;">Garantía: ${item.product.warranty}</div>` : ''}
+                  </td>
                   <td class="center">${item.quantity}</td>
                   <td class="right">${formatCurrency(item.returnAmount)}</td>
                 </tr>
@@ -1802,7 +1805,10 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
               ${returnData.items.map((item, index) => `
                 <tr class="item-row">
                   <td>${index + 1}</td>
-                  <td>${item.product?.name || 'Producto'}</td>
+                  <td>
+                    ${item.product?.name || 'Producto'}
+                    ${item.product?.warranty ? `<div style="font-size: 10px; font-style: italic; margin-top: 2px;">Garantía: ${item.product.warranty}</div>` : ''}
+                  </td>
                   <td class="center">${item.quantity}</td>
                   <td class="right">${formatCurrency(item.returnAmount)}</td>
                 </tr>
