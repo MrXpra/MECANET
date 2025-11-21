@@ -574,7 +574,7 @@ const Settings = ({ section = 'all' }) => {
   // Tabs de secciones
   const tabs = [
     { id: 'business', label: 'Negocio', icon: Building2, path: '/configuracion/negocio' },
-    { id: 'system', label: 'Sistema', icon: Globe, path: '/configuracion/sistema', developerOnly: true },
+    { id: 'system', label: 'Sistema', icon: Globe, path: '/configuracion/sistema' },
     { id: 'notifications', label: 'Notificaciones', icon: Bell, path: '/configuracion/notificaciones' },
     { id: 'billing', label: 'Facturación', icon: CreditCard, path: '/configuracion/facturacion' },
     { id: 'integrations', label: 'Integraciones', icon: Cloud, path: '/configuracion/integraciones' },

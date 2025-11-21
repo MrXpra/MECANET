@@ -1,5 +1,5 @@
 {
-  "version": "1.5.10",
+  "version": "1.5.11",
   "lastUpdated": "2025-11-21",
-  "releaseNotes": "Permitir a admins ver sección Sistema (solo ocultar features de desarrollador)"
+  "releaseNotes": "Corregir tab filter - admins deben ver tab Sistema en navegación"
 }
