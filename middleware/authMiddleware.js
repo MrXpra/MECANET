@@ -73,7 +73,7 @@ export const protect = async (req, res, next) => {
  * Uso: router.delete('/usuarios/:id', protect, admin, deleteUsuario)
  */
 export const admin = (req, res, next) => {
-  const privilegedRoles = ['admin', 'desarrollador'];
+  const privilegedRoles = ['admin', 'desarrollador', 'developer'];
   if (req.user && privilegedRoles.includes(req.user.role)) {
     next(); // Es admin, permitir acceso
   } else {

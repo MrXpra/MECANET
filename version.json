@@ -1,5 +1,5 @@
 {
-  "version": "1.5.7",
+  "version": "1.5.8",
   "lastUpdated": "2025-11-21",
-  "releaseNotes": "Corregir acceso de desarrolladores a logs (soporte para rol en inglés/español)"
+  "releaseNotes": "Corregir acceso backend para rol developer (inglés)"
 }
