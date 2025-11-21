@@ -44,16 +44,17 @@ async function main() {
     const packageJsonPath = path.join(rootDir, 'package.json');
     const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
     const currentVersion = pkg.version;
-    
+
     console.log(`📌 Versión actual: ${currentVersion}`);
     const type = await question('   Tipo de release (patch/minor/major) [patch]: ') || 'patch';
+    const customComment = await question('   Comentario del release: ') || '';
 
     // Calcular nueva versión (simple)
     let [major, minor, patch] = currentVersion.split('.').map(Number);
     if (type === 'major') { major++; minor = 0; patch = 0; }
     else if (type === 'minor') { minor++; patch = 0; }
     else { patch++; }
-    
+
     const newVersion = `${major}.${minor}.${patch}`;
     console.log(`✨ Nueva versión: ${newVersion}`);
 
@@ -63,7 +64,7 @@ async function main() {
     try {
         // 2. Actualizar archivos de versión
         console.log('\n📝 [1/4] Actualizando versiones...');
-        
+
         // package.json
         pkg.version = newVersion;
         fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2));
@@ -73,7 +74,7 @@ async function main() {
         const versionData = {
             version: newVersion,
             lastUpdated: new Date().toISOString().split('T')[0],
-            releaseNotes: `Release v${newVersion}`
+            releaseNotes: customComment || `Release v${newVersion}`
         };
         fs.writeFileSync(versionJsonPath, JSON.stringify(versionData, null, 2));
 
@@ -97,9 +98,10 @@ async function main() {
         // 4. Git Commit & Push
         console.log('\noctocat [3/4] Sincronizando con GitHub (Git)...');
         execSync('git add .', { stdio: 'inherit', cwd: rootDir });
-        
+
         try {
-            execSync(`git commit -m "Release v${newVersion}"`, { stdio: 'inherit', cwd: rootDir });
+            const commitMsg = customComment ? `Release v${newVersion} - ${customComment}` : `Release v${newVersion}`;
+            execSync(`git commit -m "${commitMsg}"`, { stdio: 'inherit', cwd: rootDir });
         } catch (e) {
             console.log('   No hay cambios para commitear (o error en commit). Continuando...');
         }
@@ -113,7 +115,7 @@ async function main() {
 
         console.log(`   Subiendo cambios a ${currentBranch}...`);
         execSync(`git push origin ${currentBranch}`, { stdio: 'inherit', cwd: rootDir });
-        
+
         // Sincronizar ramas
         const otherBranch = currentBranch === 'main' ? 'develop' : (currentBranch === 'develop' ? 'main' : null);
         if (otherBranch) {
@@ -129,14 +131,14 @@ async function main() {
         // 5. GitHub Release (SOLO TAG, SIN ZIP)
         if (GITHUB_TOKEN) {
             console.log('\n🚀 [4/4] Creando Tag en GitHub...');
-            
+
             // Crear Release (Solo metadatos, sin adjuntos)
             const createReleaseUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases`;
             const releaseData = {
                 tag_name: `v${newVersion}`,
                 target_commitish: currentBranch,
                 name: `v${newVersion}`,
-                body: `Release automático v${newVersion}`,
+                body: customComment || `Release automático v${newVersion}`,
                 draft: false,
                 prerelease: false
             };
