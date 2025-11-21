@@ -1,5 +1,5 @@
 {
-  "version": "1.5.4",
+  "version": "1.5.5",
   "lastUpdated": "2025-11-21",
-  "releaseNotes": "Implementada gestión avanzada de logs con retención configurable y limpieza por filtros"
+  "releaseNotes": "Corregir build del frontend con UI completa de gestión de logs"
 }
