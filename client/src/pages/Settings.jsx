@@ -582,7 +582,8 @@ const Settings = ({ section = 'all' }) => {
 
   // Función para verificar si una sección debe mostrarse
   const shouldShowSection = (sectionId) => {
-    if (sectionId === 'system' && !isDeveloper) return false;
+    // Removed system section blocking - admins can see Sistema section
+    // They just won't see developer-specific features (Log Management, Data Export)
     if (section === 'all') return true;
     return section === sectionId;
   };

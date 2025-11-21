@@ -1,5 +1,5 @@
 {
-  "version": "1.5.9",
+  "version": "1.5.10",
   "lastUpdated": "2025-11-21",
-  "releaseNotes": "Corregir ReferenceError en Settings.jsx (mover modal al scope correcto)"
+  "releaseNotes": "Permitir a admins ver sección Sistema (solo ocultar features de desarrollador)"
 }
