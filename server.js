@@ -21,6 +21,7 @@ import open from 'open'; // Para abrir el navegador automáticamente
 import connectDB from './config/db.js'; // Función para conectar a MongoDB
 import LogService from './services/logService.js'; // Servicio de logs con limpieza automática
 import rateLimit from 'express-rate-limit';
+import { execSync } from 'child_process';
 // import helmet from 'helmet'; // Comentado temporalmente para compatibilidad con pkg
 
 // ========== MANEJO DE ERRORES GLOBALES ==========
@@ -94,7 +95,7 @@ let APP_VERSION = '0.0.0';
 try {
   const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
   const versionJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'version.json'), 'utf8'));
-  
+
   if (packageJson.version !== versionJson.version) {
     console.error('❌ ERROR CRÍTICO DE VERSIÓN:');
     console.error(`   package.json: ${packageJson.version}`);
@@ -102,7 +103,7 @@ try {
     console.error('   Las versiones deben coincidir para iniciar el sistema.');
     process.exit(1);
   }
-  
+
   APP_VERSION = packageJson.version;
   console.log(`\n🚀 MECANET v${APP_VERSION} ✅`);
 } catch (error) {
@@ -211,7 +212,7 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Permitir requests sin origin (mobile apps, curl, localhost)
     if (!origin) return callback(null, true);
-    
+
     // MODO ESCRITORIO (LOCAL): Permisivo con localhost
     if (IS_LOCAL_APP) {
       if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
@@ -219,7 +220,7 @@ const corsOptions = {
       }
       // Opcional: Permitir acceso desde red local si se desea
       // if (origin.startsWith('http://192.168.')) return callback(null, true);
-    } 
+    }
     // MODO NUBE (RAILWAY/WEB): Estricto
     else {
       const allowedOrigins = [
@@ -227,7 +228,7 @@ const corsOptions = {
         'https://www.mecanet.site',
         // Agregar aquí dominios de producción reales
       ];
-      
+
       // En desarrollo (NODE_ENV !== production) permitimos localhost también
       if (process.env.NODE_ENV !== 'production') {
         allowedOrigins.push('http://localhost:3000', 'http://localhost:3001', 'http://localhost:5000');
@@ -239,10 +240,10 @@ const corsOptions = {
         return callback(new Error('Acceso denegado por CORS'));
       }
     }
-    
+
     // Fallback para desarrollo local si no cayó en los anteriores
     if (process.env.NODE_ENV !== 'production') {
-       return callback(null, true);
+      return callback(null, true);
     }
 
     return callback(new Error('Acceso denegado por CORS (Default)'));
@@ -293,42 +294,50 @@ app.get('/api/version', (req, res) => {
   try {
     const versionPath = path.join(__dirname, 'version.json');
     const changelogPath = path.join(__dirname, 'CHANGELOG.md');
-    
+
     if (!fs.existsSync(versionPath)) {
       return res.status(404).json({ message: 'Archivo de versión no encontrado' });
     }
-    
+
     const versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
-    
+
     // Obtener commit hash actual
     try {
-      const { execSync } = require('child_process');
-      const commitHash = execSync('git rev-parse --short HEAD', { 
+      const commitHash = execSync('git rev-parse --short HEAD', {
         cwd: __dirname,
-        encoding: 'utf8' 
+        encoding: 'utf8'
       }).trim();
       versionData.commit = commitHash;
+
+      // Obtener mensaje del último commit
+      const commitMessage = execSync('git log -1 --pretty=%B', {
+        cwd: __dirname,
+        encoding: 'utf8'
+      }).trim();
+      versionData.commitMessage = commitMessage;
     } catch (err) {
+      console.error('Error obteniendo info de git:', err.message);
       // Si falla git, usar un valor por defecto
       versionData.commit = 'unknown';
+      versionData.commitMessage = 'No disponible';
     }
-    
+
     // Leer CHANGELOG.md y extraer notas de la versión actual
     if (fs.existsSync(changelogPath)) {
       const changelog = fs.readFileSync(changelogPath, 'utf8');
       const versionRegex = new RegExp(`## \\[${versionData.version}\\][\\s\\S]*?(?=## \\[|$)`, 'i');
       const match = changelog.match(versionRegex);
-      
+
       if (match) {
         // Limpiar el texto: remover el título de versión y formatear
         let notes = match[0]
           .replace(/## \[.*?\].*?\n/, '') // Remover título
           .trim();
-        
+
         versionData.releaseNotes = notes || versionData.releaseNotes;
       }
     }
-    
+
     res.json(versionData);
   } catch (error) {
     console.error('Error al leer versión:', error);
@@ -341,13 +350,13 @@ app.get('/api/debug/returns', async (req, res) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     // Obtener todas las devoluciones completadas
     const returns = await Return.find({ status: 'Completada' })
       .populate('sale', 'createdAt invoiceNumber total')
       .limit(20)
       .lean();
-    
+
     const debug = {
       today: today.toISOString(),
       totalReturns: returns.length,
@@ -361,7 +370,7 @@ app.get('/api/debug/returns', async (req, res) => {
         saleTotal: r.sale?.total
       }))
     };
-    
+
     res.json(debug);
   } catch (error) {
     console.error('Error en debug:', error);

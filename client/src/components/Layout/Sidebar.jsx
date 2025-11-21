@@ -69,30 +69,30 @@ const Sidebar = () => {
   const canSeeAdminMenu = privilegedRoles.includes(user?.role);
   const isDeveloper = user?.role === 'desarrollador';
   const shortcutsEnabled = user?.shortcutsEnabled !== false;
-  
+
   // Estados para controlar expansión de secciones
   const [configExpanded, setConfigExpanded] = useState(location.pathname.startsWith('/configuracion'));
   const [ventasExpanded, setVentasExpanded] = useState(
-    location.pathname.includes('/facturacion') || 
-    location.pathname.includes('/historial-ventas') || 
+    location.pathname.includes('/facturacion') ||
+    location.pathname.includes('/historial-ventas') ||
     location.pathname.includes('/cotizaciones') ||
     location.pathname.includes('/devoluciones')
   );
   const [inventarioExpanded, setInventarioExpanded] = useState(
-    location.pathname.includes('/inventario') || 
+    location.pathname.includes('/inventario') ||
     location.pathname.includes('/ordenes-compra')
   );
   const [contactosExpanded, setContactosExpanded] = useState(
-    location.pathname.includes('/clientes') || 
+    location.pathname.includes('/clientes') ||
     location.pathname.includes('/proveedores')
   );
   const [cajaExpanded, setCajaExpanded] = useState(
-    location.pathname.includes('/cierre-caja') || 
+    location.pathname.includes('/cierre-caja') ||
     location.pathname.includes('/retiros-caja')
   );
   const [sistemaExpanded, setSistemaExpanded] = useState(
-    location.pathname.includes('/logs') || 
-    location.pathname.includes('/auditoria') || 
+    location.pathname.includes('/logs') ||
+    location.pathname.includes('/auditoria') ||
     location.pathname.includes('/monitoreo')
   );
 
@@ -165,8 +165,8 @@ const Sidebar = () => {
       <div className="p-4 xl:p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex flex-col items-center gap-2">
           {settings.businessLogoUrl && settings.businessLogoUrl !== '/logo.png' && settings.businessLogoUrl !== '/default-logo.png' ? (
-            <img 
-              src={settings.businessLogoUrl} 
+            <img
+              src={settings.businessLogoUrl}
               alt={settings.businessName || 'Logo'}
               className="w-14 h-14 xl:w-16 xl:h-16 rounded-xl object-cover"
               onError={(e) => {
@@ -175,7 +175,7 @@ const Sidebar = () => {
               }}
             />
           ) : null}
-          <div 
+          <div
             className="w-14 h-14 xl:w-16 xl:h-16 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center"
             style={{ display: (settings.businessLogoUrl && settings.businessLogoUrl !== '/logo.png' && settings.businessLogoUrl !== '/default-logo.png') ? 'none' : 'flex' }}
           >
@@ -183,7 +183,7 @@ const Sidebar = () => {
           </div>
           <p className="text-xs xl:text-sm text-gray-500 dark:text-gray-400 font-medium">MECANET</p>
           {versionInfo && (
-            <button 
+            <button
               onClick={() => setShowVersionModal(true)}
               className="mt-1 text-[10px] px-2 py-0.5 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors cursor-pointer border border-primary-100 dark:border-primary-800"
             >
@@ -202,10 +202,9 @@ const Sidebar = () => {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center gap-2 xl:gap-3 px-3 xl:px-4 py-2 xl:py-3 rounded-lg transition-all duration-200 text-sm xl:text-base ${
-                  isActive
-                    ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                `flex items-center gap-2 xl:gap-3 px-3 xl:px-4 py-2 xl:py-3 rounded-lg transition-all duration-200 text-sm xl:text-base ${isActive
+                  ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`
               }
             >
@@ -219,14 +218,13 @@ const Sidebar = () => {
         <div className="pt-1 xl:pt-2">
           <button
             onClick={() => setVentasExpanded(!ventasExpanded)}
-            className={`w-full flex items-center gap-2 xl:gap-3 px-3 xl:px-4 py-2 xl:py-3 rounded-lg transition-all duration-200 text-sm xl:text-base ${
-              location.pathname.includes('/facturacion') || 
-              location.pathname.includes('/historial-ventas') || 
-              location.pathname.includes('/cotizaciones') ||
-              location.pathname.includes('/devoluciones')
+            className={`w-full flex items-center gap-2 xl:gap-3 px-3 xl:px-4 py-2 xl:py-3 rounded-lg transition-all duration-200 text-sm xl:text-base ${location.pathname.includes('/facturacion') ||
+                location.pathname.includes('/historial-ventas') ||
+                location.pathname.includes('/cotizaciones') ||
+                location.pathname.includes('/devoluciones')
                 ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
+              }`}
           >
             <Receipt className="w-5 h-5" />
             <span className="font-medium flex-1 text-left">Ventas</span>
@@ -236,7 +234,7 @@ const Sidebar = () => {
               <ChevronRight className="w-4 h-4" />
             )}
           </button>
-          
+
           {ventasExpanded && (
             <div className="mt-1 ml-4 space-y-1 animate-fade-in">
               {ventasSections.map((section) => (
@@ -244,10 +242,9 @@ const Sidebar = () => {
                   key={section.path}
                   to={section.path}
                   className={({ isActive }) =>
-                    `flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${
-                      isActive
-                        ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-medium'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    `flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${isActive
+                      ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-medium'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`
                   }
                 >
@@ -270,12 +267,11 @@ const Sidebar = () => {
         <div>
           <button
             onClick={() => setInventarioExpanded(!inventarioExpanded)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-              location.pathname.includes('/inventario') || 
-              location.pathname.includes('/ordenes-compra')
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname.includes('/inventario') ||
+                location.pathname.includes('/ordenes-compra')
                 ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
+              }`}
           >
             <Package className="w-5 h-5" />
             <span className="font-medium flex-1 text-left">Inventario</span>
@@ -285,7 +281,7 @@ const Sidebar = () => {
               <ChevronRight className="w-4 h-4" />
             )}
           </button>
-          
+
           {inventarioExpanded && (
             <div className="mt-1 ml-4 space-y-1 animate-fade-in">
               {inventarioSections.map((section) => (
@@ -293,10 +289,9 @@ const Sidebar = () => {
                   key={section.path}
                   to={section.path}
                   className={({ isActive }) =>
-                    `flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${
-                      isActive
-                        ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-medium'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    `flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${isActive
+                      ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-medium'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`
                   }
                 >
@@ -319,12 +314,11 @@ const Sidebar = () => {
         <div>
           <button
             onClick={() => setContactosExpanded(!contactosExpanded)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-              location.pathname.includes('/clientes') || 
-              location.pathname.includes('/proveedores')
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname.includes('/clientes') ||
+                location.pathname.includes('/proveedores')
                 ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
+              }`}
           >
             <Users className="w-5 h-5" />
             <span className="font-medium flex-1 text-left">Contactos</span>
@@ -334,7 +328,7 @@ const Sidebar = () => {
               <ChevronRight className="w-4 h-4" />
             )}
           </button>
-          
+
           {contactosExpanded && (
             <div className="mt-1 ml-4 space-y-1 animate-fade-in">
               {contactosSections.map((section) => (
@@ -342,10 +336,9 @@ const Sidebar = () => {
                   key={section.path}
                   to={section.path}
                   className={({ isActive }) =>
-                    `flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${
-                      isActive
-                        ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-medium'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    `flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${isActive
+                      ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-medium'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`
                   }
                 >
@@ -368,12 +361,11 @@ const Sidebar = () => {
         <div>
           <button
             onClick={() => setCajaExpanded(!cajaExpanded)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-              location.pathname.includes('/cierre-caja') || 
-              location.pathname.includes('/retiros-caja')
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname.includes('/cierre-caja') ||
+                location.pathname.includes('/retiros-caja')
                 ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-            }`}
+              }`}
           >
             <DollarSign className="w-5 h-5" />
             <span className="font-medium flex-1 text-left">Caja</span>
@@ -383,7 +375,7 @@ const Sidebar = () => {
               <ChevronRight className="w-4 h-4" />
             )}
           </button>
-          
+
           {cajaExpanded && (
             <div className="mt-1 ml-4 space-y-1 animate-fade-in">
               {cajaSections.map((section) => (
@@ -391,10 +383,9 @@ const Sidebar = () => {
                   key={section.path}
                   to={section.path}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${
-                      isActive
-                        ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-medium'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    `flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${isActive
+                      ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-medium'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`
                   }
                 >
@@ -418,10 +409,9 @@ const Sidebar = () => {
                   key={item.path}
                   to={item.path}
                   className={({ isActive }) =>
-                    `flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                      isActive
-                        ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    `flex items-center justify-between gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive
+                      ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`
                   }
                 >
@@ -442,13 +432,12 @@ const Sidebar = () => {
                 <div>
                   <button
                     onClick={() => setSistemaExpanded(!sistemaExpanded)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                      location.pathname.includes('/logs') ||
-                      location.pathname.includes('/auditoria') ||
-                      location.pathname.includes('/monitoreo')
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname.includes('/logs') ||
+                        location.pathname.includes('/auditoria') ||
+                        location.pathname.includes('/monitoreo')
                         ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                    }`}
+                      }`}
                   >
                     <Activity className="w-5 h-5" />
                     <span className="font-medium flex-1 text-left">Sistema</span>
@@ -458,7 +447,7 @@ const Sidebar = () => {
                       <ChevronRight className="w-4 h-4" />
                     )}
                   </button>
-                  
+
                   {/* Subsecciones de Sistema */}
                   {sistemaExpanded && (
                     <div className="mt-1 ml-4 space-y-1 animate-fade-in">
@@ -467,10 +456,9 @@ const Sidebar = () => {
                           key={section.path}
                           to={section.path}
                           className={({ isActive }) =>
-                            `flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${
-                              isActive
-                                ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-medium'
-                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                            `flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${isActive
+                              ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-medium'
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`
                           }
                         >
@@ -489,11 +477,10 @@ const Sidebar = () => {
               <div>
                 <button
                   onClick={() => setConfigExpanded(!configExpanded)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                    location.pathname.startsWith('/configuracion')
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname.startsWith('/configuracion')
                       ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
+                    }`}
                 >
                   <Settings className="w-5 h-5" />
                   <span className="font-medium flex-1 text-left">Configuración</span>
@@ -503,7 +490,7 @@ const Sidebar = () => {
                     <ChevronRight className="w-4 h-4" />
                   )}
                 </button>
-                
+
                 {/* Subsecciones de Configuración */}
                 {configExpanded && (
                   <div className="mt-1 ml-4 space-y-1 animate-fade-in">
@@ -512,10 +499,9 @@ const Sidebar = () => {
                         key={section.path}
                         to={section.path}
                         className={({ isActive }) =>
-                          `flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${
-                            isActive
-                              ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-medium'
-                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                          `flex items-center justify-between gap-3 px-4 py-2 rounded-lg transition-all duration-200 text-sm ${isActive
+                            ? 'bg-primary-500/20 text-primary-700 dark:text-primary-300 font-medium'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                           }`
                         }
                       >
@@ -618,7 +604,7 @@ const Sidebar = () => {
                   <Info className="w-4 h-4 text-primary-500" />
                   Novedades de esta versión
                 </h4>
-                
+
                 <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
                   <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
                     {versionInfo.releaseNotes}
@@ -626,8 +612,13 @@ const Sidebar = () => {
                 </div>
 
                 {versionInfo.commit && (
-                  <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
-                    <code className="font-mono">Commit: {versionInfo.commit}</code>
+                  <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded text-xs">
+                    <code className="font-mono block mb-1">Commit: {versionInfo.commit}</code>
+                    {versionInfo.commitMessage && (
+                      <span className="text-gray-600 dark:text-gray-300 italic block">
+                        "{versionInfo.commitMessage}"
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -637,7 +628,7 @@ const Sidebar = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Footer */}
             <div className="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-center">
               <p className="text-xs text-gray-500">
