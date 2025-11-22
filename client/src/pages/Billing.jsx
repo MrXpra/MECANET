@@ -332,11 +332,14 @@ const Billing = () => {
 
   const handleCompleteSale = async () => {
     try {
+      // Calcular el total final con descuento global aplicado (igual que en el modal)
+      const discountAmount = globalDiscountAmount || ((globalDiscount / 100) * (getSubtotal() - getTotalDiscount()));
+      const finalTotal = getTotal() - discountAmount;
+
       // Validar monto recibido para efectivo
       if (paymentMethod === 'Efectivo') {
         const received = parseFloat(amountReceived) || 0;
-        const total = getTotal();
-        if (received < total) {
+        if (received < finalTotal) {
           toast.error('El monto recibido debe ser mayor o igual al total');
           return;
         }
@@ -353,9 +356,9 @@ const Billing = () => {
         paymentMethod,
         customer: selectedCustomer?._id,
         subtotal: getSubtotal(),
-        totalDiscount: getTotalDiscount(), // Descuento total (items + global)
-        total: getTotal(),
-        amountReceived: paymentMethod === 'Efectivo' ? parseFloat(amountReceived) : getTotal(),
+        totalDiscount: getTotalDiscount() + discountAmount, // Descuento total (items + global)
+        total: finalTotal, // Usar el total final con descuento global
+        amountReceived: paymentMethod === 'Efectivo' ? parseFloat(amountReceived) : finalTotal,
         change: paymentMethod === 'Efectivo' ? change : 0,
         notes: notes // Incluir notas en la venta
       };

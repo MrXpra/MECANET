@@ -1,5 +1,5 @@
 {
-  "version": "1.7.0",
+  "version": "1.7.1",
   "lastUpdated": "2025-11-22",
-  "releaseNotes": "Agregado notas en las facturas."
+  "releaseNotes": "FIXED THE PAYMENT VALIDATION ERROR."
 }
