@@ -172,42 +172,9 @@ const app = express();
 // Esto permite que express-rate-limit identifique correctamente la IP real del usuario
 app.set('trust proxy', 1);
 
-// ========== SEGURIDAD ==========
-// 1. HELMET: Desactivado temporalmente para compatibilidad con pkg
-// app.use(helmet({
-//   contentSecurityPolicy: false,
-//   crossOriginEmbedderPolicy: false
-// }));
-
-// 2. RATE LIMITING: Proteger contra fuerza bruta y DDoS
-// Límite general: 100 peticiones por IP cada 15 minutos
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // Límite por IP
-  standardHeaders: true, // Retorna info de límite en las cabeceras `RateLimit-*`
-  legacyHeaders: false, // Deshabilita las cabeceras `X-RateLimit-*`
-  message: {
-    status: 429,
-    message: 'Demasiadas peticiones desde esta IP, por favor intente nuevamente en 15 minutos'
-  }
-});
-
-// Aplicar limitador a todas las rutas
-app.use(limiter);
-
-// Limitador estricto para rutas de autenticación (login)
-const authLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hora
-  max: 10, // 10 intentos de login por hora por IP
-  message: {
-    status: 429,
-    message: 'Demasiados intentos de inicio de sesión, por favor intente nuevamente en una hora'
-  }
-});
-app.use('/api/auth/login', authLimiter);
-
 // ========== MIDDLEWARE GLOBAL ==========
 // CORS: Configurado según el modo de aplicación (Camaleón)
+// DEBE IR PRIMERO para que las respuestas de error (como rate limit) tengan headers CORS
 const corsOptions = {
   origin: function (origin, callback) {
     // Permitir requests sin origin (mobile apps, curl, localhost)
@@ -252,6 +219,40 @@ app.use(cors(corsOptions));
 if (!IS_LOCAL_APP) {
   app.set('trust proxy', 1); // Confiar en el primer proxy (Railway/Nginx/Cloudflare)
 }
+
+// ========== SEGURIDAD ==========
+// 1. HELMET: Desactivado temporalmente para compatibilidad con pkg
+// app.use(helmet({
+//   contentSecurityPolicy: false,
+//   crossOriginEmbedderPolicy: false
+// }));
+
+// 2. RATE LIMITING: Proteger contra fuerza bruta y DDoS
+// Límite general: 100 peticiones por IP cada 15 minutos
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // Límite por IP
+  standardHeaders: true, // Retorna info de límite en las cabeceras `RateLimit-*`
+  legacyHeaders: false, // Deshabilita las cabeceras `X-RateLimit-*`
+  message: {
+    status: 429,
+    message: 'Demasiadas peticiones desde esta IP, por favor intente nuevamente en 15 minutos'
+  }
+});
+
+// Aplicar limitador a todas las rutas
+app.use(limiter);
+
+// Limitador estricto para rutas de autenticación (login)
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 10, // 10 intentos de login por hora por IP
+  message: {
+    status: 429,
+    message: 'Demasiados intentos de inicio de sesión, por favor intente nuevamente en una hora'
+  }
+});
+app.use('/api/auth/login', authLimiter);
 
 // Parseo de JSON y URL-encoded
 app.use(express.json({ limit: '50mb' })); // Aumentado para imágenes base64 si es necesario
