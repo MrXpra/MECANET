@@ -79,6 +79,15 @@ API.interceptors.response.use(
   (error) => {
     // Si el servidor devuelve 401 (No autorizado)
     if (error.response?.status === 401) {
+      // Evitar redirect loop o recarga si ya estamos en login
+      // O si la petición fallida fue el propio login (credenciales incorrectas)
+      const isLoginRequest = error.config?.url?.includes('/auth/login');
+      const isLoginPage = typeof window !== 'undefined' && window.location.pathname === '/login';
+
+      if (isLoginRequest || isLoginPage) {
+        return Promise.reject(error);
+      }
+
       // Limpiar TODO el localStorage relacionado con autenticación
       try {
         if (typeof localStorage !== 'undefined') {
