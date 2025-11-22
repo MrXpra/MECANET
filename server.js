@@ -224,169 +224,181 @@ const corsOptions = {
     // MODO NUBE (RAILWAY/WEB): Estricto
     else {
       const allowedOrigins = [
-    // Fallback para desarrollo local si no cayó en los anteriores
-    if (process.env.NODE_ENV !== 'production') {
-        return callback(null, true);
+        'https://mecanet-production.up.railway.app',
+        'https://beneficial-reprieve-production-b547.up.railway.app',
+        'https://www.mecanet.site',
+        'https://mecanet.site'
+      ];
+
+      // En desarrollo (NODE_ENV !== production) permitimos localhost también
+      if (process.env.NODE_ENV !== 'production') {
+        allowedOrigins.push('http://localhost:3000', 'http://localhost:3001', 'http://localhost:5000', 'http://localhost:5173');
       }
 
-      return callback(new Error('Acceso denegado por CORS (Default)'));
-    },
-    credentials: true // Permitir cookies/headers autorizados
-  };
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        return callback(null, true);
+      } else {
+        console.warn(`Origen bloqueado por CORS: ${origin}`);
+        return callback(new Error('Acceso denegado por CORS'));
+      }
+    }
+  },
+  credentials: true // Permitir cookies/headers autorizados
+};
 
-  app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 
-  // Configuración de Proxy para modo Nube
-  if(!IS_LOCAL_APP) {
-    app.set('trust proxy', 1); // Confiar en el primer proxy (Railway/Nginx/Cloudflare)
-  }
+// Configuración de Proxy para modo Nube
+if (!IS_LOCAL_APP) {
+  app.set('trust proxy', 1); // Confiar en el primer proxy (Railway/Nginx/Cloudflare)
+}
 
 // Parseo de JSON y URL-encoded
 app.use(express.json({ limit: '50mb' })); // Aumentado para imágenes base64 si es necesario
-  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-  // ========== MIDDLEWARE DE LOGGING Y MONITOREO ==========
-  // Monitoreo de rendimiento (debe ir primero para medir todo)
-  app.use(performanceMonitor);
+// ========== MIDDLEWARE DE LOGGING Y MONITOREO ==========
+// Monitoreo de rendimiento (debe ir primero para medir todo)
+app.use(performanceMonitor);
 
-  // Registrar todas las peticiones HTTP
-  app.use(requestLogger);
+// Registrar todas las peticiones HTTP
+app.use(requestLogger);
 
-  // Endpoint para obtener versión del sistema (Definido al inicio para evitar conflictos)
-  app.get('/api/version', (req, res) => {
-    try {
-      const versionPath = path.join(__dirname, 'version.json');
-      const changelogPath = path.join(__dirname, 'CHANGELOG.md');
+// Endpoint para obtener versión del sistema (Definido al inicio para evitar conflictos)
+app.get('/api/version', (req, res) => {
+  try {
+    const versionPath = path.join(__dirname, 'version.json');
+    const changelogPath = path.join(__dirname, 'CHANGELOG.md');
 
-      let versionData = { version: '1.0.0', releaseNotes: 'Versión inicial' };
+    let versionData = { version: '1.0.0', releaseNotes: 'Versión inicial' };
 
-      if (fs.existsSync(versionPath)) {
-        try {
-          versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
-        } catch (e) {
-          console.error('Error parseando version.json:', e);
-        }
-      }
-
-      // Obtener commit hash actual
+    if (fs.existsSync(versionPath)) {
       try {
-        // Intentar obtener info de git solo si existe la carpeta .git
-        if (fs.existsSync(path.join(__dirname, '.git'))) {
-          const commitHash = execSync('git rev-parse --short HEAD', {
-            cwd: __dirname,
-            encoding: 'utf8',
-            stdio: ['ignore', 'pipe', 'ignore'] // Evitar que errores salgan a consola
-          }).trim();
-          versionData.commit = commitHash;
-
-          const commitMessage = execSync('git log -1 --pretty=%B', {
-            cwd: __dirname,
-            encoding: 'utf8',
-            stdio: ['ignore', 'pipe', 'ignore']
-          }).trim();
-          versionData.commitMessage = commitMessage;
-        } else {
-          versionData.commit = 'build';
-          versionData.commitMessage = 'Production Build';
-        }
-      } catch (err) {
-        // Silencioso en producción
-        versionData.commit = 'unknown';
-        versionData.commitMessage = 'No disponible';
+        versionData = JSON.parse(fs.readFileSync(versionPath, 'utf8'));
+      } catch (e) {
+        console.error('Error parseando version.json:', e);
       }
-
-      // Leer CHANGELOG.md y extraer notas de la versión actual
-      if (fs.existsSync(changelogPath)) {
-        try {
-          const changelog = fs.readFileSync(changelogPath, 'utf8');
-          const versionRegex = new RegExp(`## \\[${versionData.version}\\][\\s\\S]*?(?=## \\[|$)`, 'i');
-          const match = changelog.match(versionRegex);
-
-          if (match) {
-            // Limpiar el texto: remover el título de versión y formatear
-            let notes = match[0]
-              .replace(/## \[.*?\].*?\n/, '') // Remover título
-              .trim();
-
-            versionData.releaseNotes = notes || versionData.releaseNotes;
-          }
-        } catch (e) {
-          console.error('Error leyendo changelog:', e);
-        }
-      }
-
-      res.json(versionData);
-    } catch (error) {
-      console.error('Error al leer versión:', error);
-      // Enviar JSON incluso en error 500 para evitar SyntaxError en cliente
-      res.status(500).json({ message: 'Error al obtener versión', version: '0.0.0' });
     }
-  });
 
-  // ========== REGISTRO DE RUTAS API ==========
-  // Cada ruta tiene su prefijo y se delega a su archivo de rutas correspondiente
-  app.use('/api/auth', authRoutes); // /api/auth/login, /api/auth/register, etc
-  app.use('/api/users', userRoutes); // /api/users (CRUD usuarios)
-  app.use('/api/products', productRoutes); // /api/products (CRUD productos)
-  app.use('/api/sales', saleRoutes); // /api/sales (crear ventas, historial)
-  app.use('/api/customers', customerRoutes); // /api/customers (CRUD clientes)
-  app.use('/api/settings', settingsRoutes); // /api/settings (configuración)
-  app.use('/api/dashboard', dashboardRoutes); // /api/dashboard/stats
-  app.use('/api/suppliers', supplierRoutes); // /api/suppliers (CRUD proveedores)
-  app.use('/api/purchase-orders', purchaseOrderRoutes); // /api/purchase-orders
-  app.use('/api/proxy', proxyRoutes); // /api/proxy/weather (proxy APIs externas)
-  app.use('/api/returns', returnRoutes); // /api/returns (devoluciones)
-  app.use('/api/cash-withdrawals', cashWithdrawalRoutes); // /api/cash-withdrawals
-  app.use('/api/logs', logRoutes); // /api/logs (logs técnicos del sistema)
-  app.use('/api/audit-logs', auditLogRoutes); // /api/audit-logs (auditoría de usuario)
-  app.use('/api/quotations', quotationRoutes); // /api/quotations (cotizaciones)
-  app.use('/api/system', systemRoutes); // /api/system (actualizaciones del sistema)
-
-  // Endpoint de debug para verificar devoluciones
-  app.get('/api/debug/returns', async (req, res) => {
+    // Obtener commit hash actual
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // Intentar obtener info de git solo si existe la carpeta .git
+      if (fs.existsSync(path.join(__dirname, '.git'))) {
+        const commitHash = execSync('git rev-parse --short HEAD', {
+          cwd: __dirname,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'] // Evitar que errores salgan a consola
+        }).trim();
+        versionData.commit = commitHash;
 
-      // Obtener todas las devoluciones completadas
-      const returns = await Return.find({ status: 'Completada' })
-        .populate('sale', 'createdAt invoiceNumber total')
-        .limit(20)
-        .lean();
-
-      const debug = {
-        today: today.toISOString(),
-        totalReturns: returns.length,
-        returns: returns.map(r => ({
-          id: r._id,
-          returnNumber: r.returnNumber,
-          totalAmount: r.totalAmount,
-          returnDate: r.createdAt,
-          saleInvoice: r.sale?.invoiceNumber,
-          saleDate: r.sale?.createdAt,
-          saleTotal: r.sale?.total
-        }))
-      };
-
-      res.json(debug);
-    } catch (error) {
-      console.error('Error en debug:', error);
-      res.status(500).json({ error: error.message });
+        const commitMessage = execSync('git log -1 --pretty=%B', {
+          cwd: __dirname,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore']
+        }).trim();
+        versionData.commitMessage = commitMessage;
+      } else {
+        versionData.commit = 'build';
+        versionData.commitMessage = 'Production Build';
+      }
+    } catch (err) {
+      // Silencioso en producción
+      versionData.commit = 'unknown';
+      versionData.commitMessage = 'No disponible';
     }
-  });
 
-  // ========== SERVIR FRONTEND EN PRODUCCIÓN ==========
-  // En producción, Express sirve los archivos estáticos del build de React
-  if(process.env.NODE_ENV === 'production') {
-    // Servir archivos estáticos del frontend compilado
-    const clientDistPath = path.join(__dirname, 'client', 'dist');
-app.use(express.static(clientDistPath));
+    // Leer CHANGELOG.md y extraer notas de la versión actual
+    if (fs.existsSync(changelogPath)) {
+      try {
+        const changelog = fs.readFileSync(changelogPath, 'utf8');
+        const versionRegex = new RegExp(`## \\[${versionData.version}\\][\\s\\S]*?(?=## \\[|$)`, 'i');
+        const match = changelog.match(versionRegex);
 
-// Ruta catch-all: cualquier petición que no sea API debe devolver el index.html
-// Esto permite que React Router maneje el enrutamiento del lado del cliente
-app.get('*', (req, res) => {
-  res.sendFile(path.join(clientDistPath, 'index.html'));
+        if (match) {
+          // Limpiar el texto: remover el título de versión y formatear
+          let notes = match[0]
+            .replace(/## \[.*?\].*?\n/, '') // Remover título
+            .trim();
+
+          versionData.releaseNotes = notes || versionData.releaseNotes;
+        }
+      } catch (e) {
+        console.error('Error leyendo changelog:', e);
+      }
+    }
+
+    res.json(versionData);
+  } catch (error) {
+    console.error('Error al leer versión:', error);
+    // Enviar JSON incluso en error 500 para evitar SyntaxError en cliente
+    res.status(500).json({ message: 'Error al obtener versión', version: '0.0.0' });
+  }
 });
+
+// ========== REGISTRO DE RUTAS API ==========
+// Cada ruta tiene su prefijo y se delega a su archivo de rutas correspondiente
+app.use('/api/auth', authRoutes); // /api/auth/login, /api/auth/register, etc
+app.use('/api/users', userRoutes); // /api/users (CRUD usuarios)
+app.use('/api/products', productRoutes); // /api/products (CRUD productos)
+app.use('/api/sales', saleRoutes); // /api/sales (crear ventas, historial)
+app.use('/api/customers', customerRoutes); // /api/customers (CRUD clientes)
+app.use('/api/settings', settingsRoutes); // /api/settings (configuración)
+app.use('/api/dashboard', dashboardRoutes); // /api/dashboard/stats
+app.use('/api/suppliers', supplierRoutes); // /api/suppliers (CRUD proveedores)
+app.use('/api/purchase-orders', purchaseOrderRoutes); // /api/purchase-orders
+app.use('/api/proxy', proxyRoutes); // /api/proxy/weather (proxy APIs externas)
+app.use('/api/returns', returnRoutes); // /api/returns (devoluciones)
+app.use('/api/cash-withdrawals', cashWithdrawalRoutes); // /api/cash-withdrawals
+app.use('/api/logs', logRoutes); // /api/logs (logs técnicos del sistema)
+app.use('/api/audit-logs', auditLogRoutes); // /api/audit-logs (auditoría de usuario)
+app.use('/api/quotations', quotationRoutes); // /api/quotations (cotizaciones)
+app.use('/api/system', systemRoutes); // /api/system (actualizaciones del sistema)
+
+// Endpoint de debug para verificar devoluciones
+app.get('/api/debug/returns', async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Obtener todas las devoluciones completadas
+    const returns = await Return.find({ status: 'Completada' })
+      .populate('sale', 'createdAt invoiceNumber total')
+      .limit(20)
+      .lean();
+
+    const debug = {
+      today: today.toISOString(),
+      totalReturns: returns.length,
+      returns: returns.map(r => ({
+        id: r._id,
+        returnNumber: r.returnNumber,
+        totalAmount: r.totalAmount,
+        returnDate: r.createdAt,
+        saleInvoice: r.sale?.invoiceNumber,
+        saleDate: r.sale?.createdAt,
+        saleTotal: r.sale?.total
+      }))
+    };
+
+    res.json(debug);
+  } catch (error) {
+    console.error('Error en debug:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========== SERVIR FRONTEND EN PRODUCCIÓN ==========
+// En producción, Express sirve los archivos estáticos del build de React
+if (process.env.NODE_ENV === 'production') {
+  // Servir archivos estáticos del frontend compilado
+  const clientDistPath = path.join(__dirname, 'client', 'dist');
+  app.use(express.static(clientDistPath));
+
+  // Ruta catch-all: cualquier petición que no sea API debe devolver el index.html
+  // Esto permite que React Router maneje el enrutamiento del lado del cliente
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
 } else {
   // En desarrollo, solo API
   app.get('/', (req, res) => {
