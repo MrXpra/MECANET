@@ -1,5 +1,5 @@
 {
-  "version": "1.7.1",
+  "version": "1.7.2",
   "lastUpdated": "2025-11-22",
-  "releaseNotes": "FIXED THE PAYMENT VALIDATION ERROR."
+  "releaseNotes": "Ahora puedes ver el beneficio de cada producto en los reportes!."
 }

@@ -24,7 +24,8 @@ import {
   getSalesByDay,
   getTopProducts,
   getSalesByPayment,
-  getAllDashboardData
+  getAllDashboardData,
+  getProductsWithProfit
 } from '../controllers/dashboardController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -38,5 +39,9 @@ router.get('/stats', protect, getDashboardStats);
 router.get('/sales-by-day', protect, getSalesByDay);
 router.get('/top-products', protect, getTopProducts);
 router.get('/sales-by-payment', protect, getSalesByPayment);
+
+// Productos con beneficio (admin only)
+router.get('/products-with-profit', protect, getProductsWithProfit);
+
 
 export default router;

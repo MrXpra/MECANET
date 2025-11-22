@@ -27,7 +27,7 @@ export const getDashboardStats = async (req, res) => {
       .populate('sale', 'createdAt invoiceNumber total')
       .limit(10)
       .lean();
-    
+
     console.log('🔍 All Approved Returns (first 10):');
     allReturns.forEach(ret => {
       console.log(`  - Return ID: ${ret._id}`);
@@ -473,7 +473,7 @@ export const getAllDashboardData = async (req, res) => {
           }
         }
       ]),
-      
+
       // Stats de devoluciones (por fecha de venta original)
       Return.aggregate([
         {
@@ -538,7 +538,7 @@ export const getAllDashboardData = async (req, res) => {
           }
         }
       ]),
-      
+
       // Sales by day (last 7 days)
       Sale.aggregate([
         { $match: { createdAt: { $gte: days7Ago }, status: 'Completada', total: { $ne: null, $exists: true } } },
@@ -551,7 +551,7 @@ export const getAllDashboardData = async (req, res) => {
         },
         { $sort: { _id: 1 } }
       ]),
-      
+
       // Top products (last 30 days)
       Sale.aggregate([
         { $match: { createdAt: { $gte: days30Ago }, status: 'Completada', total: { $ne: null, $exists: true } } },
@@ -584,7 +584,7 @@ export const getAllDashboardData = async (req, res) => {
           }
         }
       ]),
-      
+
       // Sales by payment method (last 30 days)
       Sale.aggregate([
         { $match: { createdAt: { $gte: days30Ago }, status: 'Completada', total: { $ne: null, $exists: true } } },
@@ -596,7 +596,7 @@ export const getAllDashboardData = async (req, res) => {
           }
         }
       ]),
-      
+
       // Counts
       Promise.all([
         Product.countDocuments({ $expr: { $lte: ['$stock', '$lowStockThreshold'] } }),
@@ -604,7 +604,7 @@ export const getAllDashboardData = async (req, res) => {
         Customer.countDocuments(),
         User.countDocuments({ isActive: true })
       ]),
-      
+
       // Low stock items
       Product.find({ $expr: { $lte: ['$stock', '$lowStockThreshold'] } })
         .select('name sku stock lowStockThreshold')
@@ -706,6 +706,178 @@ export const getAllDashboardData = async (req, res) => {
     });
   } catch (error) {
     console.error('Error al obtener datos del dashboard:', error);
+    res.status(500).json({ message: 'Error al obtener datos', error: error.message });
+  }
+};
+
+// @desc    Obtener productos con beneficio calculado
+// @route   GET /api/dashboard/products-with-profit
+// @access  Private/Admin
+export const getProductsWithProfit = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    // Construir filtro de fechas
+    const dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter.createdAt = {};
+      if (startDate) {
+        dateFilter.createdAt.$gte = new Date(startDate + 'T00:00:00.000');
+      }
+      if (endDate) {
+        dateFilter.createdAt.$lte = new Date(endDate + 'T23:59:59.999');
+      }
+    }
+
+    // Agregar ventas por producto (solo ventas completadas)
+    const salesByProduct = await Sale.aggregate([
+      {
+        $match: {
+          status: 'Completada',
+          ...dateFilter
+        }
+      },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$items.product',
+          totalQuantitySold: { $sum: '$items.quantity' },
+          totalRevenue: { $sum: '$items.subtotal' },
+          totalCost: {
+            $sum: {
+              $multiply: [
+                { $ifNull: ['$items.purchasePriceAtSale', 0] },
+                '$items.quantity'
+              ]
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          totalProfit: { $subtract: ['$totalRevenue', '$totalCost'] },
+          profitPerUnit: {
+            $cond: {
+              if: { $gt: ['$totalQuantitySold', 0] },
+              then: {
+                $divide: [
+                  { $subtract: ['$totalRevenue', '$totalCost'] },
+                  '$totalQuantitySold'
+                ]
+              },
+              else: 0
+            }
+          }
+        }
+      }
+    ]);
+
+    // Agregar devoluciones por producto (solo completadas)
+    const returnsByProduct = await Return.aggregate([
+      {
+        $match: {
+          status: 'Completada'
+        }
+      },
+      {
+        $lookup: {
+          from: 'sales',
+          localField: 'sale',
+          foreignField: '_id',
+          as: 'saleData'
+        }
+      },
+      { $unwind: '$saleData' },
+      ...(Object.keys(dateFilter).length > 0 ? [{
+        $match: {
+          'saleData.createdAt': dateFilter.createdAt
+        }
+      }] : []),
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$items.product',
+          returnedQuantity: { $sum: '$items.quantity' },
+          returnedRevenue: { $sum: '$items.subtotal' },
+          returnedCost: {
+            $sum: {
+              $multiply: [
+                { $ifNull: ['$items.purchasePrice', 0] },
+                '$items.quantity'
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    // Crear mapa de devoluciones
+    const returnsMap = {};
+    returnsByProduct.forEach(ret => {
+      returnsMap[ret._id.toString()] = {
+        quantity: ret.returnedQuantity,
+        revenue: ret.returnedRevenue,
+        cost: ret.returnedCost
+      };
+    });
+
+    // Crear mapa de ventas
+    const salesMap = {};
+    salesByProduct.forEach(sale => {
+      salesMap[sale._id.toString()] = sale;
+    });
+
+    // Obtener todos los productos
+    const allProducts = await Product.find().lean();
+
+    // Combinar datos de productos con ventas y devoluciones
+    const productsWithProfit = allProducts.map(product => {
+      const productSales = salesMap[product._id.toString()] || {
+        totalQuantitySold: 0,
+        totalRevenue: 0,
+        totalCost: 0,
+        totalProfit: 0,
+        profitPerUnit: 0
+      };
+
+      const returns = returnsMap[product._id.toString()] || {
+        quantity: 0,
+        revenue: 0,
+        cost: 0
+      };
+
+      // Calcular netos (ventas - devoluciones)
+      const netQuantity = productSales.totalQuantitySold - returns.quantity;
+      const netRevenue = productSales.totalRevenue - returns.revenue;
+      const netCost = productSales.totalCost - returns.cost;
+      const netProfit = netRevenue - netCost;
+      const profitPerUnit = netQuantity > 0 ? netProfit / netQuantity : 0;
+      const profitMargin = netRevenue > 0 ? (netProfit / netRevenue) * 100 : 0;
+
+      return {
+        _id: product._id,
+        sku: product.sku,
+        name: product.name,
+        category: product.category || '',
+        brand: product.brand || '',
+        purchasePrice: product.purchasePrice || 0,
+        sellingPrice: product.sellingPrice || 0,
+        stock: product.stock || 0,
+        minStock: product.minStock || 0,
+        soldCount: product.soldCount || 0,
+        // Datos de ventas netas (ventas - devoluciones)
+        totalQuantitySold: netQuantity,
+        totalRevenue: netRevenue,
+        totalCost: netCost,
+        totalProfit: netProfit,
+        profitPerUnit: profitPerUnit,
+        profitMargin: profitMargin
+      };
+    });
+
+    res.json({ products: productsWithProfit });
+  } catch (error) {
+    console.error('Error al obtener productos con beneficio:', error);
     res.status(500).json({ message: 'Error al obtener datos', error: error.message });
   }
 };

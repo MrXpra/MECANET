@@ -65,7 +65,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { getSales, getProducts, getCustomers } from '../services/api';
+import { getSales, getProducts, getCustomers, getProductsWithProfit } from '../services/api';
 import { useSettingsStore } from '../store/settingsStore';
 import toast from 'react-hot-toast';
 import { ReportsSkeleton } from '../components/SkeletonLoader';
@@ -202,9 +202,12 @@ const Reports = () => {
         setLoadingProgress({ current: 3, total: 3, stage: 'Completado', percentage: 100 });
 
       } else if (activeTab === 'products') {
-        // Etapa 1: Cargar productos
+        // Etapa 1: Cargar productos con beneficio
         setLoadingProgress({ current: 1, total: 3, stage: 'Cargando productos...', percentage: 33 });
-        const response = await getProducts({ limit: 10000 });
+        const response = await getProductsWithProfit({
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate
+        });
         const productsArray = response?.data?.products || response?.data || [];
         setProductsData(Array.isArray(productsArray) ? productsArray : []);
 
@@ -370,7 +373,13 @@ const Reports = () => {
         'Precio Venta': product.sellingPrice,
         'Stock': product.stock,
         'Stock Mínimo': product.minStock,
-        'Vendidos': product.soldCount || 0
+        'Vendidos': product.soldCount || 0,
+        'Unidades Vendidas (Periodo)': product.totalQuantitySold || 0,
+        'Ingresos Totales': product.totalRevenue || 0,
+        'Costo Total': product.totalCost || 0,
+        'Beneficio': product.totalProfit || 0,
+        'Beneficio por Unidad': product.profitPerUnit || 0,
+        'Margen %': product.profitMargin ? product.profitMargin.toFixed(2) : '0.00'
       }));
       filename = 'productos.xlsx';
       sheetName = 'Productos';
@@ -546,12 +555,14 @@ const Reports = () => {
         product.brand || '',
         formatCurrency(product.sellingPrice),
         product.stock.toString(),
-        product.soldCount || 0
+        product.totalQuantitySold || 0,
+        formatCurrency(product.totalProfit || 0),
+        (product.profitMargin || 0).toFixed(2) + '%'
       ]);
 
       autoTable(doc, {
         startY: yPosition,
-        head: [['SKU', 'Nombre', 'Categoría', 'Marca', 'Precio', 'Stock', 'Vendidos']],
+        head: [['SKU', 'Nombre', 'Categoría', 'Marca', 'Precio', 'Stock', 'Vendidos', 'Beneficio', 'Margen %']],
         body: tableData,
         theme: 'grid',
         headStyles: { fillColor: [79, 70, 229] },

@@ -181,6 +181,7 @@ export const getDashboardStats = () => API.get('/dashboard/stats'); // Stats gen
 export const getSalesByDay = (days) => API.get('/dashboard/sales-by-day', { params: { days } }); // Ventas por día
 export const getTopProducts = (params) => API.get('/dashboard/top-products', { params }); // Productos más vendidos
 export const getSalesByPayment = (days) => API.get('/dashboard/sales-by-payment', { params: { days } }); // Ventas por método de pago
+export const getProductsWithProfit = (params) => API.get('/dashboard/products-with-profit', { params }); // Productos con beneficio calculado
 
 // ===== SUPPLIERS - Proveedores =====
 export const getSuppliers = () => API.get('/suppliers'); // Listar proveedores
