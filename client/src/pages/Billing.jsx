@@ -91,6 +91,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import JsBarcode from 'jsbarcode';
+import { showGroupedToast } from '../utils/toastUtils';
 
 const Billing = () => {
   const { invalidateCache } = useProductStore();
@@ -228,7 +229,7 @@ const Billing = () => {
         if (response.data) {
           handleAddToCart(response.data);
           setSearchTerm('');
-          toast.success(`${response.data.name} añadido al carrito`);
+          showGroupedToast(`${response.data.name} añadido al carrito`);
         }
       } catch (error) {
         // Si no encuentra por SKU, mostrar resultados filtrados
@@ -275,7 +276,7 @@ const Billing = () => {
       });
     }, 2000);
 
-    toast.success(`${product.name} añadido`);
+    showGroupedToast(`${product.name} añadido`);
   };
 
   const handleQuantityChange = (productId, newQuantity) => {
