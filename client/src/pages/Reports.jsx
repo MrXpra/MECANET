@@ -108,7 +108,7 @@ import {
 
 const Reports = () => {
   const { settings } = useSettingsStore();
-  
+
   // Helper para obtener fecha local sin problemas de zona horaria
   const getLocalDateString = (daysOffset = 0) => {
     const date = new Date();
@@ -181,7 +181,7 @@ const Reports = () => {
     try {
       setIsLoading(true);
       setLoadingProgress({ current: 0, total: 3, stage: 'Iniciando...', percentage: 0 });
-      
+
       if (activeTab === 'sales') {
         // Etapa 1: Cargar ventas
         setLoadingProgress({ current: 1, total: 3, stage: 'Cargando ventas...', percentage: 33 });
@@ -192,49 +192,49 @@ const Reports = () => {
         });
         const salesArray = response?.data?.sales || response?.data || [];
         setSalesData(Array.isArray(salesArray) ? salesArray : []);
-        
+
         // Etapa 2: Procesar datos
         setLoadingProgress({ current: 2, total: 3, stage: 'Procesando datos...', percentage: 66 });
         await new Promise(resolve => setTimeout(resolve, 300));
         setFilteredData(Array.isArray(salesArray) ? salesArray : []);
-        
+
         // Etapa 3: Completado
         setLoadingProgress({ current: 3, total: 3, stage: 'Completado', percentage: 100 });
-        
+
       } else if (activeTab === 'products') {
         // Etapa 1: Cargar productos
         setLoadingProgress({ current: 1, total: 3, stage: 'Cargando productos...', percentage: 33 });
         const response = await getProducts({ limit: 10000 });
         const productsArray = response?.data?.products || response?.data || [];
         setProductsData(Array.isArray(productsArray) ? productsArray : []);
-        
+
         // Etapa 2: Procesar datos
         setLoadingProgress({ current: 2, total: 3, stage: 'Calculando inventario...', percentage: 66 });
         await new Promise(resolve => setTimeout(resolve, 300));
         setFilteredData(Array.isArray(productsArray) ? productsArray : []);
-        
+
         // Etapa 3: Completado
         setLoadingProgress({ current: 3, total: 3, stage: 'Completado', percentage: 100 });
-        
+
       } else if (activeTab === 'customers') {
         // Etapa 1: Cargar clientes
         setLoadingProgress({ current: 1, total: 3, stage: 'Cargando clientes...', percentage: 33 });
         const response = await getCustomers({ limit: 10000 });
         const customersArray = response?.data?.customers || response?.data || [];
         setCustomersData(Array.isArray(customersArray) ? customersArray : []);
-        
+
         // Etapa 2: Procesar datos
         setLoadingProgress({ current: 2, total: 3, stage: 'Analizando historial...', percentage: 66 });
         await new Promise(resolve => setTimeout(resolve, 300));
         setFilteredData(Array.isArray(customersArray) ? customersArray : []);
-        
+
         // Etapa 3: Completado
         setLoadingProgress({ current: 3, total: 3, stage: 'Completado', percentage: 100 });
       }
-      
+
       // Pequeña pausa para mostrar el 100%
       await new Promise(resolve => setTimeout(resolve, 200));
-      
+
     } catch (error) {
       console.error('Error fetching report data:', error);
       toast.error('Error al cargar datos del reporte');
@@ -268,10 +268,11 @@ const Reports = () => {
 
   // Cálculos para el reporte de ventas
   const getSalesSummary = () => {
-    const total = salesData.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
-    const subtotal = salesData.reduce((sum, sale) => sum + (Number(sale.subtotal) || 0), 0);
-    const discounts = salesData.reduce((sum, sale) => sum + (Number(sale.totalDiscount) || 0), 0);
-    const transactions = salesData.length;
+    const validSales = salesData.filter(s => s.status !== 'Cancelada');
+    const total = validSales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
+    const subtotal = validSales.reduce((sum, sale) => sum + (Number(sale.subtotal) || 0), 0);
+    const discounts = validSales.reduce((sum, sale) => sum + (Number(sale.totalDiscount) || 0), 0);
+    const transactions = validSales.length;
     const avgTicket = transactions > 0 ? total / transactions : 0;
 
     return { total, subtotal, discounts, transactions, avgTicket };
@@ -280,7 +281,7 @@ const Reports = () => {
   // Ventas por día
   const getSalesByDay = () => {
     const salesByDay = {};
-    salesData.forEach(sale => {
+    salesData.filter(s => s.status !== 'Cancelada').forEach(sale => {
       const date = new Date(sale.createdAt).toLocaleDateString('es-DO', { month: 'short', day: 'numeric' });
       salesByDay[date] = (salesByDay[date] || 0) + (Number(sale.total) || 0);
     });
@@ -293,7 +294,7 @@ const Reports = () => {
   // Ventas por método de pago
   const getSalesByPaymentMethod = () => {
     const byMethod = {};
-    salesData.forEach(sale => {
+    salesData.filter(s => s.status !== 'Cancelada').forEach(sale => {
       byMethod[sale.paymentMethod] = (byMethod[sale.paymentMethod] || 0) + (Number(sale.total) || 0);
     });
     return Object.keys(byMethod).map(method => ({
@@ -305,7 +306,7 @@ const Reports = () => {
   // Top productos vendidos
   const getTopProducts = () => {
     const productSales = {};
-    salesData.forEach(sale => {
+    salesData.filter(s => s.status !== 'Cancelada').forEach(sale => {
       if (sale.items && Array.isArray(sale.items)) {
         sale.items.forEach(item => {
           const productName = item.product?.name || 'Producto';
@@ -347,7 +348,7 @@ const Reports = () => {
     let sheetName = '';
 
     if (activeTab === 'sales') {
-      data = salesData.map(sale => ({
+      data = salesData.filter(s => s.status !== 'Cancelada').map(sale => ({
         'Factura': sale.invoiceNumber,
         'Fecha': formatDate(sale.createdAt),
         'Hora': new Date(sale.createdAt).toLocaleTimeString('es-DO'),
@@ -395,7 +396,7 @@ const Reports = () => {
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-    
+
     // Auto ajustar ancho de columnas
     const maxWidth = data.reduce((w, r) => Math.max(w, Object.keys(r).length), 10);
     worksheet['!cols'] = Array(maxWidth).fill({ wch: 15 });
@@ -429,7 +430,7 @@ const Reports = () => {
     if (settings.businessLogoUrl) {
       try {
         let imageUrl = settings.businessLogoUrl;
-        
+
         // Si no es base64, usar el proxy del backend para evitar CORS
         if (!imageUrl.startsWith('data:')) {
           // Usar proxy del backend
@@ -439,7 +440,7 @@ const Reports = () => {
         // Cargar imagen como base64
         const response = await fetch(imageUrl);
         const blob = await response.blob();
-        
+
         const base64 = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result);
@@ -475,7 +476,7 @@ const Reports = () => {
     // Título del reporte
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    
+
     if (activeTab === 'sales') {
       doc.text('Reporte de Ventas', pageWidth / 2, yPosition, { align: 'center' });
       yPosition += 10;
@@ -500,19 +501,19 @@ const Reports = () => {
       yPosition += 10;
 
       // Tabla de ventas
-      const tableData = salesData.map(sale => {
+      const tableData = salesData.filter(s => s.status !== 'Cancelada').map(sale => {
         const date = new Date(sale.createdAt);
-        const dateStr = date.toLocaleDateString('es-DO', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric' 
+        const dateStr = date.toLocaleDateString('es-DO', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
         });
-        const timeStr = date.toLocaleTimeString('es-DO', { 
-          hour: '2-digit', 
+        const timeStr = date.toLocaleTimeString('es-DO', {
+          hour: '2-digit',
           minute: '2-digit',
-          hour12: true 
+          hour12: true
         });
-        
+
         return [
           sale.invoiceNumber,
           `${dateStr}\n${timeStr}`,
@@ -533,7 +534,7 @@ const Reports = () => {
       });
 
       doc.save(`ventas_${dateRange.startDate}_${dateRange.endDate}.pdf`);
-      
+
     } else if (activeTab === 'products') {
       doc.text('Reporte de Productos', pageWidth / 2, yPosition, { align: 'center' });
       yPosition += 15;
@@ -558,7 +559,7 @@ const Reports = () => {
       });
 
       doc.save('productos.pdf');
-      
+
     } else if (activeTab === 'customers') {
       doc.text('Reporte de Clientes', pageWidth / 2, yPosition, { align: 'center' });
       yPosition += 15;
@@ -626,15 +627,15 @@ const Reports = () => {
               </span>
             </div>
           </div>
-          
+
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             Generando Reporte
           </h3>
-          
+
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             {loadingProgress.stage}
           </p>
-          
+
           {/* Barra de progreso lineal */}
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
             <div
@@ -642,7 +643,7 @@ const Reports = () => {
               style={{ width: `${loadingProgress.percentage}%` }}
             />
           </div>
-          
+
           {/* Indicador de etapas */}
           <div className="mt-4 flex justify-between text-xs text-gray-500 dark:text-gray-400">
             <span className={loadingProgress.current >= 1 ? 'text-primary-600 font-medium' : ''}>
@@ -692,33 +693,30 @@ const Reports = () => {
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab('sales')}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${
-              activeTab === 'sales'
-                ? 'bg-primary-600 text-white shadow-lg'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'sales'
+              ? 'bg-primary-600 text-white shadow-lg'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
           >
             <TrendingUp className="w-5 h-5" />
             Ventas
           </button>
           <button
             onClick={() => setActiveTab('products')}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${
-              activeTab === 'products'
-                ? 'bg-primary-600 text-white shadow-lg'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'products'
+              ? 'bg-primary-600 text-white shadow-lg'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
           >
             <Package className="w-5 h-5" />
             Productos
           </button>
           <button
             onClick={() => setActiveTab('customers')}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${
-              activeTab === 'customers'
-                ? 'bg-primary-600 text-white shadow-lg'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-            }`}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors ${activeTab === 'customers'
+              ? 'bg-primary-600 text-white shadow-lg'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
           >
             <Users className="w-5 h-5" />
             Clientes
@@ -733,61 +731,55 @@ const Reports = () => {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleRangeChange('today')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedRange === 'today'
-                  ? 'bg-primary-600 text-white shadow-lg'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedRange === 'today'
+                ? 'bg-primary-600 text-white shadow-lg'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
             >
               Hoy
             </button>
             <button
               onClick={() => handleRangeChange('3days')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedRange === '3days'
-                  ? 'bg-primary-600 text-white shadow-lg'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedRange === '3days'
+                ? 'bg-primary-600 text-white shadow-lg'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
             >
               Últimos 3 Días
             </button>
             <button
               onClick={() => handleRangeChange('week')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedRange === 'week'
-                  ? 'bg-primary-600 text-white shadow-lg'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedRange === 'week'
+                ? 'bg-primary-600 text-white shadow-lg'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
             >
               Última Semana
             </button>
             <button
               onClick={() => handleRangeChange('month')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedRange === 'month'
-                  ? 'bg-primary-600 text-white shadow-lg'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedRange === 'month'
+                ? 'bg-primary-600 text-white shadow-lg'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
             >
               Último Mes
             </button>
             <button
               onClick={() => handleRangeChange('year')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedRange === 'year'
-                  ? 'bg-primary-600 text-white shadow-lg'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedRange === 'year'
+                ? 'bg-primary-600 text-white shadow-lg'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
             >
               Último Año
             </button>
             <button
               onClick={() => handleRangeChange('custom')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedRange === 'custom'
-                  ? 'bg-primary-600 text-white shadow-lg'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }`}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedRange === 'custom'
+                ? 'bg-primary-600 text-white shadow-lg'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
             >
               Personalizado
             </button>
@@ -841,7 +833,7 @@ const Reports = () => {
       ) : (
         <>
           {/* Sales Report */}
-          {activeTab === 'sales' && <SalesReport 
+          {activeTab === 'sales' && <SalesReport
             summary={getSalesSummary()}
             salesByDay={getSalesByDay()}
             salesByPayment={getSalesByPaymentMethod()}
@@ -853,14 +845,14 @@ const Reports = () => {
           />}
 
           {/* Products Report */}
-          {activeTab === 'products' && <ProductsReport 
+          {activeTab === 'products' && <ProductsReport
             products={productsData}
             lowStockProducts={getLowStockProducts()}
             formatCurrency={formatCurrency}
           />}
 
           {/* Customers Report */}
-          {activeTab === 'customers' && <CustomersReport 
+          {activeTab === 'customers' && <CustomersReport
             customers={customersData}
             topCustomers={getTopCustomers()}
             formatCurrency={formatCurrency}
@@ -1017,10 +1009,10 @@ const SalesReport = ({ summary, salesByDay, salesByPayment, topProducts, salesDa
                 }}
                 formatter={(value) => formatCurrency(value)}
               />
-              <Line 
-                type="monotone" 
-                dataKey="total" 
-                stroke="#3b82f6" 
+              <Line
+                type="monotone"
+                dataKey="total"
+                stroke="#3b82f6"
                 strokeWidth={2}
                 dot={{ fill: '#3b82f6', r: 4 }}
               />
@@ -1295,11 +1287,10 @@ const ProductsReport = ({ products, lowStockProducts, formatCurrency }) => {
                     {formatCurrency(product.sellingPrice)}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <span className={`font-semibold ${
-                      product.stock === 0 ? 'text-red-600' : 
-                      product.stock <= product.minStock ? 'text-yellow-600' : 
-                      'text-green-600'
-                    }`}>
+                    <span className={`font-semibold ${product.stock === 0 ? 'text-red-600' :
+                      product.stock <= product.minStock ? 'text-yellow-600' :
+                        'text-green-600'
+                      }`}>
                       {product.stock}
                     </span>
                   </td>
