@@ -33,7 +33,7 @@ import AuditLogService from '../services/auditLogService.js';
 export const getProducts = async (req, res) => {
   try {
     const { search, category, brand, lowStock, includeArchived, page = 1, limit = 100 } = req.query;
-    
+
     let query = {};
 
     // Excluir productos archivados por defecto (a menos que se solicite incluirlos)
@@ -164,6 +164,22 @@ export const createProduct = async (req, res) => {
     // Solo agregar supplier si no está vacío
     if (supplier && supplier.trim() !== '') {
       productData.supplier = supplier;
+    } else {
+      // Si no hay proveedor, asignar "Proveedor Genérico"
+      // Importar Supplier model dinámicamente o al inicio si no está
+      const Supplier = mongoose.model('Supplier');
+      let genericSupplier = await Supplier.findOne({ name: 'Proveedor Genérico' });
+
+      if (!genericSupplier) {
+        genericSupplier = await Supplier.create({
+          name: 'Proveedor Genérico',
+          email: 'generico@sistema.local',
+          phone: '000-000-0000',
+          address: 'Sistema',
+          contact: 'Sistema'
+        });
+      }
+      productData.supplier = genericSupplier._id;
     }
 
     const product = await Product.create(productData);
@@ -206,7 +222,7 @@ export const createProduct = async (req, res) => {
     res.status(201).json(product);
   } catch (error) {
     console.error('Error al crear producto:', error);
-    
+
     // Log de error
     await LogService.logError({
       module: 'products',
@@ -217,7 +233,7 @@ export const createProduct = async (req, res) => {
       req,
       details: { sku: req.body.sku }
     });
-    
+
     res.status(500).json({ message: 'Error al crear producto', error: error.message });
   }
 };
@@ -244,20 +260,20 @@ export const updateProduct = async (req, res) => {
 
     // Si se está actualizando el SKU, verificar que no exista otro producto con ese SKU
     if (req.body.sku && req.body.sku !== product.sku) {
-      const existingProduct = await Product.findOne({ 
+      const existingProduct = await Product.findOne({
         sku: req.body.sku.toUpperCase(),
         _id: { $ne: req.params.id } // Excluir el producto actual de la búsqueda
       });
-      
+
       if (existingProduct) {
         return res.status(400).json({ message: 'El SKU ya existe' });
       }
     }
 
     // Preparar datos de actualización
-    const updateData = { 
-      ...req.body, 
-      sku: req.body.sku ? req.body.sku.toUpperCase() : product.sku 
+    const updateData = {
+      ...req.body,
+      sku: req.body.sku ? req.body.sku.toUpperCase() : product.sku
     };
 
     // Si supplier está vacío, eliminarlo del objeto de actualización
@@ -324,7 +340,7 @@ export const updateProduct = async (req, res) => {
     res.json(updatedProduct);
   } catch (error) {
     console.error('Error al actualizar producto:', error);
-    
+
     // Log de error
     await LogService.logError({
       module: 'products',
@@ -335,7 +351,7 @@ export const updateProduct = async (req, res) => {
       req,
       details: { productId: req.params.id }
     });
-    
+
     res.status(500).json({ message: 'Error al actualizar producto', error: error.message });
   }
 };
@@ -378,7 +394,7 @@ export const deleteProduct = async (req, res) => {
     if (activeSalesCount > 0 || activePurchaseOrdersCount > 0 || activeReturnsCount > 0) {
       product.isArchived = true;
       await product.save();
-      
+
       // Log técnico del sistema
       await LogService.logAction({
         action: 'archive',
@@ -412,8 +428,8 @@ export const deleteProduct = async (req, res) => {
         },
         req
       });
-      
-      return res.json({ 
+
+      return res.json({
         message: 'Producto archivado (no eliminado) porque está siendo usado en transacciones activas',
         archived: true,
         details: {
@@ -457,7 +473,7 @@ export const deleteProduct = async (req, res) => {
     res.json({ message: 'Producto eliminado permanentemente', deleted: true });
   } catch (error) {
     console.error('Error al eliminar producto:', error);
-    
+
     // Log de error
     await LogService.logError({
       module: 'products',
@@ -468,7 +484,7 @@ export const deleteProduct = async (req, res) => {
       req,
       details: { productId: req.params.id }
     });
-    
+
     res.status(500).json({ message: 'Error al eliminar producto', error: error.message });
   }
 };

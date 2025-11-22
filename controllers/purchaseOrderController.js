@@ -25,7 +25,7 @@ export const getPurchaseOrderById = async (req, res) => {
       .populate('supplier')
       .populate('items.product')
       .populate('createdBy', 'name email');
-    
+
     if (!order) {
       return res.status(404).json({ message: 'Orden no encontrada' });
     }
@@ -61,10 +61,10 @@ export const createPurchaseOrder = async (req, res) => {
       }
 
       // Si no se proporciona precio, usar 0 y marcar que no hay precios
-      const unitPrice = item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== '' 
-        ? parseFloat(item.unitPrice) 
+      const unitPrice = item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice !== ''
+        ? parseFloat(item.unitPrice)
         : 0;
-      
+
       if (unitPrice === 0) {
         hasPrices = false;
       }
@@ -108,7 +108,7 @@ export const createPurchaseOrder = async (req, res) => {
     const order = new PurchaseOrder(orderData);
 
     await order.save();
-    
+
     // Populate para retornar datos completos
     await order.populate('supplier', 'name email phone');
     await order.populate('items.product', 'sku name');
@@ -127,19 +127,19 @@ export const generateAutoOrder = async (req, res) => {
     const { supplierId, productIds } = req.body;
 
     let query = {};
-    
+
     // Productos con stock menor o igual al threshold
     const allProducts = await Product.find().populate('supplier');
     let lowStockProducts = allProducts.filter(p => p.stock <= p.lowStockThreshold);
-    
+
     if (supplierId) {
-      lowStockProducts = lowStockProducts.filter(p => 
+      lowStockProducts = lowStockProducts.filter(p =>
         p.supplier && p.supplier._id.toString() === supplierId
       );
     }
-    
+
     if (productIds && productIds.length > 0) {
-      lowStockProducts = lowStockProducts.filter(p => 
+      lowStockProducts = lowStockProducts.filter(p =>
         productIds.includes(p._id.toString())
       );
     }
@@ -148,24 +148,19 @@ export const generateAutoOrder = async (req, res) => {
       return res.status(404).json({ message: 'No hay productos con stock bajo' });
     }
 
-    // Filtrar productos que NO tengan proveedor
-    const productsWithSupplier = lowStockProducts.filter(p => p.supplier && p.supplier._id);
-    
-    if (productsWithSupplier.length === 0) {
-      return res.status(404).json({ 
-        message: 'No hay productos con stock bajo que tengan proveedor asignado' 
-      });
-    }
-
     // Agrupar por proveedor
     const ordersBySupplier = {};
 
-    for (const product of productsWithSupplier) {
-      const supplierId = product.supplier._id.toString();
-      
+    for (const product of lowStockProducts) {
+      // Si tiene proveedor, usar su ID. Si no, usar 'generic'
+      const supplierId = (product.supplier && product.supplier._id)
+        ? product.supplier._id.toString()
+        : 'generic';
+
       if (!ordersBySupplier[supplierId]) {
         ordersBySupplier[supplierId] = {
-          supplier: product.supplier,
+          supplier: supplierId === 'generic' ? null : product.supplier,
+          isGeneric: supplierId === 'generic',
           items: [],
         };
       }
@@ -187,20 +182,35 @@ export const generateAutoOrder = async (req, res) => {
     for (const supplierId in ordersBySupplier) {
       const orderData = ordersBySupplier[supplierId];
 
-      const order = new PurchaseOrder({
-        supplier: supplierId,
+      const orderPayload = {
         items: orderData.items,
         subtotal: 0,
         tax: 0,
         total: 0,
-        notes: 'Orden generada automáticamente por stock bajo - Precios a confirmar con proveedor',
+        notes: orderData.isGeneric
+          ? 'Orden generada automáticamente para productos SIN PROVEEDOR asignado - Revisar proveedores'
+          : 'Orden generada automáticamente por stock bajo - Precios a confirmar con proveedor',
         createdBy: req.user.id,
-      });
+      };
+
+      // Solo asignar supplier si no es genérico
+      if (!orderData.isGeneric) {
+        orderPayload.supplier = supplierId;
+      } else {
+        // Para genéricos, podemos poner un nombre descriptivo si el modelo lo permite
+        orderPayload.genericSupplierName = 'Proveedor Genérico / Por Asignar';
+      }
+
+      const order = new PurchaseOrder(orderPayload);
 
       await order.save();
-      await order.populate('supplier', 'name email phone');
+
+      // Populate condicional
+      if (!orderData.isGeneric) {
+        await order.populate('supplier', 'name email phone');
+      }
       await order.populate('items.product', 'sku name');
-      
+
       createdOrders.push(order);
     }
 
@@ -285,7 +295,7 @@ export const updatePurchaseOrder = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status, receivedDate, receivedQuantities, receiveNotes } = req.body;
-    
+
     const updateData = { status };
     if (status === 'Recibida' && receivedDate) {
       updateData.receivedDate = receivedDate;
@@ -311,13 +321,13 @@ export const updateOrderStatus = async (req, res) => {
       for (const item of order.items) {
         // Obtener el ID del producto (puede ser ObjectId o objeto poblado)
         const productId = item.product?._id || item.product;
-        
+
         // Usar la cantidad recibida si está disponible, de lo contrario usar la cantidad original
         let quantityToAdd = item.quantity;
         if (receivedQuantities && receivedQuantities[item._id]) {
           quantityToAdd = receivedQuantities[item._id];
         }
-        
+
         // Actualizar stock con la cantidad recibida
         await Product.findByIdAndUpdate(
           productId,
@@ -347,8 +357,8 @@ export const sendPurchaseOrder = async (req, res) => {
 
     // Verificar que el proveedor tenga email
     if (!order.supplier.email) {
-      return res.status(400).json({ 
-        message: 'El proveedor no tiene email configurado. Por favor actualiza sus datos.' 
+      return res.status(400).json({
+        message: 'El proveedor no tiene email configurado. Por favor actualiza sus datos.'
       });
     }
 
@@ -375,16 +385,16 @@ export const sendPurchaseOrder = async (req, res) => {
     order.emailSentDate = new Date();
     await order.save();
 
-    res.json({ 
+    res.json({
       message: `Orden enviada exitosamente a ${order.supplier.email}`,
-      order 
+      order
     });
   } catch (error) {
     console.error('Error al enviar orden:', error);
     const emailDisabled = error.message?.includes('desactivado');
-    res.status(emailDisabled ? 400 : 500).json({ 
-      message: emailDisabled ? error.message : 'Error al enviar orden de compra', 
-      error: emailDisabled ? undefined : error.message 
+    res.status(emailDisabled ? 400 : 500).json({
+      message: emailDisabled ? error.message : 'Error al enviar orden de compra',
+      error: emailDisabled ? undefined : error.message
     });
   }
 };
