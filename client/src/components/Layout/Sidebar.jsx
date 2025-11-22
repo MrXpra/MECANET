@@ -99,22 +99,20 @@ const Sidebar = () => {
   const [versionInfo, setVersionInfo] = useState(null);
   const [showVersionModal, setShowVersionModal] = useState(false);
 
+
   useEffect(() => {
-    fetch('/api/version')
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const contentType = res.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          throw new Error("Received non-JSON response from /api/version");
-        }
-        return res.json();
-      })
-      .then(data => setVersionInfo(data))
-      .catch(err => {
+    const fetchVersion = async () => {
+      try {
+        // Usar API client para respetar VITE_API_URL
+        // API.get('/version') -> baseURL + /version -> /api/version
+        const { data } = await API.get('/version');
+        setVersionInfo(data);
+      } catch (err) {
         console.warn('Could not fetch version info:', err.message);
-        // Fallback para evitar errores visuales
-        setVersionInfo({ version: '1.6.3', commit: 'unknown' });
-      });
+        setVersionInfo({ version: '1.6.5', commit: 'unknown' });
+      }
+    };
+    fetchVersion();
   }, []);
 
   // Secciones principales sin subsecciones
