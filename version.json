@@ -1,5 +1,5 @@
 {
-  "version": "1.6.15",
+  "version": "1.7.0",
   "lastUpdated": "2025-11-22",
-  "releaseNotes": "Fixed reports calculation."
+  "releaseNotes": "Agregado notas en las facturas."
 }

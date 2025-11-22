@@ -389,6 +389,15 @@ const SalesHistory = () => {
           </table>
           
           <div class="line"></div>
+          
+          ${sale.notes ? `
+            <div style="margin: 5px 0;">
+              <strong>Notas:</strong>
+              <p style="margin-top: 2px; white-space: pre-wrap;">${sale.notes}</p>
+            </div>
+            <div class="line"></div>
+          ` : ''}
+          
           <div class="line"></div>
           
           <div style="margin-top: 40px; text-align: center;">

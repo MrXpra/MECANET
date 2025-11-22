@@ -106,6 +106,7 @@ const Billing = () => {
   const [paymentMethod, setPaymentMethod] = useState('Efectivo');
   const [amountReceived, setAmountReceived] = useState('');
   const [change, setChange] = useState(0);
+  const [notes, setNotes] = useState(''); // Estado para notas
   const [globalDiscount, setGlobalDiscount] = useState(0);
   const [globalDiscountAmount, setGlobalDiscountAmount] = useState(0);
   const [categories, setCategories] = useState([]);
@@ -350,9 +351,13 @@ const Billing = () => {
           discountApplied: item.customDiscount,
         })),
         paymentMethod,
-        customer: selectedCustomer?._id || null,
-        globalDiscount: globalDiscount || 0,
-        globalDiscountAmount: globalDiscountAmount || 0,
+        customer: selectedCustomer?._id,
+        subtotal: getSubtotal(),
+        totalDiscount: getTotalDiscount(), // Descuento total (items + global)
+        total: getTotal(),
+        amountReceived: paymentMethod === 'Efectivo' ? parseFloat(amountReceived) : getTotal(),
+        change: paymentMethod === 'Efectivo' ? change : 0,
+        notes: notes // Incluir notas en la venta
       };
 
       const response = await createSale(saleData);
@@ -376,6 +381,7 @@ const Billing = () => {
       setGlobalDiscountAmount(0);
       setAmountReceived('');
       setChange(0);
+      setNotes(''); // Limpiar notas
 
       // Recargar productos para actualizar stock
       fetchProducts();
@@ -589,6 +595,14 @@ const Billing = () => {
           
           <div class="line"></div>
           
+          ${sale.notes ? `
+            <div style="margin: 5px 0;">
+              <strong>Notas:</strong>
+              <p style="margin-top: 2px; white-space: pre-wrap;">${sale.notes}</p>
+            </div>
+            <div class="line"></div>
+          ` : ''}
+
           <div style="margin-top: 40px; text-align: center;">
             <div style="border-top: 1px solid #000; width: 80%; margin: 0 auto; padding-top: 5px;">
               Firma del Vendedor
@@ -921,6 +935,8 @@ const Billing = () => {
           amountReceived={amountReceived}
           setAmountReceived={setAmountReceived}
           change={change}
+          notes={notes}
+          setNotes={setNotes}
           onConfirm={handleCompleteSale}
           onClose={() => setShowPaymentModal(false)}
           isLoading={isLoading}
@@ -1289,6 +1305,8 @@ const PaymentModal = ({
   onConfirm,
   onClose,
   isLoading,
+  notes,
+  setNotes
 }) => {
   const [discountType, setDiscountType] = React.useState('percentage'); // 'percentage' or 'finalPrice'
   const [finalPriceInput, setFinalPriceInput] = React.useState('');
@@ -1342,223 +1360,239 @@ const PaymentModal = ({
 
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style={{ zIndex: 100000 }}>
-      <div className="glass-strong rounded-2xl p-6 w-full max-w-md animate-scale-in" onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-            Completar Venta
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+      <div className="glass-strong rounded-2xl p-6 w-full max-w-4xl animate-scale-in flex flex-col md:flex-row gap-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex-1">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+              Completar Venta
+            </h3>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
 
-        <div className="mb-6 space-y-3">
-          {/* Resumen de totales */}
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
-              <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(subtotal)}</span>
-            </div>
-            {itemsDiscount > 0 && (
+          <div className="mb-6 space-y-3">
+            {/* Resumen de totales */}
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Descuentos por ítem:</span>
-                <span className="font-medium text-red-600 dark:text-red-400">-{formatCurrency(itemsDiscount)}</span>
+                <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(subtotal)}</span>
               </div>
-            )}
-          </div>
-
-          {/* Campo de descuento global */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Descuento Adicional
-            </label>
-
-            {/* Tabs para seleccionar tipo de descuento */}
-            <div className="flex gap-2 mb-3">
-              <button
-                onClick={() => setDiscountType('percentage')}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${discountType === 'percentage'
-                  ? 'bg-primary-600 text-white shadow-md'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                  }`}
-              >
-                Porcentaje
-              </button>
-              <button
-                onClick={() => setDiscountType('finalPrice')}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${discountType === 'finalPrice'
-                  ? 'bg-primary-600 text-white shadow-md'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                  }`}
-              >
-                Precio Final
-              </button>
+              {itemsDiscount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Descuentos por ítem:</span>
+                  <span className="font-medium text-red-600 dark:text-red-400">-{formatCurrency(itemsDiscount)}</span>
+                </div>
+              )}
             </div>
 
-            {/* Input según tipo seleccionado */}
-            {discountType === 'percentage' ? (
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={globalDiscount === 0 ? '' : globalDiscount}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '' || val === null) {
-                      handlePercentageChange(0);
-                      return;
-                    }
-                    const value = Math.min(100, Math.max(0, parseFloat(val) || 0));
-                    handlePercentageChange(value);
-                  }}
-                  className="input pr-10"
-                  placeholder="0"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
-              </div>
-            ) : (
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={finalPriceInput}
-                  onChange={(e) => handleFinalPriceChange(e.target.value)}
-                  className="input pl-8"
-                  placeholder="Ingrese precio final"
-                />
-              </div>
-            )}
+            {/* Campo de descuento global */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Descuento Adicional
+              </label>
 
-            {globalDiscount > 0 && (
-              <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
-                💰 Ahorro: {discountType === 'finalPrice' && finalPriceInput
-                  ? formatCurrency((subtotal - itemsDiscount) - parseFloat(finalPriceInput))
-                  : formatCurrency((globalDiscount / 100) * (subtotal - itemsDiscount))
-                }
+              {/* Tabs para seleccionar tipo de descuento */}
+              <div className="flex gap-2 mb-3">
+                <button
+                  onClick={() => setDiscountType('percentage')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${discountType === 'percentage'
+                    ? 'bg-primary-600 text-white shadow-md'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                >
+                  Porcentaje
+                </button>
+                <button
+                  onClick={() => setDiscountType('finalPrice')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${discountType === 'finalPrice'
+                    ? 'bg-primary-600 text-white shadow-md'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                >
+                  Precio Final
+                </button>
+              </div>
+
+              {/* Input según tipo seleccionado */}
+              {discountType === 'percentage' ? (
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={globalDiscount === 0 ? '' : globalDiscount}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '' || val === null) {
+                        handlePercentageChange(0);
+                        return;
+                      }
+                      const value = Math.min(100, Math.max(0, parseFloat(val) || 0));
+                      handlePercentageChange(value);
+                    }}
+                    className="input pr-10"
+                    placeholder="0"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+                </div>
+              ) : (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={finalPriceInput}
+                    onChange={(e) => handleFinalPriceChange(e.target.value)}
+                    className="input pl-8"
+                    placeholder="Ingrese precio final"
+                  />
+                </div>
+              )}
+
+              {globalDiscount > 0 && (
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-medium">
+                  💰 Ahorro: {discountType === 'finalPrice' && finalPriceInput
+                    ? formatCurrency((subtotal - itemsDiscount) - parseFloat(finalPriceInput))
+                    : formatCurrency((globalDiscount / 100) * (subtotal - itemsDiscount))
+                  }
+                </p>
+              )}
+            </div>
+
+            {/* Total final */}
+            <div className="text-center p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                Total a Pagar
               </p>
-            )}
+              <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">
+                {formatCurrency(calculateFinalTotal())}
+              </p>
+            </div>
           </div>
 
-          {/* Total final */}
-          <div className="text-center p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-              Total a Pagar
-            </p>
-            <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">
-              {formatCurrency(calculateFinalTotal())}
-            </p>
-          </div>
         </div>
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Método de Pago
-          </label>
-          <div className="space-y-2">
-            {['Efectivo', 'Tarjeta', 'Transferencia'].map((method) => (
-              <button
-                key={method}
-                onClick={() => setPaymentMethod(method)}
-                className={`w-full p-3 rounded-lg border-2 transition-all shadow-sm ${paymentMethod === method
-                  ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20 shadow-primary-200 dark:shadow-primary-900/50'
-                  : 'border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-800/50 hover:border-primary-400 hover:shadow-md'
-                  }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900 dark:text-white">
+        <div className="flex-1 border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-700 pt-6 md:pt-0 md:pl-6 flex flex-col">
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Método de Pago
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {['Efectivo', 'Tarjeta', 'Transferencia'].map((method) => (
+                <button
+                  key={method}
+                  onClick={() => setPaymentMethod(method)}
+                  className={`p-3 rounded-lg border-2 transition-all shadow-sm flex items-center justify-center gap-2 ${paymentMethod === method
+                    ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20 shadow-primary-200 dark:shadow-primary-900/50'
+                    : 'border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-800/50 hover:border-primary-400 hover:shadow-md'
+                    }`}
+                >
+                  <span className="font-medium text-gray-900 dark:text-white text-sm">
                     {method}
                   </span>
                   {paymentMethod === method && (
-                    <Check className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                    <Check className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Notas de la venta */}
+          <div className="mb-6 flex-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Notas de la Venta
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="input w-full h-32 resize-none"
+              placeholder="Agregar notas o comentarios a la factura..."
+            />
+          </div>
+
+          {/* Monto Recibido y Cambio (solo para Efectivo) */}
+          {paymentMethod === 'Efectivo' && (
+            <div className="mb-6 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Monto Recibido *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={calculateFinalTotal()}
+                    value={amountReceived}
+                    onChange={(e) => setAmountReceived(e.target.value)}
+                    className="input pl-8"
+                    placeholder={`Mínimo: ${formatCurrency(calculateFinalTotal())}`}
+                    required
+                  />
+                </div>
+              </div>
+
+              {amountReceived && (
+                <div className={`p-4 rounded-lg border-2 ${calculatedChange >= 0
+                  ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                  : 'bg-red-50 dark:bg-red-900/20 border-red-500'
+                  }`}>
+                  <div className="flex justify-between items-center">
+                    <span className={`text-lg font-semibold ${calculatedChange >= 0
+                      ? 'text-green-700 dark:text-green-300'
+                      : 'text-red-700 dark:text-red-300'
+                      }`}>
+                      Cambio a Devolver:
+                    </span>
+                    <span className={`text-3xl font-bold ${calculatedChange >= 0
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 dark:text-red-400'
+                      }`}>
+                      {formatCurrency(calculatedChange >= 0 ? calculatedChange : 0)}
+                    </span>
+                  </div>
+                  {calculatedChange < 0 && (
+                    <p className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      El monto recibido es menor al total
+                    </p>
                   )}
                 </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Monto Recibido y Cambio (solo para Efectivo) */}
-        {paymentMethod === 'Efectivo' && (
-          <div className="mb-6 space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Monto Recibido *
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min={calculateFinalTotal()}
-                  value={amountReceived}
-                  onChange={(e) => setAmountReceived(e.target.value)}
-                  className="input pl-8"
-                  placeholder={`Mínimo: ${formatCurrency(calculateFinalTotal())}`}
-                  required
-                />
-              </div>
+              )}
             </div>
+          )}
 
-            {amountReceived && (
-              <div className={`p-4 rounded-lg border-2 ${calculatedChange >= 0
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
-                : 'bg-red-50 dark:bg-red-900/20 border-red-500'
-                }`}>
-                <div className="flex justify-between items-center">
-                  <span className={`text-lg font-semibold ${calculatedChange >= 0
-                    ? 'text-green-700 dark:text-green-300'
-                    : 'text-red-700 dark:text-red-300'
-                    }`}>
-                    Cambio a Devolver:
-                  </span>
-                  <span className={`text-3xl font-bold ${calculatedChange >= 0
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-red-600 dark:text-red-400'
-                    }`}>
-                    {formatCurrency(calculatedChange >= 0 ? calculatedChange : 0)}
-                  </span>
-                </div>
-                {calculatedChange < 0 && (
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    El monto recibido es menor al total
-                  </p>
-                )}
-              </div>
-            )}
+          <div className="flex gap-3 mt-auto">
+            <button onClick={onClose} className="btn-secondary flex-1">
+              Cancelar
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isLoading}
+              className="btn-primary flex-1 flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  <Check className="w-5 h-5" />
+                  Confirmar
+                </>
+              )}
+            </button>
           </div>
-        )}
-
-        <div className="flex gap-3">
-          <button onClick={onClose} className="btn-secondary flex-1">
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={isLoading}
-            className="btn-primary flex-1 flex items-center justify-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                Procesando...
-              </>
-            ) : (
-              <>
-                <Check className="w-5 h-5" />
-                Confirmar
-              </>
-            )}
-          </button>
         </div>
       </div>
     </div>,
