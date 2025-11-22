@@ -7,7 +7,7 @@ import Sale from '../models/Sale.js';
 export const getCustomers = async (req, res) => {
   try {
     const { search, includeArchived, page = 1, limit = 50 } = req.query;
-    
+
     let query = {};
 
     // Excluir archivados por defecto
@@ -33,11 +33,61 @@ export const getCustomers = async (req, res) => {
     // Contar total
     const totalDocs = await Customer.countDocuments(query);
 
-    const customers = await Customer.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limitNum)
-      .lean();
+    // Usar agregación para calcular totalPurchases dinámicamente
+    // Esto corrige discrepancias si hubo ventas canceladas que no actualizaron el campo en el modelo
+    const customers = await Customer.aggregate([
+      { $match: query },
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limitNum },
+      {
+        $lookup: {
+          from: 'sales',
+          localField: '_id',
+          foreignField: 'customer',
+          as: 'salesData'
+        }
+      },
+      {
+        $addFields: {
+          // Calcular totalPurchases sumando solo ventas NO canceladas
+          totalPurchases: {
+            $sum: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: '$salesData',
+                    as: 'sale',
+                    cond: { $ne: ['$$sale.status', 'Cancelada'] }
+                  }
+                },
+                as: 'sale',
+                in: '$$sale.total'
+              }
+            }
+          },
+          // Actualizar purchaseHistory para excluir ventas canceladas
+          purchaseHistory: {
+            $map: {
+              input: {
+                $filter: {
+                  input: '$salesData',
+                  as: 'sale',
+                  cond: { $ne: ['$$sale.status', 'Cancelada'] }
+                }
+              },
+              as: 'sale',
+              in: '$$sale._id'
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          salesData: 0 // No enviar toda la data de ventas para mantener la respuesta ligera
+        }
+      }
+    ]);
 
     res.json({
       customers,
@@ -64,6 +114,7 @@ export const getCustomerById = async (req, res) => {
     const customer = await Customer.findById(req.params.id)
       .populate({
         path: 'purchaseHistory',
+        match: { status: { $ne: 'Cancelada' } }, // Excluir ventas canceladas del historial
         populate: {
           path: 'items.product',
           select: 'name sku'
@@ -74,7 +125,14 @@ export const getCustomerById = async (req, res) => {
       return res.status(404).json({ message: 'Cliente no encontrado' });
     }
 
-    res.json(customer);
+    // Recalcular totalPurchases basado en el historial filtrado (opcional, pero asegura consistencia)
+    const calculatedTotal = customer.purchaseHistory.reduce((sum, sale) => sum + (sale.total || 0), 0);
+
+    // Convertir a objeto para modificar el campo sin guardar en DB
+    const customerObj = customer.toObject();
+    customerObj.totalPurchases = calculatedTotal;
+
+    res.json(customerObj);
   } catch (error) {
     console.error('Error al obtener cliente:', error);
     res.status(500).json({ message: 'Error al obtener cliente', error: error.message });
@@ -87,7 +145,7 @@ export const getCustomerById = async (req, res) => {
 export const createCustomer = async (req, res) => {
   try {
     console.log('📝 Datos recibidos para crear cliente:', req.body);
-    
+
     const { fullName, cedula, phone, email, address } = req.body;
 
     // Validar que fullName y cedula existen
@@ -217,7 +275,7 @@ export const deleteCustomer = async (req, res) => {
     }
 
     // Verificar si el cliente tiene ventas asociadas (excluyendo canceladas)
-    const activeSalesCount = await Sale.countDocuments({ 
+    const activeSalesCount = await Sale.countDocuments({
       customer: customer._id,
       status: { $ne: 'Cancelada' }
     });
@@ -226,10 +284,10 @@ export const deleteCustomer = async (req, res) => {
       // Soft delete: archivar el cliente si tiene ventas activas
       customer.isArchived = true;
       await customer.save();
-      
+
       console.log(`Cliente ${customer._id} archivado (tiene ${activeSalesCount} ventas activas)`);
-      
-      return res.json({ 
+
+      return res.json({
         message: `Cliente archivado correctamente. Mantiene ${activeSalesCount} ventas asociadas.`,
         archived: true,
         referencesCount: activeSalesCount
@@ -238,10 +296,10 @@ export const deleteCustomer = async (req, res) => {
 
     // Hard delete: eliminar permanentemente si no tiene ventas activas
     await Customer.findByIdAndDelete(req.params.id);
-    
+
     console.log(`Cliente ${customer._id} eliminado permanentemente (sin ventas activas)`);
 
-    res.json({ 
+    res.json({
       message: 'Cliente eliminado exitosamente',
       archived: false
     });

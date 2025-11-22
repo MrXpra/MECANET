@@ -1,5 +1,5 @@
 {
-  "version": "1.6.14",
+  "version": "1.6.15",
   "lastUpdated": "2025-11-22",
-  "releaseNotes": "Release v1.6.14"
+  "releaseNotes": "Fixed reports calculation."
 }
