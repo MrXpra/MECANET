@@ -13,6 +13,7 @@ import {
   Divider,
   Switch,
   FormControlLabel,
+  ListItemIcon,
   useTheme
 } from '@mui/material';
 import { useAuthStore } from '../../store/authStore';

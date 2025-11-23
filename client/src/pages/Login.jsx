@@ -170,13 +170,9 @@ const Login = () => {
           sx={{
             p: 4,
             borderRadius: 4,
-            bgcolor: 'rgba(255, 255, 255, 0.9)',
+            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(31, 41, 55, 0.9)' : 'rgba(255, 255, 255, 0.9)',
             backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            '.dark &': {
-              bgcolor: 'rgba(31, 41, 55, 0.9)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-            }
+            border: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.3)',
           }}
         >
           {/* Logo */}
@@ -300,12 +296,8 @@ const Login = () => {
               sx={{
                 mt: 3,
                 p: 2,
-                bgcolor: 'primary.50',
-                borderColor: 'primary.200',
-                '.dark &': {
-                  bgcolor: 'rgba(255,255,255,0.05)',
-                  borderColor: 'rgba(255,255,255,0.1)',
-                }
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(37, 99, 235, 0.05)',
+                borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(37, 99, 235, 0.2)',
               }}
             >
               <Typography variant="caption" fontWeight="bold" color="primary.main" display="block" gutterBottom>
