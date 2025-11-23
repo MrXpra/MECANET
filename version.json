@@ -1,5 +1,5 @@
 {
-  "version": "1.7.2",
-  "lastUpdated": "2025-11-22",
-  "releaseNotes": "Ahora puedes ver el beneficio de cada producto en los reportes!."
+  "version": "1.7.3",
+  "lastUpdated": "2025-11-23",
+  "releaseNotes": "Fixed logs not being created."
 }

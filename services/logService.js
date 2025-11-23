@@ -33,18 +33,10 @@ class LogService {
 
   // Determinar si debe guardar el log en producción
   static shouldLogInProduction(type, category) {
-    if (process.env.NODE_ENV !== 'production') return true;
-
-    // En producción, NO guardar logs de lectura (GET)
-    if (category === 'user_action' && type === 'info') {
-      return false; // No guardar acciones de lectura
-    }
-
-    // Solo guardar: warning, error, critical, y acciones importantes
-    const importantTypes = ['warning', 'error', 'critical'];
-    const importantCategories = ['security', 'system_action', 'critical_operation'];
-
-    return importantTypes.includes(type) || importantCategories.includes(category);
+    // PERMITIR TODOS LOS LOGS en cualquier entorno
+    // Los logs son esenciales para auditoría y diagnóstico tanto en local como en la nube
+    // Si en el futuro se necesita limitar en la nube, usar auto-limpieza por antigüedad
+    return true;
   }
 
   /**
