@@ -171,8 +171,9 @@ const Logs = () => {
       clearTimeout(hoverTimeoutRef.current);
     }
 
+    const target = event.currentTarget;
     hoverTimeoutRef.current = setTimeout(() => {
-      const rect = event.currentTarget.getBoundingClientRect();
+      const rect = target.getBoundingClientRect();
       setHoverPosition({
         x: rect.left + rect.width / 2,
         y: rect.top + rect.height + 5
@@ -424,11 +425,10 @@ const Logs = () => {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                              log.isSystemAction
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${log.isSystemAction
                                 ? "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
                                 : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                            }`}
+                              }`}
                             title={log.isSystemAction ? "Acción del Sistema" : "Acción de Usuario"}
                           >
                             {log.isSystemAction ? "⚙️" : "👤"}

@@ -121,6 +121,7 @@ import {
   Database,
   FileDown,
   FileUp,
+  Gift,
 } from 'lucide-react';
 
 const Settings = ({ section = 'all' }) => {
@@ -495,7 +496,7 @@ const Settings = ({ section = 'all' }) => {
       // Check if response has content before parsing JSON
       const contentType = response.headers.get('content-type');
       let data;
-      
+
       if (contentType && contentType.includes('application/json')) {
         data = await response.json();
       } else {
@@ -1341,6 +1342,49 @@ const Settings = ({ section = 'all' }) => {
                 <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
                   {formData.requireOrderReception ? 'Activado' : 'Desactivado'}
                 </span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* Debug: Christmas Theme (Developer Only) */}
+        {user?.role === 'desarrollador' && shouldShowSection('system') && (
+          <div className="card-glass p-6 border-2 border-red-200 dark:border-red-900/50">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <Gift className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Modo Navideño (Debug)
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Forzar la activación del tema navideño
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Gift className="w-5 h-5 text-red-600 dark:text-red-400" />
+                <div>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    Activar Easter Egg Navideño
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Muestra nieve y fondo de Santa Claus sin importar la fecha
+                  </p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={formData.forceChristmas || false}
+                  onChange={(e) => handleChange('forceChristmas', e.target.checked)}
+                  disabled={!canManageSettings}
+                />
+                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
               </label>
             </div>
           </div>

@@ -51,6 +51,7 @@ export const useSettingsStore = create((set) => ({
     requireOrderReception: true,
     autoOrderThreshold: 5,
     toastPosition: 'top-center',
+    forceChristmas: false, // Debug only
   },
   setSettings: (settings) => set({ settings }),
   updateSettings: (updates) =>

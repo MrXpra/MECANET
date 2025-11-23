@@ -56,6 +56,9 @@ import AuthValidator from './components/AuthValidator';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
 
+// Christmas Easter Egg
+import ChristmasSnow from './components/ChristmasSnow';
+
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { user, isAuthenticated } = useAuthStore();
@@ -76,7 +79,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 export const AppRoutes = () => {
   const { isDarkMode, autoThemeEnabled, checkAutoTheme } = useThemeStore();
   const { settings } = useSettingsStore();
-  
+
   // Enable keyboard shortcuts
   useKeyboardShortcuts();
 
@@ -115,9 +118,10 @@ export const AppRoutes = () => {
   return (
     <div className={isDarkMode ? 'dark' : ''}>
       <KeyboardShortcutsHelp />
+      <ChristmasSnow />
       <Routes>
         <Route path="/login" element={<Login />} />
-        
+
         <Route
           path="/"
           element={
@@ -137,7 +141,7 @@ export const AppRoutes = () => {
           <Route path="cotizaciones" element={<Quotations />} />
           <Route path="cierre-caja" element={<CashRegister />} />
           <Route path="retiros-caja" element={<CashWithdrawals />} />
-          
+
           {/* Admin Routes */}
           <Route
             path="usuarios"

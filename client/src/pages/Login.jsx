@@ -41,6 +41,7 @@ import { login as loginAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { LogIn, Eye, EyeOff, Loader } from 'lucide-react';
 import AnimatedBackground from '../components/AnimatedBackground';
+import useIsChristmas from '../hooks/useIsChristmas';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -52,6 +53,7 @@ const Login = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const isChristmas = useIsChristmas();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -95,22 +97,34 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500">
-      {/* Fondo animado con formas geométricas */}
-      <div className="absolute inset-0 overflow-hidden">
-        {/* Gradiente base animado */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 animate-gradient"></div>
-        
-        {/* Círculos decorativos con blur */}
-        <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-        <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-        
-        {/* Grid pattern sutil */}
-        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:50px_50px]"></div>
-        
-        {/* Overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20"></div>
-      </div>
+      {/* Fondo animado con formas geométricas o Fondo Navideño */}
+      {isChristmas ? (
+        <div
+          className="absolute inset-0 bg-cover bg-center z-0"
+          style={{
+            backgroundImage: 'url(/assets/images/santa-login-bg.jpg)',
+          }}
+        >
+          {/* Overlay oscuro para legibilidad */}
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+        </div>
+      ) : (
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Gradiente base animado */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 animate-gradient"></div>
+
+          {/* Círculos decorativos con blur */}
+          <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+          <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+
+          {/* Grid pattern sutil */}
+          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:50px_50px]"></div>
+
+          {/* Overlay gradient */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/20"></div>
+        </div>
+      )}
 
       {/* Animated Background */}
       <AnimatedBackground />
@@ -122,8 +136,8 @@ const Login = () => {
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-white rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg overflow-hidden">
               {settings.businessLogoUrl && settings.businessLogoUrl !== '/logo.png' && settings.businessLogoUrl !== '/default-logo.png' ? (
-                <img 
-                  src={settings.businessLogoUrl} 
+                <img
+                  src={settings.businessLogoUrl}
                   alt={settings.businessName || 'Logo'}
                   className="w-full h-full object-cover"
                   onError={(e) => {
