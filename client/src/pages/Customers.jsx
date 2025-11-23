@@ -68,7 +68,6 @@ import {
   TrendingUp,
   DollarSign,
   Info,
-  Info,
   ChevronLeft,
   ChevronRight,
   Save
