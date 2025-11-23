@@ -51,11 +51,10 @@ const Layout = () => {
           zIndex: 1,
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'hidden',
         }}
       >
         <Toolbar /> {/* Spacer for AppBar */}
-        <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+        <Box sx={{ flexGrow: 1 }}>
           <Outlet />
         </Box>
       </Box>
