@@ -63,13 +63,47 @@ import {
   TrendingUp,
   Calendar,
   Eye,
-  Printer
+  Printer,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
+import {
+  Box,
+  Grid,
+  Paper,
+  Typography,
+  TextField,
+  InputAdornment,
+  IconButton,
+  Button,
+  Select,
+  MenuItem,
+  Card,
+  CardContent,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  Tooltip,
+  FormControl,
+  InputLabel,
+  Stack,
+  Divider,
+  useTheme,
+  Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert
+} from '@mui/material';
 import JsBarcode from 'jsbarcode';
 import { toast } from 'react-hot-toast';
 import { getReturns, getReturnStats, createReturn, getSales } from '../services/api';
 import { ReportsSkeleton } from '../components/SkeletonLoader';
-import { createPortal } from 'react-dom';
 import { useSettingsStore } from '../store/settingsStore';
 
 const Returns = () => {
@@ -164,23 +198,23 @@ const Returns = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      Pendiente: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-      Aprobada: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-      Completada: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-      Rechazada: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+      Pendiente: 'warning',
+      Aprobada: 'primary',
+      Completada: 'success',
+      Rechazada: 'error',
     };
-    return badges[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+    return badges[status] || 'default';
   };
 
   const getReasonBadge = (reason) => {
     const badges = {
-      Defectuoso: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-      Incorrecto: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-      'No necesario': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-      Cambio: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-      Otro: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+      Defectuoso: 'error',
+      Incorrecto: 'warning',
+      'No necesario': 'info',
+      Cambio: 'secondary',
+      Otro: 'default',
     };
-    return badges[reason] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+    return badges[reason] || 'default';
   };
 
   const handlePrintReturn = (returnData) => {
@@ -484,278 +518,227 @@ const Returns = () => {
 
       {/* Estadísticas */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="card-glass p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Total Devoluciones
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                  {stats?.totalReturns || 0}
-                </p>
-              </div>
-              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className="card-glass p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Monto Devuelto
-                </p>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-                  {formatCurrency(stats?.totalAmountReturned || 0)}
-                </p>
-              </div>
-              <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                <DollarSign className="w-6 h-6 text-red-600 dark:text-red-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className="card-glass p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Pendientes
-                </p>
-                <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
-                  {stats?.returnsByStatus?.find(s => s._id === 'Pendiente')?.count || 0}
-                </p>
-              </div>
-              <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                <AlertCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className="card-glass p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Completadas
-                </p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-                  {stats?.returnsByStatus?.find(s => s._id === 'Completada')?.count || 0}
-                </p>
-              </div>
-              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-            </div>
-          </div>
-        </div>
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Total Devoluciones"
+              value={stats?.totalReturns || 0}
+              icon={Package}
+              color="primary"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Monto Devuelto"
+              value={formatCurrency(stats?.totalAmountReturned || 0)}
+              icon={DollarSign}
+              color="error"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Pendientes"
+              value={stats?.returnsByStatus?.find(s => s._id === 'Pendiente')?.count || 0}
+              icon={AlertCircle}
+              color="warning"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <StatCard
+              title="Completadas"
+              value={stats?.returnsByStatus?.find(s => s._id === 'Completada')?.count || 0}
+              icon={CheckCircle}
+              color="success"
+            />
+          </Grid>
+        </Grid>
       )}
 
       {/* Filtros */}
-      <div className="card-glass p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Buscar por número o factura
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                placeholder="DEV-000001 o INV2511150001"
-                className="input pl-10"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Estado
-            </label>
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="input"
-            >
-              <option value="">Todos</option>
-              <option value="Pendiente">Pendiente</option>
-              <option value="Aprobada">Aprobada</option>
-              <option value="Completada">Completada</option>
-              <option value="Rechazada">Rechazada</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Fecha inicio
-            </label>
-            <input
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Buscar por número o factura"
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search size={20} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Estado</InputLabel>
+              <Select
+                value={filters.status}
+                label="Estado"
+                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+              >
+                <MenuItem value="">Todos</MenuItem>
+                <MenuItem value="Pendiente">Pendiente</MenuItem>
+                <MenuItem value="Aprobada">Aprobada</MenuItem>
+                <MenuItem value="Completada">Completada</MenuItem>
+                <MenuItem value="Rechazada">Rechazada</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Fecha inicio"
               type="date"
               value={filters.startDate}
               onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-              className="input"
+              InputLabelProps={{ shrink: true }}
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Fecha fin
-            </label>
-            <input
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Fecha fin"
               type="date"
               value={filters.endDate}
               onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-              className="input"
+              InputLabelProps={{ shrink: true }}
             />
-          </div>
-        </div>
-      </div>
+          </Grid>
+        </Grid>
+      </Paper>
 
       {/* Tabla de Devoluciones */}
-      <div className="card-glass overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Número
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Venta Original
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Cliente
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Razón
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Monto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Fecha
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {Array.isArray(returns) && returns.map((returnItem) => (
-                <tr
-                  key={returnItem._id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {returnItem.returnNumber}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {returnItem.sale?.invoiceNumber || 'N/A'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {returnItem.customer?.fullName || 'Cliente General'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getReasonBadge(returnItem.reason)}`}>
-                      {returnItem.reason}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-medium text-red-600 dark:text-red-400">
-                      {formatCurrency(returnItem.totalAmount)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(returnItem.status)}`}>
-                      {returnItem.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {formatDate(returnItem.createdAt)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <button
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Número</TableCell>
+              <TableCell>Venta Original</TableCell>
+              <TableCell>Cliente</TableCell>
+              <TableCell>Razón</TableCell>
+              <TableCell>Monto</TableCell>
+              <TableCell>Estado</TableCell>
+              <TableCell>Fecha</TableCell>
+              <TableCell align="center">Acciones</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Array.isArray(returns) && returns.map((returnItem) => (
+              <TableRow key={returnItem._id} hover>
+                <TableCell>
+                  <Typography variant="body2" fontWeight="medium">
+                    {returnItem.returnNumber}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" color="text.secondary">
+                    {returnItem.sale?.invoiceNumber || 'N/A'}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2">
+                    {returnItem.customer?.fullName || 'Cliente General'}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={returnItem.reason}
+                    size="small"
+                    variant="outlined"
+                    color={getReasonBadge(returnItem.reason)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" fontWeight="bold" color="error.main">
+                    {formatCurrency(returnItem.totalAmount)}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={returnItem.status}
+                    size="small"
+                    color={getStatusBadge(returnItem.status)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" color="text.secondary">
+                    {formatDate(returnItem.createdAt)}
+                  </Typography>
+                </TableCell>
+                <TableCell align="center">
+                  <Stack direction="row" spacing={1} justifyContent="center">
+                    <Tooltip title="Imprimir devolución">
+                      <IconButton
+                        size="small"
                         onClick={() => handlePrintReturn(returnItem)}
-                        className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                        title="Imprimir devolución"
                       >
-                        <Printer className="w-5 h-5" />
-                      </button>
-                      <button
+                        <Printer size={18} />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Ver detalles">
+                      <IconButton
+                        size="small"
+                        color="primary"
                         onClick={() => {
                           setSelectedReturn(returnItem);
                           setShowDetailModal(true);
                         }}
-                        className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-                        title="Ver detalles"
                       >
-                        <Eye className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {returns.length === 0 && !isLoading && (
-          <div className="text-center py-12">
-            <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400">
-              No se encontraron devoluciones
-            </p>
-          </div>
-        )}
+                        <Eye size={18} />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+                </TableCell>
+              </TableRow>
+            ))}
+            {returns.length === 0 && !isLoading && (
+              <TableRow>
+                <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+                  <Package size={48} color="#9ca3af" style={{ margin: '0 auto', marginBottom: 16 }} />
+                  <Typography color="text.secondary">
+                    No se encontraron devoluciones
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
 
         {/* Paginación */}
         {!isLoading && pagination.pages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Typography variant="body2" color="text.secondary">
               Mostrando {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} - {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} devoluciones
-            </div>
-            <div className="flex items-center gap-2">
-              <button
+            </Typography>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Button
+                startIcon={<ChevronLeft />}
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                 disabled={!pagination.hasPrevPage}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasPrevPage
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
-                  }`}
               >
                 Anterior
-              </button>
-              <span className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+              </Button>
+              <Typography variant="body2">
                 Página {pagination.page} de {pagination.pages}
-              </span>
-              <button
+              </Typography>
+              <Button
+                endIcon={<ChevronRight />}
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                 disabled={!pagination.hasNextPage}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasNextPage
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
-                  }`}
               >
                 Siguiente
-              </button>
-            </div>
-          </div>
+              </Button>
+            </Stack>
+          </Box>
         )}
-      </div>
+      </TableContainer>
 
       {/* Modal de Nueva Devolución */}
       {showCreateModal && (
@@ -1080,36 +1063,46 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
     onSubmit(returnData);
   };
 
-  return createPortal(
-    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style={{ zIndex: 100000 }}>
-      <div className="glass-strong rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Nueva Devolución
-            </h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-              <XCircle className="w-6 h-6" />
-            </button>
-          </div>
+  return (
+    <Dialog
+      open={true}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h6" fontWeight="bold">
+          Nueva Devolución
+        </Typography>
+        <IconButton onClick={onClose}>
+          <XCircle />
+        </IconButton>
+      </DialogTitle>
 
+      <DialogContent dividers>
+        <Stack spacing={3}>
           {/* Steps */}
-          <div className="flex items-center justify-center mb-8">
-            <div className="flex items-center space-x-4">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}`}>
-                1
-              </div>
-              <div className={`w-20 h-1 ${step >= 2 ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}`}>
-                2
-              </div>
-              <div className={`w-20 h-1 ${step >= 3 ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 3 ? 'bg-primary-600 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}`}>
-                3
-              </div>
-            </div>
-          </div>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar sx={{
+                bgcolor: step >= 1 ? 'primary.main' : 'action.disabledBackground',
+                color: step >= 1 ? 'primary.contrastText' : 'text.disabled',
+                width: 32, height: 32, fontSize: '0.875rem'
+              }}>1</Avatar>
+              <Box sx={{ width: 40, height: 2, bgcolor: step >= 2 ? 'primary.main' : 'action.disabledBackground' }} />
+              <Avatar sx={{
+                bgcolor: step >= 2 ? 'primary.main' : 'action.disabledBackground',
+                color: step >= 2 ? 'primary.contrastText' : 'text.disabled',
+                width: 32, height: 32, fontSize: '0.875rem'
+              }}>2</Avatar>
+              <Box sx={{ width: 40, height: 2, bgcolor: step >= 3 ? 'primary.main' : 'action.disabledBackground' }} />
+              <Avatar sx={{
+                bgcolor: step >= 3 ? 'primary.main' : 'action.disabledBackground',
+                color: step >= 3 ? 'primary.contrastText' : 'text.disabled',
+                width: 32, height: 32, fontSize: '0.875rem'
+              }}>3</Avatar>
+            </Box>
+          </Box>
 
           {/* Step 1: Buscar venta */}
           {step === 1 && (
@@ -1629,27 +1622,15 @@ const CreateReturnModal = ({ onClose, onSubmit, formatCurrency }) => {
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>,
-    document.body
+        </Stack>
+      </DialogContent>
+    </Dialog>
   );
 };
 
 // Modal de detalle de devolución
 const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, getStatusBadge, getReasonBadge }) => {
   const { settings } = useSettingsStore();
-
-  // Cerrar modal con tecla ESC
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [onClose]);
 
   const handlePrintReturn = () => {
     // Generar código de barras
@@ -1682,89 +1663,89 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
           <title>Devolución ${returnData.returnNumber}</title>
           <style>
             @media print {
-              @page { size: 80mm auto; margin: 0; }
-              body { margin: 10mm; }
+              @page {size: 80mm auto; margin: 0; }
+            body {margin: 10mm; }
             }
-            body { 
-              font-family: 'Courier New', monospace; 
-              width: 80mm;
-              margin: 0 auto;
-              padding: 5mm;
-              font-size: 11px;
+            body {
+              font - family: 'Courier New', monospace;
+            width: 80mm;
+            margin: 0 auto;
+            padding: 5mm;
+            font-size: 11px;
             }
-            h1 { 
-              text-align: center; 
-              font-size: 16px; 
-              margin: 5px 0;
-              font-weight: bold;
+            h1 {
+              text - align: center;
+            font-size: 16px;
+            margin: 5px 0;
+            font-weight: bold;
             }
             h2 {
-              text-align: center;
-              font-size: 14px;
-              margin: 5px 0;
-              font-weight: bold;
-              color: #d32f2f;
+              text - align: center;
+            font-size: 14px;
+            margin: 5px 0;
+            font-weight: bold;
+            color: #d32f2f;
             }
-            .line { 
-              border-top: 1px dashed #000; 
-              margin: 8px 0; 
+            .line {
+              border - top: 1px dashed #000;
+            margin: 8px 0; 
             }
-            table { 
-              width: 100%; 
-              border-collapse: collapse;
+            table {
+              width: 100%;
+            border-collapse: collapse;
             }
-            td { 
+            td {
               padding: 2px 0; 
             }
-            .right { 
-              text-align: right; 
+            .right {
+              text - align: right; 
             }
-            .bold { 
-              font-weight: bold; 
+            .bold {
+              font - weight: bold; 
             }
-            .center { 
-              text-align: center; 
+            .center {
+              text - align: center; 
             }
-            .small { 
-              font-size: 9px; 
+            .small {
+              font - size: 9px; 
             }
             .info-section {
               margin: 8px 0;
-              font-size: 12px;
-              font-weight: bold;
+            font-size: 12px;
+            font-weight: bold;
             }
             .item-row {
-              margin-bottom: 4px;
+              margin - bottom: 4px;
             }
             .total-row {
-              font-size: 13px;
-              font-weight: bold;
-              padding-top: 4px;
+              font - size: 13px;
+            font-weight: bold;
+            padding-top: 4px;
             }
             .exchange-section {
               margin: 8px 0;
-              padding: 6px;
-              border: 2px solid #1976d2;
-              background: #e3f2fd;
+            padding: 6px;
+            border: 2px solid #1976d2;
+            background: #e3f2fd;
             }
             .exchange-title {
-              font-weight: bold;
-              color: #1976d2;
-              margin-bottom: 4px;
+              font - weight: bold;
+            color: #1976d2;
+            margin-bottom: 4px;
             }
             .difference-box {
               margin: 8px 0;
-              padding: 6px;
-              border: 2px solid #000;
-              font-weight: bold;
+            padding: 6px;
+            border: 2px solid #000;
+            font-weight: bold;
             }
             .difference-positive {
               background: #ffebee;
-              color: #d32f2f;
+            color: #d32f2f;
             }
             .difference-negative {
               background: #e8f5e9;
-              color: #388e3c;
+            color: #388e3c;
             }
           </style>
         </head>
@@ -1772,7 +1753,7 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
           <h1>${settings.businessName || 'MECANET'}</h1>
           <h2>NOTA DE DEVOLUCIÓN</h2>
           <div class="line"></div>
-          
+
           <div class="info-section">
             <div><strong>No. Devolución:</strong> ${returnData.returnNumber}</div>
             <div><strong>Fecha:</strong> ${new Date(returnData.createdAt).toLocaleString('es-DO', {
@@ -1788,9 +1769,9 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
             <div><strong>Razón:</strong> ${returnData.reason}</div>
             <div><strong>Estado:</strong> ${returnData.status}</div>
           </div>
-          
+
           <div class="line"></div>
-          
+
           <div class="bold center">PRODUCTOS DEVUELTOS</div>
           <table>
             <thead>
@@ -1819,7 +1800,7 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
               `).join('')}
             </tbody>
           </table>
-          
+
           ${returnData.exchangeItems && returnData.exchangeItems.length > 0 ? `
             <div class="line"></div>
             <div class="exchange-section">
@@ -1850,9 +1831,9 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
               </table>
             </div>
           ` : ''}
-          
+
           <div class="line"></div>
-          
+
           <table>
             ${returnData.exchangeItems && returnData.exchangeItems.length > 0 ? `
               <tr>
@@ -1886,7 +1867,7 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
               </tr>
             `}
           </table>
-          
+
           ${returnData.notes ? `
             <div class="line"></div>
             <div>
@@ -1894,16 +1875,16 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
               <div class="small">${returnData.notes}</div>
             </div>
           ` : ''}
-          
+
           <div class="line"></div>
           <div class="small">
             <div>Procesado por: ${returnData.processedBy?.name || 'N/A'}</div>
             ${returnData.approvedBy ? `<div>Aprobado por: ${returnData.approvedBy?.name}</div>` : ''}
           </div>
-          
-          
+
+
           <div class="line"></div>
-          
+
           <div style="margin-top: 40px; text-align: center;">
             <div style="border-top: 1px solid #000; width: 80%; margin: 0 auto; padding-top: 5px;">
               Firma del Responsable
@@ -1921,196 +1902,257 @@ const ReturnDetailModal = ({ returnData, onClose, formatCurrency, formatDate, ge
           <p class="center small">Este documento no tiene validez fiscal</p>
         </body>
       </html>
-    `);
+      `);
     printWindow.document.close();
     printWindow.print();
   };
 
-  return createPortal(
-    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style={{ zIndex: 100000 }}>
-      <div className="glass-strong rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Detalle de Devolución
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400">{returnData.returnNumber}</p>
-            </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-              <XCircle className="w-6 h-6" />
-            </button>
-          </div>
+  return (
+    <Dialog
+      open={true}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box>
+          <Typography variant="h6" fontWeight="bold">
+            Detalle de Devolución
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {returnData.returnNumber}
+          </Typography>
+        </Box>
+        <IconButton onClick={onClose}>
+          <XCircle />
+        </IconButton>
+      </DialogTitle>
 
+      <DialogContent dividers>
+        <Stack spacing={3}>
           {/* Info General */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="card-glass p-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Venta Original</p>
-              <p className="font-medium text-gray-900 dark:text-white">{returnData.sale?.invoiceNumber}</p>
-            </div>
-            <div className="card-glass p-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Cliente</p>
-              <p className="font-medium text-gray-900 dark:text-white">
-                {returnData.customer?.fullName || 'Cliente General'}
-              </p>
-            </div>
-            <div className="card-glass p-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Estado</p>
-              <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(returnData.status)}`}>
-                {returnData.status}
-              </span>
-            </div>
-            <div className="card-glass p-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Razón</p>
-              <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getReasonBadge(returnData.reason)}`}>
-                {returnData.reason}
-              </span>
-            </div>
-            <div className="card-glass p-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Método de Reembolso</p>
-              <p className="font-medium text-gray-900 dark:text-white">{returnData.refundMethod}</p>
-            </div>
-            <div className="card-glass p-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Fecha</p>
-              <p className="font-medium text-gray-900 dark:text-white">{formatDate(returnData.createdAt)}</p>
-            </div>
-          </div>
+          <Grid container spacing={2}>
+            <Grid item xs={6} md={4}>
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Typography variant="caption" color="text.secondary">Venta Original</Typography>
+                <Typography variant="body2" fontWeight="medium">{returnData.sale?.invoiceNumber}</Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={6} md={4}>
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Typography variant="caption" color="text.secondary">Cliente</Typography>
+                <Typography variant="body2" fontWeight="medium">
+                  {returnData.customer?.fullName || 'Cliente General'}
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={6} md={4}>
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Typography variant="caption" color="text.secondary">Estado</Typography>
+                <Box>
+                  <Chip
+                    label={returnData.status}
+                    color={getStatusBadge(returnData.status)}
+                    size="small"
+                  />
+                </Box>
+              </Paper>
+            </Grid>
+            <Grid item xs={6} md={4}>
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Typography variant="caption" color="text.secondary">Razón</Typography>
+                <Box>
+                  <Chip
+                    label={returnData.reason}
+                    color={getReasonBadge(returnData.reason)}
+                    size="small"
+                  />
+                </Box>
+              </Paper>
+            </Grid>
+            <Grid item xs={6} md={4}>
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Typography variant="caption" color="text.secondary">Método de Reembolso</Typography>
+                <Typography variant="body2" fontWeight="medium">{returnData.refundMethod}</Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={6} md={4}>
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Typography variant="caption" color="text.secondary">Fecha</Typography>
+                <Typography variant="body2" fontWeight="medium">{formatDate(returnData.createdAt)}</Typography>
+              </Paper>
+            </Grid>
+          </Grid>
 
           {/* Items Devueltos */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+          <Box>
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
               Productos Devueltos
-            </h3>
-            <div className="space-y-2">
+            </Typography>
+            <Stack spacing={2}>
               {returnData.items.map((item, index) => (
-                <div key={index} className="card-glass p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                <Paper key={index} variant="outlined" sx={{ p: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                      <Typography variant="subtitle2">
                         {item.product?.name || 'Producto'}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
                         Cantidad: {item.quantity} × {formatCurrency(item.originalPrice)}
-                      </p>
-                    </div>
-                    <p className="font-bold text-red-600 dark:text-red-400">
+                      </Typography>
+                    </Box>
+                    <Typography variant="subtitle1" fontWeight="bold" color="error.main">
                       {formatCurrency(item.returnAmount)}
-                    </p>
-                  </div>
-                </div>
+                    </Typography>
+                  </Box>
+                </Paper>
               ))}
-            </div>
-          </div>
+            </Stack>
+          </Box>
 
           {/* Items de Cambio (si existen) */}
           {returnData.exchangeItems && returnData.exchangeItems.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                <span className="text-blue-600 dark:text-blue-400">🔄</span>
+            <Box>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span style={{ color: '#2563eb' }}>🔄</span>
                 Productos de Cambio
-              </h3>
-              <div className="space-y-2">
+              </Typography>
+              <Stack spacing={2}>
                 {returnData.exchangeItems.map((item, index) => (
-                  <div key={index} className="card-glass p-4 border-2 border-blue-500/30">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white">
+                  <Paper key={index} variant="outlined" sx={{ p: 2, borderColor: 'primary.main', bgcolor: 'primary.lighter' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box>
+                        <Typography variant="subtitle2">
                           {item.product?.name || 'Producto'}
-                        </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
                           Cantidad: {item.quantity} × {formatCurrency(item.price)}
-                        </p>
-                      </div>
-                      <p className="font-bold text-blue-600 dark:text-blue-400">
+                        </Typography>
+                      </Box>
+                      <Typography variant="subtitle1" fontWeight="bold" color="primary.main">
                         {formatCurrency(item.quantity * item.price)}
-                      </p>
-                    </div>
-                  </div>
+                      </Typography>
+                    </Box>
+                  </Paper>
                 ))}
-              </div>
+              </Stack>
 
               {/* Diferencia de precio */}
               {returnData.priceDifference !== undefined && returnData.priceDifference !== 0 && (
-                <div className={`mt-4 p-4 rounded-lg ${returnData.priceDifference > 0
-                  ? 'bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800'
-                  : 'bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800'
-                  }`}>
-                  <div className="flex items-center justify-between">
-                    <span className={`text-sm font-medium ${returnData.priceDifference > 0
-                      ? 'text-red-700 dark:text-red-300'
-                      : 'text-green-700 dark:text-green-300'
-                      }`}>
+                <Alert
+                  severity={returnData.priceDifference > 0 ? 'error' : 'success'}
+                  sx={{ mt: 2 }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <Typography variant="subtitle2">
                       {returnData.priceDifference > 0
                         ? 'Cliente pagó diferencia:'
                         : 'Se devolvió al cliente:'}
-                    </span>
-                    <span className={`text-lg font-bold ${returnData.priceDifference > 0
-                      ? 'text-red-600 dark:text-red-400'
-                      : 'text-green-600 dark:text-green-400'
-                      }`}>
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold">
                       {formatCurrency(Math.abs(returnData.priceDifference))}
-                    </span>
-                  </div>
-                </div>
+                    </Typography>
+                  </Box>
+                </Alert>
               )}
-            </div>
+            </Box>
           )}
 
           {/* Notas */}
           {returnData.notes && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+            <Box>
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                 Notas
-              </h3>
-              <div className="card-glass p-4">
-                <p className="text-gray-700 dark:text-gray-300">{returnData.notes}</p>
-              </div>
-            </div>
+              </Typography>
+              <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
+                <Typography variant="body2">{returnData.notes}</Typography>
+              </Paper>
+            </Box>
           )}
 
           {/* Total */}
-          <div className="card-glass p-6 border-2 border-primary-500/30">
-            <div className="flex items-center justify-between">
-              <span className="text-lg text-gray-700 dark:text-gray-300">Total Devuelto:</span>
-              <span className="text-3xl font-bold text-red-600 dark:text-red-400">
+          <Paper variant="outlined" sx={{ p: 3, borderColor: 'primary.light', bgcolor: 'primary.lighter' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6">Total Devuelto:</Typography>
+              <Typography variant="h4" fontWeight="bold" color="error.main">
                 {formatCurrency(returnData.totalAmount)}
-              </span>
-            </div>
-          </div>
+              </Typography>
+            </Box>
+          </Paper>
 
           {/* Procesado por */}
-          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Procesado por: <span className="font-medium">{returnData.processedBy?.name}</span>
-            </p>
+          <Box sx={{ pt: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Typography variant="caption" display="block" color="text.secondary">
+              Procesado por: <strong>{returnData.processedBy?.name}</strong>
+            </Typography>
             {returnData.approvedBy && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Aprobado por: <span className="font-medium">{returnData.approvedBy?.name}</span>
-              </p>
+              <Typography variant="caption" display="block" color="text.secondary">
+                Aprobado por: <strong>{returnData.approvedBy?.name}</strong>
+              </Typography>
             )}
-          </div>
+          </Box>
+        </Stack>
+      </DialogContent>
 
-          {/* Botones de acción */}
-          <div className="mt-6 flex gap-3">
-            <button
-              onClick={handlePrintReturn}
-              className="btn-primary flex-1 flex items-center justify-center gap-2"
-            >
-              <Printer className="w-5 h-5" />
-              Imprimir Devolución
-            </button>
-            <button
-              onClick={onClose}
-              className="btn btn-secondary flex-1"
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body
+      <DialogActions>
+        <Button
+          onClick={handlePrintReturn}
+          variant="contained"
+          color="primary"
+          startIcon={<Printer />}
+        >
+          Imprimir Devolución
+        </Button>
+        <Button onClick={onClose} color="inherit">
+          Cerrar
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+const StatCard = ({ title, value, icon: Icon, color }) => {
+  const theme = useTheme();
+
+  const getColor = (colorName) => {
+    switch (colorName) {
+      case 'primary': return theme.palette.primary.main;
+      case 'success': return theme.palette.success.main;
+      case 'error': return theme.palette.error.main;
+      case 'warning': return theme.palette.warning.main;
+      case 'info': return theme.palette.info.main;
+      default: return theme.palette.primary.main;
+    }
+  };
+
+  const mainColor = getColor(color);
+
+  return (
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {title}
+            </Typography>
+            <Typography variant="h5" fontWeight="bold" sx={{ color: mainColor }}>
+              {value}
+            </Typography>
+          </Box>
+          <Avatar
+            variant="rounded"
+            sx={{
+              bgcolor: `${mainColor}20`, // 20% opacity
+              color: mainColor,
+              width: 48,
+              height: 48
+            }}
+          >
+            <Icon size={24} />
+          </Avatar>
+        </Box>
+      </CardContent>
+    </Card>
   );
 };
 

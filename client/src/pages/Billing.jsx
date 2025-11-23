@@ -415,7 +415,7 @@ const Billing = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ height: 'calc(100vh - 100px)', py: 2 }}>
+    <Container maxWidth={false} sx={{ height: 'calc(100vh - 100px)', py: 2 }}>
       <Grid container spacing={3} sx={{ height: '100%' }}>
         {/* Left Side - Product Catalog */}
         <Grid item xs={12} md={7} lg={8} sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>

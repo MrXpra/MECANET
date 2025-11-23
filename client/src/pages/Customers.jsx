@@ -68,8 +68,39 @@ import {
   TrendingUp,
   DollarSign,
   Info,
+  Info,
+  ChevronLeft,
+  ChevronRight,
+  Save
 } from 'lucide-react';
-import { createPortal } from 'react-dom';
+import {
+  Box,
+  Grid,
+  Paper,
+  Typography,
+  TextField,
+  InputAdornment,
+  IconButton,
+  Button,
+  Card,
+  CardContent,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  Tooltip,
+  Stack,
+  Divider,
+  useTheme,
+  Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
+} from '@mui/material';
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
@@ -115,7 +146,7 @@ const Customers = () => {
         }
       }
     };
-    
+
     if (showCustomerModal || showDetailModal) {
       window.addEventListener('keydown', handleEscape);
       return () => window.removeEventListener('keydown', handleEscape);
@@ -126,10 +157,10 @@ const Customers = () => {
     try {
       setIsLoading(true);
       const response = await getCustomers({ page: pagination.page, limit: pagination.limit });
-      
+
       const customersData = response?.data?.customers || response?.data || [];
       const paginationData = response?.data?.pagination || {};
-      
+
       setCustomers(Array.isArray(customersData) ? customersData : []);
       setPagination(prev => ({
         ...prev,
@@ -206,7 +237,7 @@ const Customers = () => {
     try {
       setSelectedCustomer(customer);
       setShowDetailModal(true);
-      
+
       // Fetch sales for this customer
       const response = await getSales();
       const customerSalesData = response.data.filter(sale => sale.customer?._id === customer._id);
@@ -233,7 +264,7 @@ const Customers = () => {
   };
 
   const getTotalCustomers = () => customers.length;
-  
+
   const getTotalSales = () => {
     return customers.reduce((sum, c) => sum + (c.totalPurchases || 0), 0);
   };
@@ -256,261 +287,295 @@ const Customers = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Clientes</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box>
+          <Typography variant="h4" fontWeight="bold" gutterBottom>
+            Clientes
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
             Gestión de base de datos de clientes
-          </p>
-        </div>
-        <button onClick={handleAddCustomer} className="btn-primary">
-          <Plus className="w-5 h-5" />
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<Plus />}
+          onClick={handleAddCustomer}
+        >
           Nuevo Cliente
-        </button>
-      </div>
+        </Button>
+      </Box>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="card-glass p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Clientes</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{getTotalCustomers()}</p>
-            </div>
-            <Users className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-          </div>
-        </div>
-
-        <div className="card-glass p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Clientes Activos</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{getActiveCustomers()}</p>
-            </div>
-            <ShoppingBag className="w-8 h-8 text-green-600 dark:text-green-400" />
-          </div>
-        </div>
-
-        <div className="card-glass p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Ventas Totales</p>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {formatCurrency(getTotalSales())}
-              </p>
-            </div>
-            <DollarSign className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-          </div>
-        </div>
-
-        <div className="card-glass p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Promedio/Cliente</p>
-              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                {formatCurrency(getAveragePerCustomer())}
-              </p>
-            </div>
-            <TrendingUp className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-          </div>
-        </div>
-      </div>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Total Clientes
+                  </Typography>
+                  <Typography variant="h5" fontWeight="bold">
+                    {getTotalCustomers()}
+                  </Typography>
+                </Box>
+                <Avatar sx={{ bgcolor: 'primary.main' }}>
+                  <Users size={24} />
+                </Avatar>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Clientes Activos
+                  </Typography>
+                  <Typography variant="h5" fontWeight="bold" color="success.main">
+                    {getActiveCustomers()}
+                  </Typography>
+                </Box>
+                <Avatar sx={{ bgcolor: 'success.main' }}>
+                  <ShoppingBag size={24} />
+                </Avatar>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Ventas Totales
+                  </Typography>
+                  <Typography variant="h5" fontWeight="bold" color="info.main">
+                    {formatCurrency(getTotalSales())}
+                  </Typography>
+                </Box>
+                <Avatar sx={{ bgcolor: 'info.main' }}>
+                  <DollarSign size={24} />
+                </Avatar>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Promedio/Cliente
+                  </Typography>
+                  <Typography variant="h5" fontWeight="bold" color="secondary.main">
+                    {formatCurrency(getAveragePerCustomer())}
+                  </Typography>
+                </Box>
+                <Avatar sx={{ bgcolor: 'secondary.main' }}>
+                  <TrendingUp size={24} />
+                </Avatar>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       {/* Search */}
-      <div className="card-glass p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, cédula, teléfono o email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="input pl-10"
-          />
-        </div>
-      </div>
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <TextField
+          fullWidth
+          placeholder="Buscar por nombre, cédula, teléfono o email..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search size={20} />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Paper>
 
       {/* Customers Table */}
-      <div className="card-glass overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Cliente
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Cédula
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Contacto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Dirección
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Compras
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Total Gastado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Registrado
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {isLoading ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-12 text-center">
-                    <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredCustomers.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Cliente</TableCell>
+              <TableCell>Cédula</TableCell>
+              <TableCell>Contacto</TableCell>
+              <TableCell>Dirección</TableCell>
+              <TableCell>Compras</TableCell>
+              <TableCell>Total Gastado</TableCell>
+              <TableCell>Registrado</TableCell>
+              <TableCell align="right">Acciones</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                </TableCell>
+              </TableRow>
+            ) : filteredCustomers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
+                  <Typography color="text.secondary">
                     {searchTerm ? 'No se encontraron clientes' : 'No hay clientes registrados'}
-                  </td>
-                </tr>
-              ) : (
-                filteredCustomers.map((customer) => (
-                  <tr
-                    key={customer._id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-                          <User className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                        </div>
-                        <div className="ml-3">
-                          <div className="font-medium text-gray-900 dark:text-white">
-                            {customer.fullName}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 dark:text-white font-mono">
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredCustomers.map((customer) => (
+                <TableRow key={customer._id} hover>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main' }}>
+                        <User size={20} />
+                      </Avatar>
+                      <Typography variant="body2" fontWeight="medium">
+                        {customer.fullName}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontFamily="monospace">
                       {customer.cedula || '-'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        {customer.phone && (
-                          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                            <Phone className="w-4 h-4 mr-1" />
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Stack spacing={0.5}>
+                      {customer.phone && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Phone size={14} color="gray" />
+                          <Typography variant="caption" color="text.secondary">
                             {customer.phone}
-                          </div>
-                        )}
-                        {customer.email && (
-                          <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                            <Mail className="w-4 h-4 mr-1" />
-                            {customer.email}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
-                      {customer.address ? (
-                        <div className="flex items-start">
-                          <MapPin className="w-4 h-4 mr-1 mt-0.5 flex-shrink-0" />
-                          <span className="line-clamp-2">{customer.address}</span>
-                        </div>
-                      ) : (
-                        '-'
+                          </Typography>
+                        </Box>
                       )}
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {customer.purchaseHistory?.length || 0}
-                      </span>
-                      <span className="text-gray-500 dark:text-gray-400"> compras</span>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                      {customer.email && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Mail size={14} color="gray" />
+                          <Typography variant="caption" color="text.secondary">
+                            {customer.email}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
+                    {customer.address ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <MapPin size={14} color="gray" />
+                        <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 200 }}>
+                          {customer.address}
+                        </Typography>
+                      </Box>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      <span className="font-bold">{customer.purchaseHistory?.length || 0}</span> compras
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight="bold">
                       {formatCurrency(customer.totalPurchases || 0)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
                       {formatDate(customer.createdAt)}
-                    </td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                      <button
-                        onClick={() => handleViewCustomer(customer)}
-                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                        title="Ver detalles"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleEditCustomer(customer)}
-                        className="text-primary-600 hover:text-primary-700 dark:text-primary-400"
-                        title="Editar"
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCustomer(customer._id)}
-                        className="text-red-600 hover:text-red-700 dark:text-red-400"
-                        title="Eliminar"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Stack direction="row" spacing={1} justifyContent="flex-end">
+                      <Tooltip title="Ver detalles">
+                        <IconButton
+                          size="small"
+                          color="info"
+                          onClick={() => handleViewCustomer(customer)}
+                        >
+                          <Eye size={18} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Editar">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handleEditCustomer(customer)}
+                        >
+                          <Edit size={18} />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Eliminar">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDeleteCustomer(customer._id)}
+                        >
+                          <Trash2 size={18} />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
 
         {/* Paginación */}
         {!isLoading && pagination.pages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Typography variant="body2" color="text.secondary">
               Mostrando {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} - {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} clientes
-            </div>
-            <div className="flex items-center gap-2">
-              <button
+            </Typography>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Button
+                startIcon={<ChevronLeft />}
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                 disabled={!pagination.hasPrevPage}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pagination.hasPrevPage
-                    ? 'bg-primary-600 text-white hover:bg-primary-700'
-                    : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
-                }`}
               >
                 Anterior
-              </button>
-              <span className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+              </Button>
+              <Typography variant="body2">
                 Página {pagination.page} de {pagination.pages}
-              </span>
-              <button
+              </Typography>
+              <Button
+                endIcon={<ChevronRight />}
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                 disabled={!pagination.hasNextPage}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pagination.hasNextPage
-                    ? 'bg-primary-600 text-white hover:bg-primary-700'
-                    : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
-                }`}
               >
                 Siguiente
-              </button>
-            </div>
-          </div>
+              </Button>
+            </Stack>
+          </Box>
         )}
-      </div>
+      </TableContainer>
 
       {/* Customer Modal */}
-      {showCustomerModal && (
+      <Dialog
+        open={showCustomerModal}
+        onClose={() => setShowCustomerModal(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <CustomerModal
           customer={editingCustomer}
           onSave={handleSaveCustomer}
           onClose={() => setShowCustomerModal(false)}
         />
-      )}
+      </Dialog>
 
       {/* Customer Detail Modal */}
       {showDetailModal && selectedCustomer && (
@@ -550,10 +615,10 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
   const formatPhone = (value) => {
     // Remover todo excepto números
     const cleaned = value.replace(/\D/g, '');
-    
+
     // Limitar a 10 dígitos
     const limited = cleaned.substring(0, 10);
-    
+
     // Aplicar formato XXX-XXX-XXXX
     if (limited.length <= 3) {
       return limited;
@@ -567,10 +632,10 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
   const formatCedula = (value) => {
     // Remover todo excepto números
     const cleaned = value.replace(/\D/g, '');
-    
+
     // Limitar a 11 dígitos
     const limited = cleaned.substring(0, 11);
-    
+
     // Aplicar formato XXX-XXXXXXX-X
     if (limited.length <= 3) {
       return limited;
@@ -584,19 +649,19 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     let formattedValue = value;
-    
+
     // Aplicar formato según el campo
     if (name === 'phone') {
       formattedValue = formatPhone(value);
     } else if (name === 'cedula') {
       formattedValue = formatCedula(value);
     }
-    
+
     setFormData((prev) => ({
       ...prev,
       [name]: formattedValue,
     }));
-    
+
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
@@ -644,291 +709,282 @@ const CustomerModal = ({ customer, onSave, onClose }) => {
     }
   };
 
-  return createPortal(
-    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style={{ zIndex: 100000 }}>
-      <div className="glass-strong rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {customer ? 'Editar Cliente' : 'Nuevo Cliente'}
-            </h3>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Nombre Completo *
-            </label>
-            <input
-              type="text"
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleChange}
-              className={`input ${errors.fullName ? 'border-red-500' : ''}`}
-              placeholder="Juan Pérez"
-              autoFocus
-            />
-            {errors.fullName && <p className="text-xs text-red-600 mt-1">{errors.fullName}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Cédula
-            </label>
-            <input
-              type="text"
-              name="cedula"
-              value={formData.cedula}
-              onChange={handleChange}
-              className={`input font-mono ${errors.cedula ? 'border-red-500' : ''}`}
-              placeholder="001-0123456-7 (opcional)"
-            />
-            {errors.cedula && <p className="text-xs text-red-600 mt-1">{errors.cedula}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Teléfono
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              className={`input font-mono ${errors.phone ? 'border-red-500' : ''}`}
-              placeholder="809-555-1234 (opcional)"
-            />
-            {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className={`input ${errors.email ? 'border-red-500' : ''}`}
-              placeholder="cliente@ejemplo.com"
-            />
-            {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Dirección
-            </label>
-            <textarea
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              rows="3"
-              className="input"
-              placeholder="Calle, número, sector, ciudad..."
-            />
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1">
-              Cancelar
-            </button>
-            <button type="submit" disabled={isLoading} className="btn-primary flex-1 flex items-center justify-center gap-2">
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <Check className="w-5 h-5" />
-                  {customer ? 'Actualizar' : 'Crear'}
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-        </div>
-      </div>
-    </div>,
-    document.body
+  return (
+    <>
+      <DialogTitle>
+        {customer ? 'Editar Cliente' : 'Nuevo Cliente'}
+      </DialogTitle>
+      <DialogContent dividers>
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Nombre Completo"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                error={!!errors.fullName}
+                helperText={errors.fullName}
+                required
+                autoFocus
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Cédula"
+                name="cedula"
+                value={formData.cedula}
+                onChange={handleChange}
+                error={!!errors.cedula}
+                helperText={errors.cedula || "001-0123456-7 (opcional)"}
+                inputProps={{ style: { fontFamily: 'monospace' } }}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Teléfono"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                error={!!errors.phone}
+                helperText={errors.phone || "809-555-1234 (opcional)"}
+                inputProps={{ style: { fontFamily: 'monospace' } }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                error={!!errors.email}
+                helperText={errors.email}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Dirección"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                multiline
+                rows={3}
+              />
+            </Grid>
+          </Grid>
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="inherit">
+          Cancelar
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          startIcon={isLoading ? null : <Save />}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Guardando...' : (customer ? 'Actualizar' : 'Crear')}
+        </Button>
+      </DialogActions>
+    </>
   );
 };
 
 // Customer Detail Modal Component
+// Customer Detail Modal Component
 const CustomerDetailModal = ({ customer, sales, onClose, onEdit, formatCurrency, formatDate }) => {
-  return createPortal(
-    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto" style={{ zIndex: 100000 }}>
-      <div className="glass-strong rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto my-8" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-              <User className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {customer.fullName}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Cliente desde {formatDate(customer.createdAt)}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
+  return (
+    <Dialog
+      open={true}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main', width: 56, height: 56 }}>
+            <User size={32} />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" fontWeight="bold">
+              {customer.fullName}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Cliente desde {formatDate(customer.createdAt)}
+            </Typography>
+          </Box>
+        </Box>
+        <IconButton onClick={onClose}>
+          <X />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
         {/* Customer Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-              Información de Contacto
-            </h4>
-            <div className="space-y-2">
-              {customer.cedula && (
-                <div className="flex items-center text-gray-900 dark:text-white">
-                  <User className="w-4 h-4 mr-2 text-gray-400" />
-                  <span className="font-mono">{customer.cedula}</span>
-                </div>
-              )}
-              {customer.phone && (
-                <div className="flex items-center text-gray-900 dark:text-white">
-                  <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                  {customer.phone}
-                </div>
-              )}
-              {customer.email && (
-                <div className="flex items-center text-gray-900 dark:text-white">
-                  <Mail className="w-4 h-4 mr-2 text-gray-400" />
-                  {customer.email}
-                </div>
-              )}
-              {customer.address && (
-                <div className="flex items-start text-gray-900 dark:text-white">
-                  <MapPin className="w-4 h-4 mr-2 mt-1 text-gray-400 flex-shrink-0" />
-                  <span>{customer.address}</span>
-                </div>
-              )}
-            </div>
-          </div>
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 2, bgcolor: 'background.default' }} variant="outlined">
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Información de Contacto
+              </Typography>
+              <Stack spacing={1}>
+                {customer.cedula && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box component="span" sx={{ color: 'text.secondary', display: 'flex' }}>
+                      <User size={16} />
+                    </Box>
+                    <Typography variant="body2" fontFamily="monospace">
+                      {customer.cedula}
+                    </Typography>
+                  </Box>
+                )}
+                {customer.phone && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box component="span" sx={{ color: 'text.secondary', display: 'flex' }}>
+                      <Phone size={16} />
+                    </Box>
+                    <Typography variant="body2" fontFamily="monospace">
+                      {customer.phone}
+                    </Typography>
+                  </Box>
+                )}
+                {customer.email && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box component="span" sx={{ color: 'text.secondary', display: 'flex' }}>
+                      <Mail size={16} />
+                    </Box>
+                    <Typography variant="body2">
+                      {customer.email}
+                    </Typography>
+                  </Box>
+                )}
+                {customer.address && (
+                  <Box sx={{ display: 'flex', alignItems: 'start', gap: 1 }}>
+                    <Box component="span" sx={{ color: 'text.secondary', display: 'flex', mt: 0.5 }}>
+                      <MapPin size={16} />
+                    </Box>
+                    <Typography variant="body2">
+                      {customer.address}
+                    </Typography>
+                  </Box>
+                )}
+              </Stack>
+            </Paper>
+          </Grid>
 
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-              Estadísticas de Compra
-            </h4>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 dark:text-gray-400">Total de compras:</span>
-                <span className="font-semibold text-gray-900 dark:text-white">
-                  {sales.length}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 dark:text-gray-400">Total gastado:</span>
-                <span className="font-semibold text-green-600 dark:text-green-400">
-                  {formatCurrency(customer.totalPurchases || 0)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 dark:text-gray-400">Promedio por compra:</span>
-                <span className="font-semibold text-blue-600 dark:text-blue-400">
-                  {formatCurrency(sales.length > 0 ? (customer.totalPurchases || 0) / sales.length : 0)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 2, bgcolor: 'background.default' }} variant="outlined">
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                Estadísticas de Compra
+              </Typography>
+              <Stack spacing={2}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">Total de compras:</Typography>
+                  <Typography variant="body1" fontWeight="bold">
+                    {sales.length}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">Total gastado:</Typography>
+                  <Typography variant="body1" fontWeight="bold" color="success.main">
+                    {formatCurrency(customer.totalPurchases || 0)}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">Promedio por compra:</Typography>
+                  <Typography variant="body1" fontWeight="bold" color="info.main">
+                    {formatCurrency(sales.length > 0 ? (customer.totalPurchases || 0) / sales.length : 0)}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Paper>
+          </Grid>
+        </Grid>
 
         {/* Purchase History */}
-        <div className="mb-6">
-          <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <Box>
+          <Typography variant="h6" gutterBottom>
             Historial de Compras
-          </h4>
-          
-          {sales.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <ShoppingBag className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>No hay compras registradas</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {sales.map((sale) => (
-                <div
-                  key={sale._id}
-                  className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <div className="font-medium text-gray-900 dark:text-white">
-                        Factura #{sale.invoiceNumber}
-                      </div>
-                      <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          {formatDate(sale.createdAt)}
-                        </span>
-                        <span className="flex items-center">
-                          <ShoppingBag className="w-4 h-4 mr-1" />
-                          {sale.items.length} artículo(s)
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-gray-900 dark:text-white">
-                        {formatCurrency(sale.total)}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {sale.paymentMethod}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Items */}
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-                    <div className="space-y-1">
-                      {sale.items.map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between text-sm text-gray-600 dark:text-gray-400"
-                        >
-                          <span>
-                            {item.quantity}x {item.product?.name || 'Producto'}
-                          </span>
-                          <span>{formatCurrency(item.subtotal)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+          </Typography>
 
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button onClick={onClose} className="btn-secondary flex-1">
-            Cerrar
-          </button>
-          <button onClick={onEdit} className="btn-primary flex-1">
-            <Edit className="w-5 h-5" />
-            Editar Cliente
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
+          {sales.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
+              <ShoppingBag size={48} style={{ margin: '0 auto', marginBottom: 8, opacity: 0.5 }} />
+              <Typography>No hay compras registradas</Typography>
+            </Box>
+          ) : (
+            <Stack spacing={2}>
+              {sales.map((sale) => (
+                <Paper
+                  key={sale._id}
+                  variant="outlined"
+                  sx={{ p: 2, '&:hover': { bgcolor: 'action.hover' } }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight="medium">
+                        Factura #{sale.invoiceNumber}
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Calendar size={14} color="gray" />
+                          <Typography variant="caption" color="text.secondary">
+                            {formatDate(sale.createdAt)}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <ShoppingBag size={14} color="gray" />
+                          <Typography variant="caption" color="text.secondary">
+                            {sale.items.length} artículo(s)
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="h6" fontWeight="bold">
+                        {formatCurrency(sale.total)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {sale.paymentMethod}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Divider sx={{ my: 1 }} />
+
+                  <Stack spacing={0.5}>
+                    {sale.items.map((item, index) => (
+                      <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          {item.quantity}x {item.product?.name || 'Producto'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {formatCurrency(item.subtotal)}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                </Paper>
+              ))}
+            </Stack>
+          )}
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="inherit">
+          Cerrar
+        </Button>
+        <Button onClick={onEdit} variant="contained" startIcon={<Edit />}>
+          Editar Cliente
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

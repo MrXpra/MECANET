@@ -86,7 +86,7 @@ const TopBar = ({ drawerWidth }) => {
         backgroundImage: 'none'
       }}
     >
-      <Toolbar>
+      <Toolbar sx={{ px: { xs: 2, md: 3 } }}>
         {/* Business Name */}
         <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
           {settings.businessName || 'MECANET'}

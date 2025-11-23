@@ -167,7 +167,7 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ width: '100%' }}>
         {/* KPI Cards */}
         <Grid item xs={12} md={6} lg={3}>
           <KPICard
