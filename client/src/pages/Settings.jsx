@@ -307,8 +307,14 @@ const Settings = ({ section = 'all' }) => {
   };
 
   const handleChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+    const newData = { ...formData, [field]: value };
+    setFormData(newData);
     setHasChanges(true);
+
+    // Debug: Update store immediately for visual feedback
+    if (field === 'forceChristmas') {
+      updateSettingsStore(newData);
+    }
   };
 
   const handleSmtpChange = (field, value) => {
