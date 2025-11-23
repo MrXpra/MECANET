@@ -1,37 +1,3 @@
-/**
- * @file Dashboard.jsx
- * @description Página principal con estadísticas y gráficos
- * 
- * Responsabilidades:
- * - Mostrar KPIs principales: ventas hoy, productos vendidos, bajo stock, total clientes
- * - Gráfico de ventas por día (últimos 7 días) con LineChart
- * - Tabla de productos más vendidos (top 5, últimos 30 días)
- * - Gráfico de ventas por método de pago (PieChart)
- * 
- * Estados:
- * - stats: Objeto con todaySales, todayProductsSold, lowStockCount, totalCustomers
- * - salesByDay: Array para gráfico de líneas (fecha, total)
- * - topProducts: Array de productos más vendidos (name, totalSold, totalRevenue)
- * - salesByPayment: Array para gráfico de pastel (paymentMethod, total, count)
- * - isLoading: Boolean durante fetch inicial
- * 
- * APIs:
- * - GET /api/dashboard/stats
- * - GET /api/dashboard/sales-by-day?days=7
- * - GET /api/dashboard/top-products?limit=5&days=30
- * - GET /api/dashboard/sales-by-payment?days=30
- * 
- * Gráficos (recharts):
- * - LineChart: Ventas por día con gradient (verde)
- * - PieChart: Métodos de pago con colores personalizados
- * 
- * UI:
- * - Skeleton loader durante carga inicial
- * - Cards con glassmorphism para KPIs
- * - Tooltips informativos en títulos de sección
- * - Responsive: grid cols-1 md:cols-2 lg:cols-4
- */
-
 import { useState, useEffect } from 'react';
 import {
   getAllDashboardData,
@@ -39,15 +5,13 @@ import {
 import toast from 'react-hot-toast';
 import {
   DollarSign,
-  ShoppingCart,
   TrendingUp,
   Package,
-  AlertTriangle,
   Users,
   Info,
   HelpCircle,
+  AlertTriangle
 } from 'lucide-react';
-import { DashboardSkeleton } from '../components/SkeletonLoader';
 import {
   LineChart,
   Line,
@@ -57,12 +21,30 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
   Area,
   AreaChart,
 } from 'recharts';
+import {
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  Skeleton,
+  Tooltip,
+  IconButton,
+  useTheme,
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Avatar,
+  Divider
+} from '@mui/material';
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
@@ -70,8 +52,7 @@ const Dashboard = () => {
   const [topProducts, setTopProducts] = useState([]);
   const [salesByPayment, setSalesByPayment] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showSalesChartTooltip, setShowSalesChartTooltip] = useState(false);
-  const [showPaymentChartTooltip, setShowPaymentChartTooltip] = useState(false);
+  const theme = useTheme();
 
   useEffect(() => {
     fetchDashboardData();
@@ -80,7 +61,6 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      // Una sola petición para todo el dashboard
       const response = await getAllDashboardData();
       const data = response.data;
 
@@ -120,16 +100,14 @@ const Dashboard = () => {
     }).format(value);
   };
 
-  // Colores vibrantes y atractivos con gradientes
   const COLORS = [
-    '#6366f1', // Indigo vibrante
-    '#ec4899', // Pink brillante
-    '#14b8a6', // Teal moderno
-    '#f59e0b', // Amber cálido
-    '#8b5cf6', // Púrpura profundo
+    '#6366f1', // Indigo
+    '#ec4899', // Pink
+    '#14b8a6', // Teal
+    '#f59e0b', // Amber
+    '#8b5cf6', // Purple
   ];
 
-  // Custom label para la gráfica de pastel - mejorado para mantener dentro
   const renderCustomLabel = ({
     cx,
     cy,
@@ -138,11 +116,8 @@ const Dashboard = () => {
     outerRadius,
     percent,
   }) => {
-    // Solo mostrar si el porcentaje es significativo (mayor a 5%)
     if (percent < 0.05) return null;
-
     const RADIAN = Math.PI / 180;
-    // Posicionar en el centro del anillo (entre innerRadius y outerRadius)
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
@@ -155,9 +130,9 @@ const Dashboard = () => {
         textAnchor="middle"
         dominantBaseline="central"
         style={{
-          fontSize: '14px',
+          fontSize: '12px',
           fontWeight: 'bold',
-          textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+          textShadow: '0 1px 2px rgba(0,0,0,0.8)',
           pointerEvents: 'none'
         }}
       >
@@ -167,377 +142,365 @@ const Dashboard = () => {
   };
 
   if (isLoading) {
-    return <DashboardSkeleton />;
+    return (
+      <Grid container spacing={3}>
+        {[...Array(4)].map((_, i) => (
+          <Grid item xs={12} md={6} lg={3} key={i}>
+            <Skeleton variant="rectangular" height={140} sx={{ borderRadius: 2 }} />
+          </Grid>
+        ))}
+        <Grid item xs={12} lg={6}>
+          <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
+        </Grid>
+        <Grid item xs={12} lg={6}>
+          <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
+        </Grid>
+        <Grid item xs={12} lg={6}>
+          <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
+        </Grid>
+        <Grid item xs={12} lg={6}>
+          <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
+        </Grid>
+      </Grid>
+    );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KPICard
-          title="Ventas de Hoy"
-          tooltip="Total de ingresos generados hoy incluyendo todos los métodos de pago"
-          value={formatCurrency(stats?.today?.total || 0)}
-          icon={DollarSign}
-          color="blue"
-          subtitle={`${stats?.today?.transactions || 0} transacciones`}
-        />
-        <KPICard
-          title="Venta Promedio"
-          value={formatCurrency(stats?.today?.avgTicket || 0)}
-          icon={TrendingUp}
-          color="green"
-          subtitle="Por transacción hoy"
-          tooltip="Monto promedio por cada venta realizada hoy (total de ventas ÷ número de ventas)"
-        />
-        <KPICard
-          title="Productos"
-          value={stats?.inventory?.totalProducts || 0}
-          icon={Package}
-          color="purple"
-          subtitle={`${stats?.inventory?.lowStockProducts || 0} con bajo stock`}
-          tooltip="Total de productos registrados en el inventario. Se alerta cuando hay productos con stock bajo"
-        />
-        <KPICard
-          title="Clientes"
-          value={stats?.customers || 0}
-          icon={Users}
-          color="orange"
-          subtitle="Registrados"
-          tooltip="Número total de clientes registrados en el sistema con su información y historial de compras"
-        />
-      </div>
+    <Box sx={{ flexGrow: 1 }}>
+      <Grid container spacing={3}>
+        {/* KPI Cards */}
+        <Grid item xs={12} md={6} lg={3}>
+          <KPICard
+            title="Ventas de Hoy"
+            tooltip="Total de ingresos generados hoy incluyendo todos los métodos de pago"
+            value={formatCurrency(stats?.today?.total || 0)}
+            icon={DollarSign}
+            color="primary"
+            subtitle={`${stats?.today?.transactions || 0} transacciones`}
+          />
+        </Grid>
+        <Grid item xs={12} md={6} lg={3}>
+          <KPICard
+            title="Venta Promedio"
+            value={formatCurrency(stats?.today?.avgTicket || 0)}
+            icon={TrendingUp}
+            color="success"
+            subtitle="Por transacción hoy"
+            tooltip="Monto promedio por cada venta realizada hoy"
+          />
+        </Grid>
+        <Grid item xs={12} md={6} lg={3}>
+          <KPICard
+            title="Productos"
+            value={stats?.inventory?.totalProducts || 0}
+            icon={Package}
+            color="secondary"
+            subtitle={`${stats?.inventory?.lowStockProducts || 0} con bajo stock`}
+            tooltip="Total de productos registrados en el inventario"
+          />
+        </Grid>
+        <Grid item xs={12} md={6} lg={3}>
+          <KPICard
+            title="Clientes"
+            value={stats?.customers || 0}
+            icon={Users}
+            color="warning"
+            subtitle="Registrados"
+            tooltip="Número total de clientes registrados"
+          />
+        </Grid>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sales by Day Chart */}
-        <div className="card-glass p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Ventas de la Última Semana
-            </h3>
-            <div className="relative">
-              <button
-                onMouseEnter={() => setShowSalesChartTooltip(true)}
-                onMouseLeave={() => setShowSalesChartTooltip(false)}
-                className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              >
-                <HelpCircle className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              </button>
-              {showSalesChartTooltip && (
-                <div className="absolute right-0 top-8 w-64 p-3 bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg shadow-xl z-50">
-                  <p className="font-semibold mb-1">¿Qué muestra esta gráfica?</p>
-                  <p className="text-xs leading-relaxed">
-                    Muestra el total de ventas diarias (ingresos) de los últimos 7 días.
-                    Cada barra representa el monto total vendido en ese día. Pasa el cursor sobre las barras para ver detalles.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={salesByDay}>
-              <defs>
-                <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-              <XAxis
-                dataKey="date"
-                stroke="#6b7280"
-                fontSize={12}
-                tickMargin={10}
-              />
-              <YAxis
-                stroke="#6b7280"
-                fontSize={12}
-                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#1f2937',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: '#fff',
-                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                }}
-                formatter={(value) => [formatCurrency(value), 'Ventas']}
-                labelFormatter={(label) => `Fecha: ${label}`}
-              />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="total"
-                stroke="#3b82f6"
-                strokeWidth={3}
-                fill="url(#colorTotal)"
-                name="Total de Ventas"
-                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        {/* Charts Row */}
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <CardContent sx={{ flexGrow: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6" fontWeight="bold">
+                  Ventas de la Última Semana
+                </Typography>
+                <Tooltip title="Muestra el total de ventas diarias de los últimos 7 días">
+                  <IconButton size="small">
+                    <HelpCircle size={18} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+              <Box sx={{ height: 300, width: '100%' }}>
+                <ResponsiveContainer>
+                  <AreaChart data={salesByDay}>
+                    <defs>
+                      <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.3} />
+                        <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                    <XAxis
+                      dataKey="date"
+                      stroke={theme.palette.text.secondary}
+                      fontSize={12}
+                      tickMargin={10}
+                    />
+                    <YAxis
+                      stroke={theme.palette.text.secondary}
+                      fontSize={12}
+                      tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                    />
+                    <RechartsTooltip
+                      contentStyle={{
+                        backgroundColor: theme.palette.background.paper,
+                        borderColor: theme.palette.divider,
+                        borderRadius: 8,
+                        color: theme.palette.text.primary
+                      }}
+                      formatter={(value) => [formatCurrency(value), 'Ventas']}
+                      labelFormatter={(label) => `Fecha: ${label}`}
+                    />
+                    <Legend />
+                    <Area
+                      type="monotone"
+                      dataKey="total"
+                      stroke={theme.palette.primary.main}
+                      strokeWidth={3}
+                      fill="url(#colorTotal)"
+                      name="Total de Ventas"
+                      dot={{ fill: theme.palette.primary.main, strokeWidth: 2, r: 4 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-        {/* Sales by Payment Method */}
-        <div className="card-glass p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Ventas por Método de Pago
-            </h3>
-            <div className="relative">
-              <button
-                onMouseEnter={() => setShowPaymentChartTooltip(true)}
-                onMouseLeave={() => setShowPaymentChartTooltip(false)}
-                className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              >
-                <HelpCircle className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              </button>
-              {showPaymentChartTooltip && (
-                <div className="absolute right-0 top-8 w-64 p-3 bg-gray-900 dark:bg-gray-800 text-white text-sm rounded-lg shadow-xl z-50">
-                  <p className="font-semibold mb-1">¿Qué muestra esta gráfica?</p>
-                  <p className="text-xs leading-relaxed">
-                    Distribución de ventas de los últimos 30 días por método de pago (Efectivo, Tarjeta, Transferencia).
-                    Cada porción representa el porcentaje del total.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={350}>
-            <PieChart>
-              <defs>
-                {COLORS.map((color, index) => (
-                  <linearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity={1} />
-                    <stop offset="100%" stopColor={color} stopOpacity={0.7} />
-                  </linearGradient>
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <CardContent sx={{ flexGrow: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6" fontWeight="bold">
+                  Ventas por Método de Pago
+                </Typography>
+                <Tooltip title="Distribución de ventas de los últimos 30 días por método de pago">
+                  <IconButton size="small">
+                    <HelpCircle size={18} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+              <Box sx={{ height: 300, width: '100%' }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={salesByPayment}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={renderCustomLabel}
+                      outerRadius={100}
+                      innerRadius={50}
+                      dataKey="total"
+                      nameKey="name"
+                      paddingAngle={3}
+                    >
+                      {salesByPayment.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                          stroke={theme.palette.background.paper}
+                          strokeWidth={2}
+                        />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip
+                      formatter={(value) => formatCurrency(value)}
+                      contentStyle={{
+                        backgroundColor: theme.palette.background.paper,
+                        borderColor: theme.palette.divider,
+                        borderRadius: 8,
+                        color: theme.palette.text.primary
+                      }}
+                    />
+                    <Legend
+                      verticalAlign="bottom"
+                      height={36}
+                      iconType="circle"
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Box>
+              <Grid container spacing={2} sx={{ mt: 2 }}>
+                {salesByPayment.map((payment, index) => (
+                  <Grid item xs={4} key={index}>
+                    <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
+                      <Box
+                        sx={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: '50%',
+                          bgcolor: COLORS[index % COLORS.length],
+                          mx: 'auto',
+                          mb: 1
+                        }}
+                      />
+                      <Typography variant="caption" display="block" color="text.secondary">
+                        {payment.name}
+                      </Typography>
+                      <Typography variant="body2" fontWeight="bold">
+                        {formatCurrency(payment.total)}
+                      </Typography>
+                    </Box>
+                  </Grid>
                 ))}
-              </defs>
-              <Pie
-                data={salesByPayment}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={renderCustomLabel}
-                outerRadius={110}
-                innerRadius={60}
-                fill="#8884d8"
-                dataKey="total"
-                nameKey="name"
-                paddingAngle={3}
-                animationBegin={0}
-                animationDuration={800}
-              >
-                {salesByPayment.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={`url(#gradient-${index % COLORS.length})`}
-                    stroke="rgba(255,255,255,0.3)"
-                    strokeWidth={2}
-                  />
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Bottom Row */}
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                Productos Más Vendidos (30 días)
+              </Typography>
+              <List disablePadding>
+                {topProducts.map((product, index) => (
+                  <Box key={product._id}>
+                    <ListItem disableGutters alignItems="flex-start">
+                      <ListItemAvatar>
+                        <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', width: 32, height: 32, fontSize: '0.875rem' }}>
+                          {index + 1}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={product.name}
+                        secondary={product.sku}
+                        primaryTypographyProps={{ fontWeight: 'medium' }}
+                      />
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="body2" fontWeight="bold">
+                          {product.totalQuantity} unid.
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatCurrency(product.totalRevenue)}
+                        </Typography>
+                      </Box>
+                    </ListItem>
+                    {index < topProducts.length - 1 && <Divider variant="inset" component="li" />}
+                  </Box>
                 ))}
-              </Pie>
-              <Tooltip
-                formatter={(value) => formatCurrency(value)}
-                contentStyle={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.85)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                }}
-                labelStyle={{
-                  color: '#fff',
-                  fontWeight: 'bold',
-                  marginBottom: '4px'
-                }}
-                itemStyle={{
-                  color: '#fff',
-                  padding: '2px 0'
-                }}
-              />
-              <Legend
-                verticalAlign="bottom"
-                height={36}
-                iconType="circle"
-                formatter={(value) => (
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {value}
-                  </span>
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <AlertTriangle size={20} color={theme.palette.warning.main} />
+                <Typography variant="h6" fontWeight="bold">
+                  Productos con Bajo Stock
+                </Typography>
+              </Box>
+              <List disablePadding sx={{ maxHeight: 400, overflow: 'auto' }}>
+                {stats?.inventory?.lowStockItems?.map((product, index) => (
+                  <Box key={product._id}>
+                    <ListItem
+                      disableGutters
+                      sx={{
+                        p: 1,
+                        mb: 1,
+                        bgcolor: 'warning.light',
+                        borderRadius: 1,
+                        bgOpacity: 0.1, // Note: bgOpacity not valid in sx directly, use alpha color
+                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(255, 247, 237, 1)'
+                      }}
+                    >
+                      <ListItemText
+                        primary={product.name}
+                        secondary={product.sku}
+                        primaryTypographyProps={{ fontWeight: 'medium' }}
+                      />
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography variant="h6" color="warning.main" fontWeight="bold">
+                          {product.stock}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          en stock
+                        </Typography>
+                      </Box>
+                    </ListItem>
+                  </Box>
+                ))}
+                {stats?.inventory?.lowStockItems?.length === 0 && (
+                  <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
+                    No hay productos con bajo stock
+                  </Typography>
                 )}
-                wrapperStyle={{
-                  paddingTop: '20px'
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-
-          {/* Estadísticas adicionales debajo de la gráfica */}
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            {salesByPayment.map((payment, index) => {
-              const methodName = payment.name || payment._id || 'Desconocido';
-              return (
-                <div
-                  key={`${methodName}-${index}`}
-                  className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600"
-                >
-                  <div
-                    className="w-3 h-3 rounded-full mx-auto mb-2"
-                    style={{
-                      background: `linear-gradient(180deg, ${COLORS[index % COLORS.length]} 0%, ${COLORS[index % COLORS.length]}99 100%)`
-                    }}
-                  />
-                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                    {methodName}
-                  </p>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">
-                    {formatCurrency(payment.total)}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Products */}
-        <div className="card-glass p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Productos Más Vendidos (Últimos 30 días)
-          </h3>
-          <div className="space-y-3">
-            {topProducts.map((product, index) => (
-              <div
-                key={product._id}
-                className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-bold text-primary-600 dark:text-primary-400">
-                      {index + 1}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {product.name}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {product.sku}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {product.totalQuantity} unid.
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {formatCurrency(product.totalRevenue)}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Low Stock Alerts */}
-        <div className="card-glass p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle className="w-5 h-5 text-yellow-500" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Productos con Bajo Stock
-            </h3>
-          </div>
-          <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
-            {stats?.inventory?.lowStockItems?.map((product) => (
-              <div
-                key={product._id}
-                className="flex items-center justify-between p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800"
-              >
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">
-                    {product.name}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {product.sku}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-yellow-600 dark:text-yellow-400">
-                    {product.stock}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    en stock
-                  </p>
-                </div>
-              </div>
-            ))}
-            {stats?.inventory?.lowStockItems?.length === 0 && (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                No hay productos con bajo stock
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </Box>
   );
 };
 
-// KPI Card Component
 const KPICard = ({ title, value, icon: Icon, color, subtitle, tooltip }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
+  const theme = useTheme();
 
-  const colorClasses = {
-    blue: 'from-blue-500 to-blue-600',
-    green: 'from-green-500 to-green-600',
-    purple: 'from-purple-500 to-purple-600',
-    orange: 'from-orange-500 to-orange-600',
+  // Map color prop to theme palette
+  const getColor = (colorName) => {
+    switch (colorName) {
+      case 'blue': return theme.palette.primary.main;
+      case 'green': return theme.palette.success.main;
+      case 'purple': return theme.palette.secondary.main;
+      case 'orange': return theme.palette.warning.main;
+      default: return theme.palette[colorName]?.main || theme.palette.primary.main;
+    }
   };
 
+  const mainColor = getColor(color);
+
   return (
-    <div className="card-glass hover-lift relative">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
-            {tooltip && (
-              <div className="relative">
-                <button
-                  onMouseEnter={() => setShowTooltip(true)}
-                  onMouseLeave={() => setShowTooltip(false)}
-                  className="p-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <Info className="w-3.5 h-3.5 text-gray-400" />
-                </button>
-                {showTooltip && (
-                  <div className="absolute left-0 top-6 w-56 p-2 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-xl z-50">
-                    {tooltip}
-                  </div>
-                )}
-              </div>
+    <Card sx={{ height: '100%', position: 'relative', overflow: 'visible' }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                {title}
+              </Typography>
+              {tooltip && (
+                <Tooltip title={tooltip}>
+                  <IconButton size="small" sx={{ p: 0.5 }}>
+                    <Info size={14} />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Box>
+            <Typography variant="h5" fontWeight="bold" sx={{ mb: 0.5 }}>
+              {value}
+            </Typography>
+            {subtitle && (
+              <Typography variant="caption" color="text.secondary">
+                {subtitle}
+              </Typography>
             )}
-          </div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {value}
-          </p>
-          {subtitle && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              {subtitle}
-            </p>
-          )}
-        </div>
-        <div
-          className={`w-12 h-12 bg-gradient-to-br ${colorClasses[color]} rounded-xl flex items-center justify-center shadow-lg`}
-        >
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-      </div>
-    </div>
+          </Box>
+          <Avatar
+            variant="rounded"
+            sx={{
+              bgcolor: mainColor,
+              width: 48,
+              height: 48,
+              boxShadow: 3
+            }}
+          >
+            <Icon size={24} color="#fff" />
+          </Avatar>
+        </Box>
+      </CardContent>
+    </Card>
   );
 };
 

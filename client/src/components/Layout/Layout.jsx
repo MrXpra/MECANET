@@ -1,32 +1,18 @@
-/**
- * @file Layout.jsx
- * @description Layout principal de la aplicación con sidebar, topbar y contenido
- * 
- * Responsabilidades:
- * - Cargar configuración desde backend al montar (useEffect)
- * - Renderizar estructura general: Sidebar + TopBar + Outlet (contenido)
- * - Mostrar AnimatedBackground decorativo
- * 
- * Estructura:
- * - Sidebar: Menú de navegación lateral (siempre visible)
- * - TopBar: Barra superior con widgets (reloj, clima, usuario, tema)
- * - Outlet: Renderiza la ruta actual (Dashboard, Billing, etc.)
- * 
- * Nota:
- * - Este componente se monta en la ruta "/" (protegida)
- * - Al cargar, hace fetch de /api/settings y actualiza settingsStore
- */
-
 import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
+import { Box, Toolbar, useMediaQuery, useTheme } from '@mui/material';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import AnimatedBackground from '../AnimatedBackground';
 import { useSettingsStore } from '../../store/settingsStore';
 import { getSettings } from '../../services/api';
 
+const DRAWER_WIDTH = 260;
+
 const Layout = () => {
   const { setSettings } = useSettingsStore();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Cargar settings al montar el componente
   useEffect(() => {
@@ -43,24 +29,37 @@ const Layout = () => {
   }, [setSettings]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900 relative">
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       {/* Animated Background */}
       <AnimatedBackground />
 
+      {/* Top Bar */}
+      <TopBar drawerWidth={DRAWER_WIDTH} />
+
       {/* Sidebar */}
-      <Sidebar />
+      <Sidebar drawerWidth={DRAWER_WIDTH} />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
-        {/* Top Bar */}
-        <TopBar />
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto custom-scrollbar p-6">
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          ml: { md: `${DRAWER_WIDTH}px` },
+          position: 'relative',
+          zIndex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <Toolbar /> {/* Spacer for AppBar */}
+        <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
           <Outlet />
-        </main>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 
