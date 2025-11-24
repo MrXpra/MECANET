@@ -43,7 +43,8 @@ import {
   ListItemText,
   ListItemAvatar,
   Avatar,
-  Divider
+  Divider,
+  Container
 } from '@mui/material';
 
 const Dashboard = () => {
@@ -143,33 +144,35 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <Grid container spacing={3}>
-        {[...Array(4)].map((_, i) => (
-          <Grid item xs={12} md={6} lg={3} key={i}>
-            <Skeleton variant="rectangular" height={140} sx={{ borderRadius: 2 }} />
+      <Container maxWidth="xl" sx={{ py: 3 }}>
+        <Grid container spacing={2}>
+          {[...Array(4)].map((_, i) => (
+            <Grid item xs={12} sm={6} md={3} key={i}>
+              <Skeleton variant="rectangular" height={140} sx={{ borderRadius: 2 }} />
+            </Grid>
+          ))}
+          <Grid item xs={12} lg={6}>
+            <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
           </Grid>
-        ))}
-        <Grid item xs={12} lg={6}>
-          <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
+          <Grid item xs={12} lg={6}>
+            <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
+          </Grid>
+          <Grid item xs={12} lg={6}>
+            <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
+          </Grid>
+          <Grid item xs={12} lg={6}>
+            <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
+          </Grid>
         </Grid>
-        <Grid item xs={12} lg={6}>
-          <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
-        </Grid>
-        <Grid item xs={12} lg={6}>
-          <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
-        </Grid>
-        <Grid item xs={12} lg={6}>
-          <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
-        </Grid>
-      </Grid>
+      </Container>
     );
   }
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <Grid container spacing={3} sx={{ width: '100%' }}>
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      <Grid container spacing={2}>
         {/* KPI Cards */}
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <KPICard
             title="Ventas de Hoy"
             tooltip="Total de ingresos generados hoy incluyendo todos los métodos de pago"
@@ -179,7 +182,7 @@ const Dashboard = () => {
             subtitle={`${stats?.today?.transactions || 0} transacciones`}
           />
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <KPICard
             title="Venta Promedio"
             value={formatCurrency(stats?.today?.avgTicket || 0)}
@@ -189,7 +192,7 @@ const Dashboard = () => {
             tooltip="Monto promedio por cada venta realizada hoy"
           />
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <KPICard
             title="Productos"
             value={stats?.inventory?.totalProducts || 0}
@@ -199,7 +202,7 @@ const Dashboard = () => {
             tooltip="Total de productos registrados en el inventario"
           />
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
+        <Grid item xs={12} sm={6} md={3}>
           <KPICard
             title="Clientes"
             value={stats?.customers || 0}
@@ -224,7 +227,7 @@ const Dashboard = () => {
                   </IconButton>
                 </Tooltip>
               </Box>
-              <Box sx={{ height: 300, width: '100%' }}>
+              <Box sx={{ width: '100%', minHeight: 280, height: { xs: 250, sm: 280, md: 300 } }}>
                 <ResponsiveContainer>
                   <AreaChart data={salesByDay}>
                     <defs>
@@ -285,7 +288,7 @@ const Dashboard = () => {
                   </IconButton>
                 </Tooltip>
               </Box>
-              <Box sx={{ height: 300, width: '100%' }}>
+              <Box sx={{ width: '100%', minHeight: 280, height: { xs: 250, sm: 280, md: 300 } }}>
                 <ResponsiveContainer>
                   <PieChart>
                     <Pie
@@ -328,7 +331,7 @@ const Dashboard = () => {
               </Box>
               <Grid container spacing={2} sx={{ mt: 2 }}>
                 {salesByPayment.map((payment, index) => (
-                  <Grid item xs={4} key={index}>
+                  <Grid item xs={12} sm={6} md={4} key={index}>
                     <Box sx={{ textAlign: 'center', p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
                       <Box
                         sx={{
@@ -441,7 +444,7 @@ const Dashboard = () => {
           </Card>
         </Grid>
       </Grid>
-    </Box>
+    </Container>
   );
 };
 
