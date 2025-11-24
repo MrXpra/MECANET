@@ -213,8 +213,8 @@ const Dashboard = () => {
           />
         </Grid>
 
-        {/* Charts Row */}
-        <Grid item xs={12} lg={6}>
+        {/* Charts Row - Full Width */}
+        <Grid item xs={12} md={6} lg={6}>
           <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <CardContent sx={{ flexGrow: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -275,7 +275,7 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} lg={6}>
+        <Grid item xs={12} md={6} lg={6}>
           <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <CardContent sx={{ flexGrow: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -357,8 +357,8 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
-        {/* Bottom Row */}
-        <Grid item xs={12} lg={6}>
+        {/* Bottom Row - Products and Stock */}
+        <Grid item xs={12} md={6} lg={6}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
@@ -395,7 +395,7 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} lg={6}>
+        <Grid item xs={12} md={6} lg={6}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
