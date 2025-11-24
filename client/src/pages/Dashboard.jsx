@@ -43,8 +43,7 @@ import {
   ListItemText,
   ListItemAvatar,
   Avatar,
-  Divider,
-  Container
+  Divider
 } from '@mui/material';
 
 const Dashboard = () => {
@@ -144,32 +143,32 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 3 }}>
+      <Box sx={{ width: '100%', px: 3, py: 3 }}>
         <Grid container spacing={2}>
           {[...Array(4)].map((_, i) => (
             <Grid item xs={12} sm={6} md={3} key={i}>
               <Skeleton variant="rectangular" height={140} sx={{ borderRadius: 2 }} />
             </Grid>
           ))}
-          <Grid item xs={12} lg={6}>
+          <Grid item xs={12} md={6}>
             <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
           </Grid>
-          <Grid item xs={12} lg={6}>
+          <Grid item xs={12} md={6}>
             <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
           </Grid>
-          <Grid item xs={12} lg={6}>
+          <Grid item xs={12} md={6}>
             <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
           </Grid>
-          <Grid item xs={12} lg={6}>
+          <Grid item xs={12} md={6}>
             <Skeleton variant="rectangular" height={300} sx={{ borderRadius: 2 }} />
           </Grid>
         </Grid>
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
+    <Box sx={{ width: '100%', px: 3, py: 3 }}>
       <Grid container spacing={2}>
         {/* KPI Cards */}
         <Grid item xs={12} sm={6} md={3}>
@@ -444,7 +443,7 @@ const Dashboard = () => {
           </Card>
         </Grid>
       </Grid>
-    </Container>
+    </Box>
   );
 };
 
