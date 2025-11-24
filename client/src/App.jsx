@@ -25,6 +25,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
 import { useSettingsStore } from './store/settingsStore';
+import { AppTheme } from './theme/AppTheme'; // Import AppTheme
 
 // Pages
 import Login from './pages/Login';
@@ -106,7 +107,7 @@ export const AppRoutes = () => {
     }
   }, [settings?.businessLogo]);
 
-  // Aplicar clase dark al documentElement para que funcione con portals
+  // Aplicar clase dark al documentElement para que funcione con portals (opcional con MUI, pero útil para consistencia)
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -116,7 +117,7 @@ export const AppRoutes = () => {
   }, [isDarkMode]);
 
   return (
-    <div className={isDarkMode ? 'dark' : ''}>
+    <>
       <KeyboardShortcutsHelp />
       <ChristmasSnow />
       <Routes>
@@ -199,7 +200,7 @@ export const AppRoutes = () => {
           },
         }}
       />
-    </div>
+    </>
   );
 };
 
@@ -207,7 +208,9 @@ function App() {
   return (
     <Router>
       <AuthValidator>
-        <AppRoutes />
+        <AppTheme>
+          <AppRoutes />
+        </AppTheme>
       </AuthValidator>
     </Router>
   );

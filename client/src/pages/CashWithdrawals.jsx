@@ -1,58 +1,5 @@
-/**
- * @file CashWithdrawals.jsx
- * @description Gestión de retiros de caja (salidas de efectivo)
- * 
- * Responsabilidades:
- * - Listar retiros de caja con filtros
- * - Crear nuevo retiro (cajero crea con status 'pending', admin con 'approved')
- * - Ver detalle de retiro
- * - Aprobar/Rechazar retiro (solo admin)
- * - Eliminar retiro (solo admin)
- * - Mostrar resumen de retiros
- * 
- * Estados:
- * - withdrawals: Array de retiros desde backend
- * - summary: Objeto con pending, approved, rejected, totalAmount
- * - filters: { status, category, startDate, endDate, search }
- * - showCreateModal: Boolean para modal crear
- * - showDetailModal: Boolean para modal detalle
- * - selectedWithdrawal: Retiro seleccionado para detalle
- * 
- * APIs:
- * - GET /api/cash-withdrawals (con filtros)
- * - POST /api/cash-withdrawals (crear)
- * - GET /api/cash-withdrawals/:id (detalle)
- * - PATCH /api/cash-withdrawals/:id (aprobar/rechazar, solo admin)
- * - DELETE /api/cash-withdrawals/:id (eliminar, solo admin)
- * 
- * Lógica por Rol:
- * - Admin:
- *   - Ve todos los retiros
- *   - Crea retiros con status 'approved' automáticamente
- *   - Puede aprobar/rechazar retiros pendientes
- *   - Puede eliminar retiros
- * - Cajero:
- *   - Solo ve sus propios retiros
- *   - Crea retiros con status 'pending' (requiere aprobación de admin)
- *   - No puede aprobar/rechazar/eliminar
- * 
- * Form Data (Crear):
- * - amount: Monto del retiro (requerido, > 0)
- * - category: 'Pago a proveedores', 'Gastos operativos', 'Retiro personal', 'Otros'
- * - description: Descripción del retiro
- * - receipt: Número de comprobante (opcional)
- * 
- * UI Features:
- * - Tarjetas de resumen (pending, approved, rejected, total)
- * - Tabla con skeleton loader
- * - Badge de status con colores
- * - Filtros expandibles
- * - Botones de aprobar/rechazar (solo admin, solo pending)
- * - Confirmación antes de aprobar/rechazar/eliminar
- */
-
 import { useState, useEffect } from 'react';
-import { 
+import {
   DollarSign,
   Plus,
   CheckCircle,
@@ -70,17 +17,50 @@ import {
   Receipt
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { 
-  getCashWithdrawals, 
-  createCashWithdrawal, 
+import {
+  getCashWithdrawals,
+  createCashWithdrawal,
   updateCashWithdrawalStatus,
-  deleteCashWithdrawal 
+  deleteCashWithdrawal
 } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { TableSkeleton } from '../components/SkeletonLoader';
-import { createPortal } from 'react-dom';
+import {
+  Box,
+  Container,
+  Typography,
+  Button,
+  Card,
+  CardContent,
+  Grid,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Stack,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  InputAdornment,
+  useTheme,
+  Tooltip,
+  Checkbox,
+  FormControlLabel
+} from '@mui/material';
 
 const CashWithdrawals = () => {
+  const theme = useTheme();
   const { user } = useAuthStore();
   const canAuthorizeWithdrawals = ['admin', 'desarrollador'].includes(user?.role);
   const [withdrawals, setWithdrawals] = useState([]);
@@ -128,7 +108,7 @@ const CashWithdrawals = () => {
 
   const handleApprove = async (id) => {
     if (!window.confirm('¿Aprobar este retiro?')) return;
-    
+
     try {
       await updateCashWithdrawalStatus(id, { status: 'approved' });
       toast.success('Retiro aprobado');
@@ -142,7 +122,7 @@ const CashWithdrawals = () => {
   const handleReject = async (id) => {
     const notes = window.prompt('Razón del rechazo:');
     if (!notes) return;
-    
+
     try {
       await updateCashWithdrawalStatus(id, { status: 'rejected', notes });
       toast.success('Retiro rechazado');
@@ -155,7 +135,7 @@ const CashWithdrawals = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('¿Eliminar este retiro permanentemente?')) return;
-    
+
     try {
       await deleteCashWithdrawal(id);
       toast.success('Retiro eliminado');
@@ -183,22 +163,31 @@ const CashWithdrawals = () => {
     });
   };
 
-  const getStatusBadge = (status) => {
-    const badges = {
-      pending: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', icon: Clock, label: 'Pendiente' },
-      approved: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', icon: CheckCircle, label: 'Aprobado' },
-      rejected: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', icon: XCircle, label: 'Rechazado' },
+  const getStatusColor = (status) => {
+    const colors = {
+      pending: 'warning',
+      approved: 'success',
+      rejected: 'error',
     };
-    
-    const badge = badges[status] || badges.pending;
-    const Icon = badge.icon;
-    
-    return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
-        <Icon className="w-3 h-3" />
-        {badge.label}
-      </span>
-    );
+    return colors[status] || 'default';
+  };
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      pending: 'Pendiente',
+      approved: 'Aprobado',
+      rejected: 'Rechazado',
+    };
+    return labels[status] || status;
+  };
+
+  const getStatusIcon = (status) => {
+    const icons = {
+      pending: <Clock size={16} />,
+      approved: <CheckCircle size={16} />,
+      rejected: <XCircle size={16} />,
+    };
+    return icons[status] || <Clock size={16} />;
   };
 
   const getCategoryLabel = (category) => {
@@ -216,275 +205,308 @@ const CashWithdrawals = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Retiros de Caja</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Box>
+          <Typography variant="h4" fontWeight="bold" gutterBottom>
+            Retiros de Caja
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
             Gestión de retiros y gastos de efectivo
-          </p>
-        </div>
-        <button 
-          onClick={() => setShowCreateModal(true)} 
-          className="btn btn-primary flex items-center gap-2"
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<Plus size={20} />}
+          onClick={() => setShowCreateModal(true)}
         >
-          <Plus className="w-5 h-5" />
           Nuevo Retiro
-        </button>
-      </div>
+        </Button>
+      </Box>
 
       {/* Stats Cards */}
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="card-glass p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Retiros</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{summary.total}</p>
-              </div>
-              <Receipt className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-            </div>
-          </div>
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} md={6} lg={3}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">Total Retiros</Typography>
+                    <Typography variant="h4" fontWeight="bold">{summary.total}</Typography>
+                  </Box>
+                  <Receipt size={32} color={theme.palette.primary.main} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
 
-          <div className="card-glass p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Monto Total</p>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                  {formatCurrency(summary.totalAmount)}
-                </p>
-              </div>
-              <TrendingDown className="w-8 h-8 text-red-600 dark:text-red-400" />
-            </div>
-          </div>
+          <Grid item xs={12} md={6} lg={3}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">Monto Total</Typography>
+                    <Typography variant="h4" fontWeight="bold" color="error.main">
+                      {formatCurrency(summary.totalAmount)}
+                    </Typography>
+                  </Box>
+                  <TrendingDown size={32} color={theme.palette.error.main} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
 
-          <div className="card-glass p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Pendientes</p>
-                <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                  {summary.byStatus.pending}
-                </p>
-              </div>
-              <Clock className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
-            </div>
-          </div>
+          <Grid item xs={12} md={6} lg={3}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">Pendientes</Typography>
+                    <Typography variant="h4" fontWeight="bold" color="warning.main">
+                      {summary.byStatus.pending}
+                    </Typography>
+                  </Box>
+                  <Clock size={32} color={theme.palette.warning.main} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
 
-          <div className="card-glass p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Aprobados</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {summary.byStatus.approved}
-                </p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
+          <Grid item xs={12} md={6} lg={3}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">Aprobados</Typography>
+                    <Typography variant="h4" fontWeight="bold" color="success.main">
+                      {summary.byStatus.approved}
+                    </Typography>
+                  </Box>
+                  <CheckCircle size={32} color={theme.palette.success.main} />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       )}
 
       {/* Filters */}
-      <div className="card-glass p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-            className="input"
-          >
-            <option value="">Todos los estados</option>
-            <option value="pending">Pendientes</option>
-            <option value="approved">Aprobados</option>
-            <option value="rejected">Rechazados</option>
-          </select>
+      <Paper sx={{ p: 3, mb: 4 }}>
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Estado</InputLabel>
+              <Select
+                value={filters.status}
+                label="Estado"
+                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+              >
+                <MenuItem value="">Todos los estados</MenuItem>
+                <MenuItem value="pending">Pendientes</MenuItem>
+                <MenuItem value="approved">Aprobados</MenuItem>
+                <MenuItem value="rejected">Rechazados</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
 
-          <select
-            value={filters.category}
-            onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-            className="input"
-          >
-            <option value="">Todas las categorías</option>
-            <option value="personal">Personal</option>
-            <option value="business">Negocio</option>
-            <option value="supplier">Proveedor</option>
-            <option value="other">Otro</option>
-          </select>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Categoría</InputLabel>
+              <Select
+                value={filters.category}
+                label="Categoría"
+                onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+              >
+                <MenuItem value="">Todas las categorías</MenuItem>
+                <MenuItem value="personal">Personal</MenuItem>
+                <MenuItem value="business">Negocio</MenuItem>
+                <MenuItem value="supplier">Proveedor</MenuItem>
+                <MenuItem value="other">Otro</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
 
-          <input
-            type="date"
-            value={filters.startDate}
-            onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-            className="input"
-            placeholder="Fecha inicio"
-          />
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              size="small"
+              type="date"
+              label="Fecha Inicio"
+              InputLabelProps={{ shrink: true }}
+              value={filters.startDate}
+              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+            />
+          </Grid>
 
-          <input
-            type="date"
-            value={filters.endDate}
-            onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-            className="input"
-            placeholder="Fecha fin"
-          />
-        </div>
-      </div>
+          <Grid item xs={12} md={3}>
+            <TextField
+              fullWidth
+              size="small"
+              type="date"
+              label="Fecha Fin"
+              InputLabelProps={{ shrink: true }}
+              value={filters.endDate}
+              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+            />
+          </Grid>
+        </Grid>
+      </Paper>
 
       {/* Table */}
-      <div className="card-glass overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Número
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Fecha
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Monto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Razón
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Categoría
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Retirado por
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-              {withdrawals.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                    <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>No hay retiros registrados</p>
-                  </td>
-                </tr>
-              ) : (
-                withdrawals.map((withdrawal) => (
-                  <tr key={withdrawal._id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {withdrawal.withdrawalNumber}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Número</TableCell>
+              <TableCell>Fecha</TableCell>
+              <TableCell>Monto</TableCell>
+              <TableCell>Razón</TableCell>
+              <TableCell>Categoría</TableCell>
+              <TableCell>Retirado por</TableCell>
+              <TableCell>Estado</TableCell>
+              <TableCell>Acciones</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {withdrawals.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, opacity: 0.5 }}>
+                    <AlertCircle size={48} />
+                    <Typography>No hay retiros registrados</Typography>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) : (
+              withdrawals.map((withdrawal) => (
+                <TableRow key={withdrawal._id} hover>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight="medium">
+                      {withdrawal.withdrawalNumber}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
                       {formatDate(withdrawal.withdrawalDate)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-semibold text-red-600 dark:text-red-400">
-                        {formatCurrency(withdrawal.amount)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-900 dark:text-white line-clamp-2">
-                        {withdrawal.reason}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {getCategoryLabel(withdrawal.category)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-900 dark:text-white">
-                          {withdrawal.withdrawnBy?.fullName || 'N/A'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(withdrawal.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <button
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight="bold" color="error.main">
+                      {formatCurrency(withdrawal.amount)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ maxWidth: 200 }} noWrap title={withdrawal.reason}>
+                      {withdrawal.reason}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={getCategoryLabel(withdrawal.category)} size="small" variant="outlined" />
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <User size={16} color={theme.palette.text.secondary} />
+                      <Typography variant="body2">
+                        {withdrawal.withdrawnBy?.fullName || 'N/A'}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      icon={getStatusIcon(withdrawal.status)}
+                      label={getStatusLabel(withdrawal.status)}
+                      color={getStatusColor(withdrawal.status)}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1}>
+                      <Tooltip title="Ver detalles">
+                        <IconButton
+                          size="small"
+                          color="primary"
                           onClick={() => {
                             setSelectedWithdrawal(withdrawal);
                             setShowDetailModal(true);
                           }}
-                          className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
-                          title="Ver detalles"
                         >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        
-                        {canAuthorizeWithdrawals && withdrawal.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => handleApprove(withdrawal._id)}
-                              className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
-                              title="Aprobar"
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleReject(withdrawal._id)}
-                              className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                              title="Rechazar"
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
+                          <Eye size={18} />
+                        </IconButton>
+                      </Tooltip>
 
-                        {canAuthorizeWithdrawals && (
-                          <button
+                      {canAuthorizeWithdrawals && withdrawal.status === 'pending' && (
+                        <>
+                          <Tooltip title="Aprobar">
+                            <IconButton
+                              size="small"
+                              color="success"
+                              onClick={() => handleApprove(withdrawal._id)}
+                            >
+                              <CheckCircle size={18} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Rechazar">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleReject(withdrawal._id)}
+                            >
+                              <XCircle size={18} />
+                            </IconButton>
+                          </Tooltip>
+                        </>
+                      )}
+
+                      {canAuthorizeWithdrawals && (
+                        <Tooltip title="Eliminar">
+                          <IconButton
+                            size="small"
+                            color="error"
                             onClick={() => handleDelete(withdrawal._id)}
-                            className="text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
-                            title="Eliminar"
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                            <Trash2 size={18} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {/* Create Modal */}
-      {showCreateModal && (
-        <CreateWithdrawalModal
-          onClose={() => setShowCreateModal(false)}
-          onSave={handleCreateWithdrawal}
-        />
-      )}
+      <CreateWithdrawalModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSave={handleCreateWithdrawal}
+      />
 
       {/* Detail Modal */}
-      {showDetailModal && selectedWithdrawal && (
-        <WithdrawalDetailModal
-          withdrawal={selectedWithdrawal}
-          onClose={() => {
-            setShowDetailModal(false);
-            setSelectedWithdrawal(null);
-          }}
-          formatCurrency={formatCurrency}
-          formatDate={formatDate}
-          getStatusBadge={getStatusBadge}
-          getCategoryLabel={getCategoryLabel}
-        />
-      )}
-    </div>
+      <WithdrawalDetailModal
+        open={showDetailModal}
+        withdrawal={selectedWithdrawal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedWithdrawal(null);
+        }}
+        formatCurrency={formatCurrency}
+        formatDate={formatDate}
+        getStatusColor={getStatusColor}
+        getStatusLabel={getStatusLabel}
+        getStatusIcon={getStatusIcon}
+        getCategoryLabel={getCategoryLabel}
+      />
+    </Container>
   );
 };
 
 // Create Withdrawal Modal Component
-const CreateWithdrawalModal = ({ onClose, onSave }) => {
+const CreateWithdrawalModal = ({ open, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     amount: '',
     reason: '',
@@ -496,7 +518,7 @@ const CreateWithdrawalModal = ({ onClose, onSave }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.amount || !formData.reason) {
       toast.error('Monto y razón son requeridos');
       return;
@@ -520,222 +542,183 @@ const CreateWithdrawalModal = ({ onClose, onSave }) => {
     }
   };
 
-  return createPortal(
-    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style={{ zIndex: 100000 }}>
-      <div className="glass-strong rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Nuevo Retiro de Caja</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-            <XCircle className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Monto *
-            </label>
-            <input
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Nuevo Retiro de Caja</DialogTitle>
+      <form onSubmit={handleSubmit}>
+        <DialogContent dividers>
+          <Stack spacing={3}>
+            <TextField
+              label="Monto"
               type="number"
-              step="0.01"
+              fullWidth
+              required
               value={formData.amount}
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              className="input"
+              InputProps={{
+                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+              }}
               placeholder="0.00"
-              required
             />
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Razón del retiro *
-            </label>
-            <input
-              type="text"
+            <TextField
+              label="Razón del retiro"
+              fullWidth
+              required
               value={formData.reason}
               onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-              className="input"
               placeholder="Ej: Compra de materiales"
-              required
             />
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Categoría
-            </label>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="input"
-            >
-              <option value="other">Otro</option>
-              <option value="personal">Personal</option>
-              <option value="business">Negocio</option>
-              <option value="supplier">Proveedor</option>
-            </select>
-          </div>
+            <FormControl fullWidth>
+              <InputLabel>Categoría</InputLabel>
+              <Select
+                value={formData.category}
+                label="Categoría"
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              >
+                <MenuItem value="other">Otro</MenuItem>
+                <MenuItem value="personal">Personal</MenuItem>
+                <MenuItem value="business">Negocio</MenuItem>
+                <MenuItem value="supplier">Proveedor</MenuItem>
+              </Select>
+            </FormControl>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Notas adicionales
-            </label>
-            <textarea
+            <TextField
+              label="Notas adicionales"
+              fullWidth
+              multiline
+              rows={3}
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="input"
-              rows="3"
               placeholder="Información adicional (opcional)"
             />
-          </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="receiptAttached"
-              checked={formData.receiptAttached}
-              onChange={(e) => setFormData({ ...formData, receiptAttached: e.target.checked })}
-              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.receiptAttached}
+                  onChange={(e) => setFormData({ ...formData, receiptAttached: e.target.checked })}
+                  color="primary"
+                />
+              }
+              label="Tengo comprobante adjunto"
             />
-            <label htmlFor="receiptAttached" className="text-sm text-gray-700 dark:text-gray-300">
-              Tengo comprobante adjunto
-            </label>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn btn-secondary flex-1"
-              disabled={isSaving}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary flex-1"
-              disabled={isSaving}
-            >
-              {isSaving ? 'Guardando...' : 'Registrar Retiro'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>,
-    document.body
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} disabled={isSaving}>Cancelar</Button>
+          <Button type="submit" variant="contained" disabled={isSaving}>
+            {isSaving ? 'Guardando...' : 'Registrar Retiro'}
+          </Button>
+        </DialogActions>
+      </form>
+    </Dialog>
   );
 };
 
 // Detail Modal Component
-const WithdrawalDetailModal = ({ withdrawal, onClose, formatCurrency, formatDate, getStatusBadge, getCategoryLabel }) => {
-  return createPortal(
-    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style={{ zIndex: 100000 }}>
-      <div className="glass-strong rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-            Detalle de Retiro
-          </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-            <XCircle className="w-6 h-6" />
-          </button>
-        </div>
+const WithdrawalDetailModal = ({ open, withdrawal, onClose, formatCurrency, formatDate, getStatusColor, getStatusLabel, getStatusIcon, getCategoryLabel }) => {
+  if (!withdrawal) return null;
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Número de Retiro</p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {withdrawal.withdrawalNumber}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Estado</p>
-              <div className="mt-1">
-                {getStatusBadge(withdrawal.status)}
-              </div>
-            </div>
-          </div>
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        Detalle de Retiro
+        <IconButton onClick={onClose} size="small">
+          <XCircle size={24} />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        <Stack spacing={3}>
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <Typography variant="caption" color="text.secondary">Número de Retiro</Typography>
+              <Typography variant="h6">{withdrawal.withdrawalNumber}</Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="caption" color="text.secondary">Estado</Typography>
+              <Box mt={0.5}>
+                <Chip
+                  icon={getStatusIcon(withdrawal.status)}
+                  label={getStatusLabel(withdrawal.status)}
+                  color={getStatusColor(withdrawal.status)}
+                  size="small"
+                />
+              </Box>
+            </Grid>
+          </Grid>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Monto</p>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <Typography variant="caption" color="text.secondary">Monto</Typography>
+              <Typography variant="h5" fontWeight="bold" color="error.main">
                 {formatCurrency(withdrawal.amount)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Categoría</p>
-              <p className="text-lg font-medium text-gray-900 dark:text-white">
-                {getCategoryLabel(withdrawal.category)}
-              </p>
-            </div>
-          </div>
+              </Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="caption" color="text.secondary">Categoría</Typography>
+              <Typography variant="body1">{getCategoryLabel(withdrawal.category)}</Typography>
+            </Grid>
+          </Grid>
 
-          <div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Razón del Retiro</p>
-            <p className="text-base text-gray-900 dark:text-white mt-1">
-              {withdrawal.reason}
-            </p>
-          </div>
+          <Box>
+            <Typography variant="caption" color="text.secondary">Razón del Retiro</Typography>
+            <Typography variant="body1">{withdrawal.reason}</Typography>
+          </Box>
 
           {withdrawal.notes && (
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Notas</p>
-              <p className="text-base text-gray-900 dark:text-white mt-1">
-                {withdrawal.notes}
-              </p>
-            </div>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Notas</Typography>
+              <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'action.hover' }}>
+                <Typography variant="body2">{withdrawal.notes}</Typography>
+              </Paper>
+            </Box>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Fecha de Retiro</p>
-              <p className="text-base text-gray-900 dark:text-white">
-                {formatDate(withdrawal.withdrawalDate)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Comprobante</p>
-              <p className="text-base text-gray-900 dark:text-white">
+          <Grid container spacing={2}>
+            <Grid item xs={6}>
+              <Typography variant="caption" color="text.secondary">Fecha de Retiro</Typography>
+              <Typography variant="body1">{formatDate(withdrawal.withdrawalDate)}</Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="caption" color="text.secondary">Comprobante</Typography>
+              <Typography variant="body1">
                 {withdrawal.receiptAttached ? '✅ Adjuntado' : '❌ No adjuntado'}
-              </p>
-            </div>
-          </div>
+              </Typography>
+            </Grid>
+          </Grid>
 
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Retirado por</p>
-                <p className="text-base text-gray-900 dark:text-white">
+          <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Typography variant="caption" color="text.secondary">Retirado por</Typography>
+                <Typography variant="body2" fontWeight="medium">
                   {withdrawal.withdrawnBy?.fullName || 'N/A'}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
                   {withdrawal.withdrawnBy?.email || ''}
-                </p>
-              </div>
+                </Typography>
+              </Grid>
               {withdrawal.authorizedBy && (
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Autorizado por</p>
-                  <p className="text-base text-gray-900 dark:text-white">
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">Autorizado por</Typography>
+                  <Typography variant="body2" fontWeight="medium">
                     {withdrawal.authorizedBy?.fullName || 'N/A'}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
                     {withdrawal.authorizedBy?.email || ''}
-                  </p>
-                </div>
+                  </Typography>
+                </Grid>
               )}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button onClick={onClose} className="btn btn-secondary w-full">
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
+            </Grid>
+          </Box>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cerrar</Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

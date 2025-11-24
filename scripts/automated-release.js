@@ -29,12 +29,19 @@ const question = (query) => new Promise((resolve) => rl.question(query, resolve)
 async function main() {
     console.log('\n🚀 INICIANDO PROCESO DE RELEASE AUTOMATIZADO\n');
 
+    const args = process.argv.slice(2);
+    const argType = args.find(a => a.startsWith('--type='))?.split('=')[1];
+    const argComment = args.find(a => a.startsWith('--comment='))?.substring(10);
+    const argYes = args.includes('--yes') || args.includes('-y');
+
     // 0. Verificar Token
     if (!GITHUB_TOKEN) {
         console.warn('⚠️  ADVERTENCIA: No se encontró GITHUB_TOKEN en .env');
         console.warn('   El proceso realizará el build y git push, pero NO podrá subir el release a GitHub automáticamente.');
-        const cont = await question('   ¿Desea continuar? (s/n): ');
-        if (cont.toLowerCase() !== 's') process.exit(0);
+        if (!argYes) {
+            const cont = await question('   ¿Desea continuar? (s/n): ');
+            if (cont.toLowerCase() !== 's') process.exit(0);
+        }
     }
 
     // 1. Determinar versión y rama
@@ -46,8 +53,16 @@ async function main() {
     const currentVersion = pkg.version;
 
     console.log(`📌 Versión actual: ${currentVersion}`);
-    const type = await question('   Tipo de release (patch/minor/major) [patch]: ') || 'patch';
-    const customComment = await question('   Comentario del release: ') || '';
+    
+    let type = argType;
+    if (!type) {
+        type = await question('   Tipo de release (patch/minor/major) [patch]: ') || 'patch';
+    }
+
+    let customComment = argComment;
+    if (customComment === undefined) {
+        customComment = await question('   Comentario del release: ') || '';
+    }
 
     // Calcular nueva versión (simple)
     let [major, minor, patch] = currentVersion.split('.').map(Number);
@@ -58,8 +73,10 @@ async function main() {
     const newVersion = `${major}.${minor}.${patch}`;
     console.log(`✨ Nueva versión: ${newVersion}`);
 
-    const confirm = await question('\n   ¿Proceder con el Release? (s/n): ');
-    if (confirm.toLowerCase() !== 's') process.exit(0);
+    if (!argYes) {
+        const confirm = await question('\n   ¿Proceder con el Release? (s/n): ');
+        if (confirm.toLowerCase() !== 's') process.exit(0);
+    }
 
     try {
         // 2. Actualizar archivos de versión

@@ -46,7 +46,37 @@ import {
   DollarSign,
   AlertCircle,
   Printer,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
+import {
+  Box,
+  Grid,
+  Paper,
+  Typography,
+  TextField,
+  InputAdornment,
+  IconButton,
+  Button,
+  Select,
+  MenuItem,
+  Card,
+  CardContent,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  Tooltip,
+  FormControl,
+  InputLabel,
+  Stack,
+  Divider,
+  useTheme,
+  Avatar
+} from '@mui/material';
 
 const addBusinessDaysClient = (startDate, days) => {
   const date = new Date(startDate);
@@ -167,7 +197,7 @@ const Quotations = () => {
 
   const handleDelete = async (id) => {
     if (!confirm('¿Estás seguro de eliminar esta cotización?')) return;
-    
+
     try {
       await deleteQuotation(id);
       toast.success('Cotización eliminada');
@@ -369,199 +399,210 @@ const Quotations = () => {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="card-glass p-4 mb-6">
-        <div className="flex gap-4 flex-wrap">
-          <div className="flex-1 min-w-[200px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar por número o cliente..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="input pl-10 w-full"
-              />
-            </div>
-          </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="input w-48"
-          >
-            <option value="all">Todos los estados</option>
-            <option value="Pendiente">Pendiente</option>
-            <option value="Aprobada">Aprobada</option>
-            <option value="Rechazada">Rechazada</option>
-            <option value="Convertida">Convertida</option>
-            <option value="Vencida">Vencida</option>
-          </select>
-        </div>
-      </div>
+
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="card-glass p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{quotations.length}</p>
-            </div>
-            <FileText className="w-8 h-8 text-gray-400" />
-          </div>
-        </div>
-        <div className="card-glass p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Pendientes</p>
-              <p className="text-2xl font-bold text-yellow-600">{quotations.filter(q => q.status === 'Pendiente').length}</p>
-            </div>
-            <AlertCircle className="w-8 h-8 text-yellow-400" />
-          </div>
-        </div>
-        <div className="card-glass p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Convertidas</p>
-              <p className="text-2xl font-bold text-blue-600">{quotations.filter(q => q.status === 'Convertida').length}</p>
-            </div>
-            <ShoppingCart className="w-8 h-8 text-blue-400" />
-          </div>
-        </div>
-        <div className="card-glass p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Vencidas</p>
-              <p className="text-2xl font-bold text-gray-600">{quotations.filter(q => q.status === 'Vencida').length}</p>
-            </div>
-            <Calendar className="w-8 h-8 text-gray-400" />
-          </div>
-        </div>
-      </div>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Total"
+            value={quotations.length}
+            icon={FileText}
+            color="primary"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Pendientes"
+            value={quotations.filter(q => q.status === 'Pendiente').length}
+            icon={AlertCircle}
+            color="warning"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Convertidas"
+            value={quotations.filter(q => q.status === 'Convertida').length}
+            icon={ShoppingCart}
+            color="info"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Vencidas"
+            value={quotations.filter(q => q.status === 'Vencida').length}
+            icon={Calendar}
+            color="error"
+          />
+        </Grid>
+      </Grid>
+
+      {/* Filters */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Buscar por número o cliente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search size={20} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Estado</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Estado"
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="all">Todos los estados</MenuItem>
+                <MenuItem value="Pendiente">Pendiente</MenuItem>
+                <MenuItem value="Aprobada">Aprobada</MenuItem>
+                <MenuItem value="Rechazada">Rechazada</MenuItem>
+                <MenuItem value="Convertida">Convertida</MenuItem>
+                <MenuItem value="Vencida">Vencida</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Paper>
 
       {/* Table */}
-      <div className="card-glass overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
-                  Número
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
-                  Cliente
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
-                  Productos
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
-                  Total
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
-                  Válida hasta
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredQuotations.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                    {searchTerm || statusFilter !== 'all' 
-                      ? 'No se encontraron cotizaciones' 
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Número</TableCell>
+              <TableCell>Cliente</TableCell>
+              <TableCell>Productos</TableCell>
+              <TableCell align="right">Total</TableCell>
+              <TableCell align="center">Estado</TableCell>
+              <TableCell align="center">Válida hasta</TableCell>
+              <TableCell align="center">Acciones</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredQuotations.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                  <Typography color="text.secondary">
+                    {searchTerm || statusFilter !== 'all'
+                      ? 'No se encontraron cotizaciones'
                       : 'No hay cotizaciones. Crea una nueva para comenzar.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredQuotations.map((quotation) => (
-                  <tr key={quotation._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                    <td className="px-6 py-4">
-                      <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
-                        {quotation.quotationNumber}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {getCustomerDisplayName(quotation)}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {getCustomerDisplayContact(quotation)}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredQuotations.map((quotation) => (
+                <TableRow key={quotation._id} hover>
+                  <TableCell>
+                    <Typography variant="body2" fontFamily="monospace" fontWeight="medium">
+                      {quotation.quotationNumber}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Box>
+                      <Typography variant="body2" fontWeight="medium">
+                        {getCustomerDisplayName(quotation)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {getCustomerDisplayContact(quotation)}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
                       {quotation.items?.length || 0} producto(s)
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="text-sm font-bold text-gray-900 dark:text-white">
-                        {formatCurrency(quotation.total || 0)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex justify-center">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(quotation.status)}`}>
-                          {quotation.status}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-600 dark:text-gray-400">
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Typography variant="body2" fontWeight="bold">
+                      {formatCurrency(quotation.total || 0)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Chip
+                      label={quotation.status}
+                      size="small"
+                      color={
+                        quotation.status === 'Aprobada' ? 'success' :
+                          quotation.status === 'Pendiente' ? 'warning' :
+                            quotation.status === 'Rechazada' ? 'error' :
+                              quotation.status === 'Convertida' ? 'info' : 'default'
+                      }
+                      variant="outlined"
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography variant="body2" color="text.secondary">
                       {formatDate(quotation.validUntil)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Stack direction="row" spacing={1} justifyContent="center">
+                      <Tooltip title="Ver detalle">
+                        <IconButton
+                          size="small"
+                          color="primary"
                           onClick={() => {
                             setSelectedQuotation(quotation);
                             setShowDetailModal(true);
                           }}
-                          className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400"
-                          title="Ver detalle"
                         >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        {quotation.status === 'Pendiente' && (
-                          <>
-                            <button
+                          <Eye size={18} />
+                        </IconButton>
+                      </Tooltip>
+                      {quotation.status === 'Pendiente' && (
+                        <>
+                          <Tooltip title="Editar">
+                            <IconButton
+                              size="small"
+                              color="warning"
                               onClick={() => {
                                 setEditingQuotation(quotation);
                                 setShowCreateModal(true);
                               }}
-                              className="p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 rounded-lg text-yellow-600 dark:text-yellow-400"
-                              title="Editar"
                             >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
+                              <Edit size={18} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Convertir a venta">
+                            <IconButton
+                              size="small"
+                              color="success"
                               onClick={() => handleConvert(quotation)}
-                              className="p-2 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg text-green-600 dark:text-green-400"
-                              title="Convertir a venta"
                             >
-                              <ShoppingCart className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                        <button
+                              <ShoppingCart size={18} />
+                            </IconButton>
+                          </Tooltip>
+                        </>
+                      )}
+                      <Tooltip title="Eliminar">
+                        <IconButton
+                          size="small"
+                          color="error"
                           onClick={() => handleDelete(quotation._id)}
-                          className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400"
-                          title="Eliminar"
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                          <Trash2 size={18} />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       {/* Modals */}
       {showCreateModal && (
@@ -806,22 +847,20 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
                 <button
                   type="button"
                   onClick={() => setCustomerMode('existing')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${
-                    customerMode === 'existing'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20'
-                      : 'border-gray-300 text-gray-600 hover:border-primary-200'
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${customerMode === 'existing'
+                    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20'
+                    : 'border-gray-300 text-gray-600 hover:border-primary-200'
+                    }`}
                 >
                   <User className="w-4 h-4" /> Cliente registrado
                 </button>
                 <button
                   type="button"
                   onClick={() => setCustomerMode('generic')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${
-                    customerMode === 'generic'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20'
-                      : 'border-gray-300 text-gray-600 hover:border-primary-200'
-                  }`}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${customerMode === 'generic'
+                    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20'
+                    : 'border-gray-300 text-gray-600 hover:border-primary-200'
+                    }`}
                 >
                   <UserPlus className="w-4 h-4" /> Cliente genérico
                 </button>
@@ -1104,6 +1143,51 @@ const QuotationPrintModal = ({ quotation, onPrint, onClose }) => {
       </div>
     </div>,
     document.body
+  );
+};
+
+const StatCard = ({ title, value, icon: Icon, color }) => {
+  const theme = useTheme();
+
+  const getColor = (colorName) => {
+    switch (colorName) {
+      case 'primary': return theme.palette.primary.main;
+      case 'success': return theme.palette.success.main;
+      case 'error': return theme.palette.error.main;
+      case 'warning': return theme.palette.warning.main;
+      case 'info': return theme.palette.info.main;
+      default: return theme.palette.primary.main;
+    }
+  };
+
+  const mainColor = getColor(color);
+
+  return (
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Box>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {title}
+            </Typography>
+            <Typography variant="h5" fontWeight="bold" sx={{ color: mainColor }}>
+              {value}
+            </Typography>
+          </Box>
+          <Avatar
+            variant="rounded"
+            sx={{
+              bgcolor: `${mainColor}20`, // 20% opacity
+              color: mainColor,
+              width: 48,
+              height: 48
+            }}
+          >
+            <Icon size={24} />
+          </Avatar>
+        </Box>
+      </CardContent>
+    </Card>
   );
 };
 
