@@ -537,9 +537,28 @@ const Billing = () => {
             {/* Cart Items */}
             <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
               {items.length === 0 ? (
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.5 }}>
-                  <ShoppingCart size={48} />
-                  <Typography variant="body2" sx={{ mt: 1 }}>El carrito está vacío</Typography>
+                <Box sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  opacity: 0.7,
+                  p: 4,
+                  textAlign: 'center'
+                }}>
+                  <Box sx={{
+                    p: 3,
+                    borderRadius: '50%',
+                    bgcolor: 'action.hover',
+                    mb: 2
+                  }}>
+                    <ShoppingCart size={48} strokeWidth={1.5} />
+                  </Box>
+                  <Typography variant="h6" gutterBottom>Tu carrito está vacío</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Selecciona productos del catálogo para comenzar una nueva venta.
+                  </Typography>
                 </Box>
               ) : (
                 <Stack spacing={2}>
@@ -694,17 +713,17 @@ const ProductListItem = ({ product, onAdd, formatCurrency }) => {
   const hasDiscount = product.discountPercentage > 0;
 
   return (
-    <Card variant="outlined" sx={{ opacity: isOutOfStock ? 0.6 : 1 }}>
+    <Card variant="outlined" sx={{ opacity: isOutOfStock ? 0.6 : 1, '&:hover': { borderColor: 'primary.main' } }}>
       <CardActionArea onClick={() => !isOutOfStock && onAdd(product)} sx={{ p: 2 }}>
         <Grid container alignItems="center" spacing={2}>
-          <Grid item xs>
+          <Grid item xs={12} sm>
             <Typography variant="subtitle1" fontWeight="bold">{product.name}</Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" display="block">
               {product.sku} {product.brand && `• ${product.brand}`}
             </Typography>
           </Grid>
-          <Grid item>
-            <Box sx={{ textAlign: 'right' }}>
+          <Grid item xs={6} sm="auto">
+            <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
               {hasDiscount && (
                 <Typography variant="caption" sx={{ textDecoration: 'line-through', color: 'text.secondary', display: 'block' }}>
                   {formatCurrency(product.sellingPrice)}
@@ -715,18 +734,25 @@ const ProductListItem = ({ product, onAdd, formatCurrency }) => {
               </Typography>
             </Box>
           </Grid>
-          <Grid item>
-            <Chip
-              label={isOutOfStock ? "Agotado" : `Stock: ${product.stock}`}
-              color={isOutOfStock ? "error" : "default"}
-              variant={isOutOfStock ? "filled" : "outlined"}
-              size="small"
-            />
-          </Grid>
-          <Grid item>
-            <Button variant="contained" size="small" startIcon={<Plus />} disabled={isOutOfStock}>
-              Agregar
-            </Button>
+          <Grid item xs={6} sm="auto">
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Chip
+                label={isOutOfStock ? "Agotado" : `${product.stock} un.`}
+                color={isOutOfStock ? "error" : "default"}
+                variant={isOutOfStock ? "filled" : "outlined"}
+                size="small"
+              />
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<Plus size={16} />}
+                disabled={isOutOfStock}
+                disableElevation
+                sx={{ minWidth: '100px' }}
+              >
+                Agregar
+              </Button>
+            </Stack>
           </Grid>
         </Grid>
       </CardActionArea>

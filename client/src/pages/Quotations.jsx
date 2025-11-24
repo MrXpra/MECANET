@@ -399,35 +399,7 @@ const Quotations = () => {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="card-glass p-4 mb-6">
-        <div className="flex gap-4 flex-wrap">
-          <div className="flex-1 min-w-[200px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar por número o cliente..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="input pl-10 w-full"
-              />
-            </div>
-          </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="input w-48"
-          >
-            <option value="all">Todos los estados</option>
-            <option value="Pendiente">Pendiente</option>
-            <option value="Aprobada">Aprobada</option>
-            <option value="Rechazada">Rechazada</option>
-            <option value="Convertida">Convertida</option>
-            <option value="Vencida">Vencida</option>
-          </select>
-        </div>
-      </div>
+
 
       {/* Stats */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -876,8 +848,8 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
                   type="button"
                   onClick={() => setCustomerMode('existing')}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${customerMode === 'existing'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20'
-                      : 'border-gray-300 text-gray-600 hover:border-primary-200'
+                    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20'
+                    : 'border-gray-300 text-gray-600 hover:border-primary-200'
                     }`}
                 >
                   <User className="w-4 h-4" /> Cliente registrado
@@ -886,8 +858,8 @@ const QuotationModal = ({ quotation, customers, products, onSave, onClose }) => 
                   type="button"
                   onClick={() => setCustomerMode('generic')}
                   className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border text-sm ${customerMode === 'generic'
-                      ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20'
-                      : 'border-gray-300 text-gray-600 hover:border-primary-200'
+                    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20'
+                    : 'border-gray-300 text-gray-600 hover:border-primary-200'
                     }`}
                 >
                   <UserPlus className="w-4 h-4" /> Cliente genérico
