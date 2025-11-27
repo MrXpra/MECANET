@@ -8,12 +8,16 @@ echo ========================================================
 echo    MECANET - Configuracion Inicial
 echo ========================================================
 echo.
+echo Bienvenido al asistente de configuracion de MECANET.
+echo Este proceso preparara todo lo necesario para iniciar el sistema.
+echo.
 
 REM ========================================================
 REM 1. INSTALACIÓN DE DEPENDENCIAS
 REM ========================================================
 if not exist "node_modules" (
-    echo [1/3] Instalando dependencias...
+    echo [1/2] Instalando componentes necesarios...
+    echo       Por favor espere, esto puede tomar unos minutos.
     
     if exist "node\node.exe" (
         "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --omit=dev
@@ -23,70 +27,31 @@ if not exist "node_modules" (
     
     if %errorlevel% neq 0 (
         echo.
-        echo Error instalando dependencias.
+        echo [X] Ocurrio un error al instalar los componentes.
+        echo     Por favor verifique su conexion a internet e intente nuevamente.
         pause
         exit /b 1
     )
-    echo OK
-)
-
-REM ========================================================
-REM 2. VERIFICAR ACTUALIZACIONES
-REM ========================================================
-echo.
-echo [2/3] Verificando actualizaciones...
-
-if exist "node\node.exe" (
-    "node\node.exe" scripts/smart-startup.js
+    echo [OK] Componentes instalados correctamente.
 ) else (
-    node scripts/smart-startup.js
-)
-
-set STARTUP_CODE=%errorlevel%
-
-if %STARTUP_CODE% equ 2 (
-    cls
-    echo.
-    echo Aplicando actualizacion...
-    
-    set /p UPDATE_PATH=<.update-pending
-    
-    if not exist "%UPDATE_PATH%" (
-        echo Error: Carpeta de actualizacion no encontrada
-        pause
-        goto :CONFIGURACION
-    )
-
-    robocopy "%UPDATE_PATH%" "." /E /XO /XD ".git" "node_modules" "temp_source_update" "distribucion" /XF ".env" ".gitignore" "package-lock.json" >nul
-    copy /Y "%UPDATE_PATH%\package.json" "." >nul
-    rmdir /s /q "temp_source_update"
-    del ".update-pending"
-
-    echo Actualizando dependencias...
-    if exist "node\node.exe" (
-        "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --production
-    ) else (
-        call npm install --production
-    )
-
-    echo OK
-    timeout /t 2 >nul
-    cls
+    echo [1/2] Componentes ya instalados. Saltando este paso.
 )
 
 :CONFIGURACION
 REM ========================================================
-REM 3. CONFIGURACIÓN DEL SISTEMA
+REM 2. CONFIGURACIÓN DEL SISTEMA
 REM ========================================================
 echo.
-echo [3/3] Configurando sistema...
+echo [2/2] Iniciando configuracion del sistema...
 echo.
 
 powershell -ExecutionPolicy Bypass -File "sistema\CONFIGURAR-INICIAL.ps1"
 
 echo.
 echo ========================================================
-echo    Configuracion Finalizada
+echo    Configuracion Finalizada Exitosamente
 echo ========================================================
 echo.
-pause >nul
+echo Ya puedes iniciar el sistema ejecutando "INICIAR-MECANET.bat"
+echo.
+pause
