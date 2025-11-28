@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import api from '../services/api';
 import { toast } from 'react-hot-toast';
 import {
@@ -10,40 +11,14 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
+  Database,
+  Zap,
   RefreshCw,
   Eye,
   CheckSquare
 } from 'lucide-react';
-import {
-  Box,
-  Container,
-  Typography,
-  Button,
-  Card,
-  CardContent,
-  Grid,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Stack,
-  LinearProgress,
-  useTheme,
-  Alert,
-  AlertTitle
-} from '@mui/material';
 
 const Monitoring = () => {
-  const theme = useTheme();
   const [systemMetrics, setSystemMetrics] = useState(null);
   const [performanceMetrics, setPerformanceMetrics] = useState([]);
   const [recentErrors, setRecentErrors] = useState([]);
@@ -51,8 +26,6 @@ const Monitoring = () => {
   const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [selectedError, setSelectedError] = useState(null);
-  const [resolutionText, setResolutionText] = useState('');
-  const [showResolveDialog, setShowResolveDialog] = useState(false);
 
   useEffect(() => {
     loadAllMetrics();
@@ -120,21 +93,12 @@ const Monitoring = () => {
     }
   };
 
-  const handleResolveClick = (error) => {
-    setSelectedError(error);
-    setResolutionText('');
-    setShowResolveDialog(true);
-  };
-
-  const resolveError = async () => {
-    if (!selectedError || !resolutionText.trim()) return;
-
+  const resolveError = async (logId, resolution) => {
     try {
-      await api.patch(`/logs/${selectedError._id}/resolve`, { resolution: resolutionText });
+      await api.patch(`/logs/${logId}/resolve`, { resolution });
       toast.success('Error marcado como resuelto');
       loadRecentErrors();
       loadCriticalAlerts();
-      setShowResolveDialog(false);
       setSelectedError(null);
     } catch (error) {
       toast.error('Error al resolver log');
@@ -157,441 +121,385 @@ const Monitoring = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Box>
-          <Typography variant="h4" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Activity size={32} color={theme.palette.primary.main} />
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Activity className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
             Monitoreo del Sistema
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Métricas en tiempo real y análisis de rendimiento
-          </Typography>
-        </Box>
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Métricas en tiempo real y análisis de rendimiento</p>
+        </div>
 
-        <Stack direction="row" spacing={2}>
-          <Button
-            variant={autoRefresh ? "contained" : "outlined"}
-            color={autoRefresh ? "success" : "primary"}
+        <div className="flex gap-2">
+          <button
             onClick={() => setAutoRefresh(!autoRefresh)}
-            startIcon={<RefreshCw size={18} className={autoRefresh ? 'animate-spin' : ''} />}
+            className={`btn-secondary flex items-center gap-2 ${autoRefresh ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : ''}`}
           >
+            <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} />
             {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
-          </Button>
-          <Button
-            variant="contained"
+          </button>
+          <button
             onClick={loadAllMetrics}
-            startIcon={<RefreshCw size={18} />}
+            className="btn-primary flex items-center gap-2"
           >
+            <RefreshCw className="w-4 h-4" />
             Actualizar
-          </Button>
-        </Stack>
-      </Box>
+          </button>
+        </div>
+      </div>
 
       {/* Alertas Críticas */}
       {criticalAlerts.length > 0 && (
-        <Paper sx={{ p: 3, mb: 4, borderLeft: 6, borderColor: 'error.main', bgcolor: 'error.lighter' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <AlertTriangle size={24} color={theme.palette.error.main} />
-            <Typography variant="h6" color="error.main" fontWeight="bold">
+        <div className="card-glass border-l-4 border-red-500 p-4 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+            <h2 className="text-lg font-bold text-red-600 dark:text-red-400">
               {criticalAlerts.length} Alerta{criticalAlerts.length > 1 ? 's' : ''} Crítica{criticalAlerts.length > 1 ? 's' : ''}
-            </Typography>
-          </Box>
-          <Stack spacing={2}>
+            </h2>
+          </div>
+          <div className="space-y-2">
             {criticalAlerts.slice(0, 3).map((alert) => (
-              <Paper key={alert._id} variant="outlined" sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: 'background.paper' }}>
-                <Box>
-                  <Typography variant="subtitle1" color="error.dark" fontWeight="medium">{alert.message}</Typography>
-                  <Typography variant="caption" color="error.main">
+              <div key={alert._id} className="flex items-center justify-between bg-red-50 p-3 rounded dark:bg-red-900/20">
+                <div className="flex-1">
+                  <p className="font-medium text-red-800 dark:text-red-200">{alert.message}</p>
+                  <p className="text-sm text-red-600 dark:text-red-300">
                     {new Date(alert.timestamp).toLocaleString('es-DO')}
-                  </Typography>
-                </Box>
-                <IconButton color="error" onClick={() => setSelectedError(alert)}>
-                  <Eye size={20} />
-                </IconButton>
-              </Paper>
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedError(alert)}
+                  className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                >
+                  <Eye className="w-5 h-5" />
+                </button>
+              </div>
             ))}
-          </Stack>
-        </Paper>
+          </div>
+        </div>
       )}
 
       {/* Métricas del Sistema en Tiempo Real */}
       {systemMetrics && (
-        <Grid container spacing={3} sx={{ mb: 4 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {/* CPU */}
-          <Grid item xs={12} md={6} lg={3}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Cpu size={20} color={theme.palette.info.main} />
-                    <Typography variant="subtitle2" color="text.secondary">CPU</Typography>
-                  </Box>
-                  <CheckCircle size={16} color={theme.palette.success.main} />
-                </Box>
-                <Typography variant="h4" fontWeight="bold" gutterBottom>
-                  {systemMetrics.cpu.cores} cores
-                </Typography>
-                <Typography variant="caption" color="text.secondary" display="block" noWrap title={systemMetrics.cpu.model}>
-                  {systemMetrics.cpu.model}
-                </Typography>
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="caption" color="text.secondary">Load Avg</Typography>
-                  <Stack direction="row" spacing={1} mt={0.5}>
-                    {systemMetrics.loadAverage.map((load, i) => (
-                      <Chip key={i} label={load.toFixed(2)} size="small" color="info" variant="outlined" />
-                    ))}
-                  </Stack>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+          <div className="card-glass p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">CPU</span>
+              </div>
+              <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {systemMetrics.cpu.cores} cores
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{systemMetrics.cpu.model}</p>
+            <div className="mt-2">
+              <p className="text-xs text-gray-600 dark:text-gray-400">Load Avg</p>
+              <div className="flex gap-2 mt-1">
+                {systemMetrics.loadAverage.map((load, i) => (
+                  <span key={i} className="text-xs font-mono bg-blue-100 px-2 py-1 rounded dark:bg-blue-900 dark:text-blue-200">
+                    {load.toFixed(2)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
 
           {/* Memoria */}
-          <Grid item xs={12} md={6} lg={3}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <HardDrive size={20} color={theme.palette.secondary.main} />
-                    <Typography variant="subtitle2" color="text.secondary">Memoria</Typography>
-                  </Box>
-                  <CheckCircle size={16} color={theme.palette.success.main} />
-                </Box>
-                <Typography variant="h4" fontWeight="bold" gutterBottom>
-                  {systemMetrics.memoryUsagePercent}%
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {formatBytes(systemMetrics.memory.used)} / {formatBytes(systemMetrics.memory.total)}
-                </Typography>
-                <Box sx={{ mt: 2 }}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={parseFloat(systemMetrics.memoryUsagePercent)}
-                    color={
-                      parseFloat(systemMetrics.memoryUsagePercent) > 80 ? 'error' :
-                        parseFloat(systemMetrics.memoryUsagePercent) > 60 ? 'warning' :
-                          'success'
-                    }
-                    sx={{ height: 8, borderRadius: 4 }}
-                  />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+          <div className="card-glass p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <HardDrive className="w-5 h-5 text-purple-500 dark:text-purple-400" />
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Memoria</span>
+              </div>
+              <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {systemMetrics.memoryUsagePercent}%
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {formatBytes(systemMetrics.memory.used)} / {formatBytes(systemMetrics.memory.total)}
+            </p>
+            <div className="w-full bg-gray-200 rounded-full h-2 mt-2 dark:bg-gray-700">
+              <div 
+                className={`h-2 rounded-full ${
+                  parseFloat(systemMetrics.memoryUsagePercent) > 80 ? 'bg-red-500' :
+                  parseFloat(systemMetrics.memoryUsagePercent) > 60 ? 'bg-yellow-500' :
+                  'bg-green-500'
+                }`}
+                style={{ width: `${systemMetrics.memoryUsagePercent}%` }}
+              ></div>
+            </div>
+          </div>
 
           {/* Uptime */}
-          <Grid item xs={12} md={6} lg={3}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Clock size={20} color={theme.palette.success.main} />
-                    <Typography variant="subtitle2" color="text.secondary">Uptime</Typography>
-                  </Box>
-                  <CheckCircle size={16} color={theme.palette.success.main} />
-                </Box>
-                <Typography variant="h4" fontWeight="bold" gutterBottom>
-                  {formatUptime(systemMetrics.uptime)}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" display="block">
-                  {systemMetrics.platform} - Node {systemMetrics.nodeVersion}
-                </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                  PID: {systemMetrics.processId}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+          <div className="card-glass p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-green-500 dark:text-green-400" />
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Uptime</span>
+              </div>
+              <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {formatUptime(systemMetrics.uptime)}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {systemMetrics.platform} - Node {systemMetrics.nodeVersion}
+            </p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+              Proceso: {systemMetrics.processId}
+            </p>
+          </div>
 
           {/* Estado General */}
-          <Grid item xs={12} md={6} lg={3}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Activity size={20} color={theme.palette.primary.main} />
-                    <Typography variant="subtitle2" color="text.secondary">Estado</Typography>
-                  </Box>
-                  <CheckCircle size={16} color={theme.palette.success.main} />
-                </Box>
-                <Typography variant="h4" fontWeight="bold" color="success.main" gutterBottom>
-                  Operativo
-                </Typography>
-                <Stack spacing={0.5} mt={1}>
-                  <Typography variant="caption" color="text.secondary">
-                    Errores: {recentErrors.length}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Alertas: {criticalAlerts.length}
-                  </Typography>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+          <div className="card-glass p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Activity className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Estado</span>
+              </div>
+              <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400" />
+            </div>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">Operativo</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Errores: {recentErrors.length}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Alertas: {criticalAlerts.length}
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Métricas de Rendimiento */}
-      <Paper sx={{ p: 3, mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <TrendingUp size={24} color={theme.palette.primary.main} />
-          <Typography variant="h6" fontWeight="bold">Rendimiento (Últimas 24h)</Typography>
-        </Box>
+      <div className="card-glass p-6 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Rendimiento (Últimas 24h)</h2>
+        </div>
 
         {performanceMetrics.length > 0 ? (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Módulo</TableCell>
-                  <TableCell>Operaciones</TableCell>
-                  <TableCell>Tiempo Promedio</TableCell>
-                  <TableCell>Tiempo Máx</TableCell>
-                  <TableCell>DB Promedio</TableCell>
-                  <TableCell>Lentas</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b dark:bg-gray-800 dark:border-gray-700">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-300">Módulo</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-300">Operaciones</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-300">Tiempo Promedio</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-300">Tiempo Máx</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-300">DB Promedio</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-300">Lentas</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {performanceMetrics.slice(0, 10).map((metric, index) => (
-                  <TableRow key={index} hover>
-                    <TableCell sx={{ fontWeight: 'medium' }}>{metric._id.module}</TableCell>
-                    <TableCell>{metric.totalOperations}</TableCell>
-                    <TableCell>
-                      <Typography
-                        variant="body2"
-                        fontWeight="bold"
-                        color={
-                          metric.avgExecutionTime > 1000 ? 'error.main' :
-                            metric.avgExecutionTime > 500 ? 'warning.main' :
-                              'success.main'
-                        }
-                        sx={{ fontFamily: 'monospace' }}
-                      >
+                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{metric._id.module}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{metric.totalOperations}</td>
+                    <td className="px-4 py-3">
+                      <span className={`font-mono ${
+                        metric.avgExecutionTime > 1000 ? 'text-red-600 font-bold' :
+                        metric.avgExecutionTime > 500 ? 'text-yellow-600' :
+                        'text-green-600'
+                      }`}>
                         {metric.avgExecutionTime.toFixed(0)}ms
-                      </Typography>
-                    </TableCell>
-                    <TableCell sx={{ fontFamily: 'monospace' }}>
-                      {metric.maxExecutionTime.toFixed(0)}ms
-                    </TableCell>
-                    <TableCell sx={{ fontFamily: 'monospace' }}>
-                      {(metric.avgDbTime || 0).toFixed(0)}ms
-                    </TableCell>
-                    <TableCell>
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-gray-700 dark:text-gray-300">
+                        {metric.maxExecutionTime.toFixed(0)}ms
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-gray-700 dark:text-gray-300">
+                        {(metric.avgDbTime || 0).toFixed(0)}ms
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
                       {metric.slowOperations > 0 ? (
-                        <Chip
-                          icon={<AlertTriangle size={14} />}
-                          label={metric.slowOperations}
-                          color="error"
-                          size="small"
-                          variant="outlined"
-                        />
+                        <span className="inline-flex items-center gap-1 text-red-600 font-medium">
+                          <AlertTriangle className="w-4 h-4" />
+                          {metric.slowOperations}
+                        </span>
                       ) : (
-                        <Typography variant="body2" color="success.main">0</Typography>
+                        <span className="text-green-600">0</span>
                       )}
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <Typography color="text.secondary" align="center" py={4}>
-            No hay datos de rendimiento disponibles
-          </Typography>
+          <p className="text-gray-600 dark:text-gray-400 text-center py-8">No hay datos de rendimiento disponibles</p>
         )}
-      </Paper>
+      </div>
 
       {/* Errores Recientes */}
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-          <XCircle size={24} color={theme.palette.error.main} />
-          <Typography variant="h6" fontWeight="bold">Errores Recientes</Typography>
-        </Box>
+      <div className="card-glass p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Errores Recientes</h2>
+        </div>
 
         {recentErrors.length > 0 ? (
-          <Stack spacing={2}>
+          <div className="space-y-3">
             {recentErrors.map((error) => (
-              <Paper
-                key={error._id}
-                variant="outlined"
-                sx={{
-                  p: 2,
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(211, 47, 47, 0.1)' : '#FEF2F2',
-                  borderColor: theme.palette.mode === 'dark' ? 'rgba(211, 47, 47, 0.3)' : '#FECACA'
-                }}
-              >
-                <Grid container alignItems="center" spacing={2}>
-                  <Grid item xs>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                      <Chip label={error.module} size="small" color="error" variant="outlined" />
-                      <Typography variant="caption" color="text.secondary">
+              <div key={error._id} className="border border-red-200 rounded-lg p-4 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded dark:bg-red-900 dark:text-red-200">
+                        {error.module}
+                      </span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
                         {new Date(error.timestamp).toLocaleString('es-DO')}
-                      </Typography>
-                    </Box>
-                    <Typography variant="subtitle2" fontWeight="bold" color="error.dark">
-                      {error.message}
-                    </Typography>
+                      </span>
+                    </div>
+                    <p className="font-medium text-red-900 dark:text-red-200">{error.message}</p>
                     {error.error?.message && (
-                      <Typography variant="body2" color="error.main" sx={{ mt: 0.5 }}>
-                        {error.error.message}
-                      </Typography>
+                      <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error.error.message}</p>
                     )}
                     {error.user && (
-                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
                         Usuario: {error.userDetails?.fullName || error.userDetails?.username}
-                      </Typography>
+                      </p>
                     )}
-                  </Grid>
-                  <Grid item>
-                    <Stack direction="row" spacing={1}>
-                      <IconButton color="error" onClick={() => setSelectedError(error)} title="Ver detalles">
-                        <Eye size={20} />
-                      </IconButton>
-                      {!error.metadata?.resolved && (
-                        <IconButton color="success" onClick={() => handleResolveClick(error)} title="Marcar como resuelto">
-                          <CheckSquare size={20} />
-                        </IconButton>
-                      )}
-                    </Stack>
-                  </Grid>
-                </Grid>
-              </Paper>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSelectedError(error)}
+                      className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                      title="Ver detalles"
+                    >
+                      <Eye className="w-5 h-5" />
+                    </button>
+                    {!error.metadata?.resolved && (
+                      <button
+                        onClick={() => {
+                          const resolution = prompt('Describe la resolución del error:');
+                          if (resolution) resolveError(error._id, resolution);
+                        }}
+                        className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
+                        title="Marcar como resuelto"
+                      >
+                        <CheckSquare className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             ))}
-          </Stack>
+          </div>
         ) : (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <CheckCircle size={48} color={theme.palette.success.main} style={{ marginBottom: 8, opacity: 0.5 }} />
-            <Typography color="text.secondary">No hay errores recientes sin resolver</Typography>
-          </Box>
+          <div className="text-center py-8">
+            <CheckCircle className="w-12 h-12 text-green-500 dark:text-green-400 mx-auto mb-2" />
+            <p className="text-gray-600 dark:text-gray-400">No hay errores recientes sin resolver</p>
+          </div>
         )}
-      </Paper>
+      </div>
 
       {/* Modal de Detalles de Error */}
-      <Dialog
-        open={!!selectedError && !showResolveDialog}
-        onClose={() => setSelectedError(null)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          Detalles del Error
-          <IconButton onClick={() => setSelectedError(null)}>
-            <XCircle size={24} />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          {selectedError && (
-            <Stack spacing={3}>
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary">Mensaje</Typography>
-                <Alert severity="error" icon={false} sx={{ mt: 1 }}>
-                  {selectedError.message}
-                </Alert>
-              </Box>
+      {selectedError && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100000]">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 dark:bg-gray-900">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Detalles del Error</h2>
+              <button
+                onClick={() => setSelectedError(null)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Mensaje</label>
+                <p className="mt-1 bg-red-50 p-3 rounded text-red-900 font-medium dark:bg-red-900/20 dark:text-red-200">{selectedError.message}</p>
+              </div>
 
               {selectedError.error && (
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">Error Detallado</Typography>
-                  <Paper variant="outlined" sx={{ p: 2, mt: 1, bgcolor: 'action.hover' }}>
-                    <Typography variant="body2" color="error.main" fontWeight="bold">
-                      {selectedError.error.message}
-                    </Typography>
+                <div>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Error Detallado</label>
+                  <div className="mt-1 bg-gray-50 p-3 rounded dark:bg-gray-800">
+                    <p className="font-medium text-red-800 dark:text-red-200">{selectedError.error.message}</p>
                     {selectedError.error.stack && (
-                      <Box sx={{ mt: 1, maxHeight: 200, overflow: 'auto' }}>
-                        <Typography variant="caption" component="pre" sx={{ fontFamily: 'monospace' }}>
-                          {selectedError.error.stack}
-                        </Typography>
-                      </Box>
+                      <pre className="mt-2 text-xs text-gray-700 overflow-x-auto whitespace-pre-wrap dark:text-gray-300">
+                        {selectedError.error.stack}
+                      </pre>
                     )}
-                  </Paper>
-                </Box>
+                  </div>
+                </div>
               )}
 
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Módulo</Typography>
-                  <Typography variant="body1">{selectedError.module}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Severidad</Typography>
-                  <Chip
-                    label={selectedError.severity}
-                    color={
-                      selectedError.severity === 'critical' ? 'error' :
-                        selectedError.severity === 'high' ? 'warning' :
-                          'info'
-                    }
-                    size="small"
-                    sx={{ mt: 0.5 }}
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle2" color="text.secondary">Fecha/Hora</Typography>
-                  <Typography variant="body1">
-                    {new Date(selectedError.timestamp).toLocaleString('es-DO')}
-                  </Typography>
-                </Grid>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Módulo</label>
+                  <p className="mt-1 font-medium text-gray-900 dark:text-white">{selectedError.module}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Severidad</label>
+                  <p className="mt-1">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      selectedError.severity === 'critical' ? 'bg-red-100 text-red-800' :
+                      selectedError.severity === 'high' ? 'bg-orange-100 text-orange-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {selectedError.severity}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Fecha/Hora</label>
+                  <p className="mt-1 text-gray-900 dark:text-white">{new Date(selectedError.timestamp).toLocaleString('es-DO')}</p>
+                </div>
                 {selectedError.user && (
-                  <Grid item xs={6}>
-                    <Typography variant="subtitle2" color="text.secondary">Usuario</Typography>
-                    <Typography variant="body1">
-                      {selectedError.userDetails?.fullName || selectedError.userDetails?.username}
-                    </Typography>
-                  </Grid>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Usuario</label>
+                    <p className="mt-1 text-gray-900 dark:text-white">{selectedError.userDetails?.fullName || selectedError.userDetails?.username}</p>
+                  </div>
                 )}
-              </Grid>
+              </div>
 
               {selectedError.request && (
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">Request Info</Typography>
-                  <Paper variant="outlined" sx={{ p: 2, mt: 1, bgcolor: 'action.hover', overflowX: 'auto' }}>
-                    <pre style={{ margin: 0, fontSize: '0.75rem' }}>
-                      {JSON.stringify(selectedError.request, null, 2)}
-                    </pre>
-                  </Paper>
-                </Box>
+                <div>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Request Info</label>
+                  <pre className="mt-1 bg-gray-50 p-3 rounded text-xs overflow-x-auto dark:bg-gray-800 dark:text-gray-300">
+                    {JSON.stringify(selectedError.request, null, 2)}
+                  </pre>
+                </div>
               )}
-            </Stack>
-          )}
-        </DialogContent>
-        <DialogActions>
-          {!selectedError?.metadata?.resolved && (
-            <Button onClick={() => { setShowResolveDialog(true); }} color="primary">
-              Marcar como Resuelto
-            </Button>
-          )}
-          <Button onClick={() => setSelectedError(null)}>Cerrar</Button>
-        </DialogActions>
-      </Dialog>
 
-      {/* Modal de Resolución */}
-      <Dialog open={showResolveDialog} onClose={() => setShowResolveDialog(false)}>
-        <DialogTitle>Resolver Error</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Describe cómo se resolvió este error para futuras referencias.
-          </Typography>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Resolución"
-            fullWidth
-            multiline
-            rows={3}
-            value={resolutionText}
-            onChange={(e) => setResolutionText(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowResolveDialog(false)}>Cancelar</Button>
-          <Button onClick={resolveError} variant="contained" color="primary">
-            Confirmar
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+              <div className="flex gap-2 justify-end pt-4 border-t">
+                {!selectedError.metadata?.resolved && (
+                  <button
+                    onClick={() => {
+                      const resolution = prompt('Describe la resolución del error:');
+                      if (resolution) resolveError(selectedError._id, resolution);
+                    }}
+                    className="btn-primary"
+                  >
+                    Marcar como Resuelto
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedError(null)}
+                  className="btn-secondary"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
   );
 };
 

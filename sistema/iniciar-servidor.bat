@@ -47,17 +47,101 @@ if %errorlevel% equ 0 (
 )
 
 REM ========================================================
-REM INICIAR SERVIDOR
+REM VERIFICAR ACTUALIZACIONES
 REM ========================================================
-echo.
-echo Iniciando servidor MECANET...
-echo Por favor espere mientras se carga el sistema.
-echo.
+echo Verificando actualizaciones...
+%NODE_CMD% scripts/smart-startup.js
 
-REM Asegurar que SIEMPRE estamos en el directorio raiz antes de iniciar
+set STARTUP_CODE=%errorlevel%
+
+if %STARTUP_CODE% equ 2 (
+    echo.
+    echo ========================================================
+    echo    APLICANDO ACTUALIZACION
+    echo ========================================================
+    echo.
+    
+    REM Buscar directamente la carpeta dentro de temp_source_update
+    echo Buscando carpeta de actualizacion...
+    
+    set "UPDATE_PATH="
+    for /d %%G in ("temp_source_update\MrXpra-MECANET-*") do (
+        set "UPDATE_PATH=%%G"
+        goto :FOUND_UPDATE
+    )
+    
+    :FOUND_UPDATE
+    if not defined UPDATE_PATH (
+        echo [ERROR] No se encontro carpeta de actualizacion en temp_source_update
+        echo [DEBUG] Contenido de temp_source_update:
+        dir /b temp_source_update 2>nul
+        pause
+        goto :START_SERVER
+    )
+
+    echo [OK] Carpeta encontrada: %UPDATE_PATH%
+    echo.
+    echo Copiando archivos del sistema...
+    
+    REM Copiar archivos de versiÃ³n primero (crÃ­ticos)
+    copy /Y "%UPDATE_PATH%\package.json" "." >nul
+    if %errorlevel% neq 0 (
+        echo [ERROR] No se pudo copiar package.json
+        pause
+        goto :CLEANUP_AND_START
+    )
+    
+    copy /Y "%UPDATE_PATH%\version.json" "." >nul
+    if %errorlevel% neq 0 (
+        echo [ERROR] No se pudo copiar version.json
+        pause
+        goto :CLEANUP_AND_START
+    )
+    
+    REM Copiar el resto de archivos (sin /XO para sobrescribir todo)
+    robocopy "%UPDATE_PATH%" "." /E /XD ".git" "node_modules" "temp_source_update" "distribucion" "client\dist" /XF ".env" ".gitignore" "package-lock.json" /NFL /NDL /NJH /NJS
+    
+    echo [OK] Archivos copiados exitosamente
+    
+    echo Limpiando archivos temporales...
+    rmdir /s /q "temp_source_update" 2>nul
+    del ".update-pending" 2>nul
+
+    echo.
+    echo Actualizando dependencias del backend...
+    if exist "node\node.exe" (
+        "node\node.exe" "node\node_modules\npm\bin\npm-cli.js" install --production 2>nul
+    ) else (
+        call npm install --production 2>nul
+    )
+    
+    echo.
+    echo Limpiando build anterior del frontend...
+    if exist "client\dist" rmdir /s /q "client\dist" 2>nul
+    
+    echo Compilando frontend actualizado...
+    pushd "%~dp0\..\client"
+    if exist "..\node\node.exe" (
+        "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" install --production=false >nul 2>&1
+        "..\node\node.exe" "..\node\node_modules\npm\bin\npm-cli.js" run build
+    ) else (
+        call npm install --production=false >nul 2>&1
+        call npm run build
+    )
+    popd
+    
+    echo.
+    echo ========================================================
+    echo   ACTUALIZACION COMPLETADA
+    echo ========================================================
+    echo.
+    timeout /t 2 >nul
+)
+
+REM Asegurar que SIEMPRE estamos en el directorio raÃ­z antes de iniciar
 cd /d "%~dp0\.."
 
-REM Re-detectar Node.js
+REM Re-detectar Node.js despuÃ©s de actualizaciÃ³n
 set "NODE_CMD=node"
 if exist "node\node.exe" (
     set "NODE_CMD=node\node.exe"

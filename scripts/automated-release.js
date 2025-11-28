@@ -121,18 +121,10 @@ async function main() {
         if (otherBranch) {
             try {
                 console.log(`   Intentando sincronizar también con ${otherBranch}...`);
-                // Intentar hacer pull primero para evitar conflictos
-                try {
-                    execSync(`git pull origin ${otherBranch}`, { stdio: 'inherit', cwd: rootDir });
-                } catch (e) {
-                    console.warn(`   ⚠️  No se pudo hacer pull de ${otherBranch}. Intentando push de todos modos...`);
-                }
-                
                 execSync(`git push origin ${currentBranch}:${otherBranch}`, { stdio: 'inherit', cwd: rootDir });
                 console.log(`   ✅ ${otherBranch} actualizado.`);
             } catch (e) {
                 console.warn(`   ⚠️  No se pudo actualizar ${otherBranch} automáticamente.`);
-                console.warn(`   Error: ${e.message}`);
             }
         }
 

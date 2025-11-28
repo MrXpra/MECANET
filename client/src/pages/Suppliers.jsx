@@ -61,34 +61,7 @@ import {
   FileText,
   CreditCard,
   Save,
-  ChevronLeft,
-  ChevronRight
 } from 'lucide-react';
-import {
-  Box,
-  Grid,
-  Paper,
-  Typography,
-  TextField,
-  InputAdornment,
-  IconButton,
-  Button,
-  Card,
-  CardContent,
-  CardActions,
-  Stack,
-  Divider,
-  useTheme,
-  Avatar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
-} from '@mui/material';
 
 const Suppliers = () => {
   const [suppliers, setSuppliers] = useState([]);
@@ -143,10 +116,10 @@ const Suppliers = () => {
     try {
       setIsLoading(true);
       const response = await getSuppliers({ page: pagination.page, limit: pagination.limit });
-
+      
       const suppliersData = response?.data?.suppliers || response?.data || [];
       const paginationData = response?.data?.pagination || {};
-
+      
       setSuppliers(Array.isArray(suppliersData) ? suppliersData : []);
       setPagination(prev => ({
         ...prev,
@@ -196,7 +169,7 @@ const Suppliers = () => {
         await createSupplier(formData);
         toast.success('Proveedor creado exitosamente');
       }
-
+      
       handleCloseModal();
       fetchSuppliers();
     } catch (error) {
@@ -268,305 +241,335 @@ const Suppliers = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Proveedores
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Proveedores</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             Gestiona tus proveedores y sus datos de contacto
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          startIcon={<Plus />}
+          </p>
+        </div>
+        <button
           onClick={() => setShowModal(true)}
+          className="btn btn-primary flex items-center gap-2"
         >
+          <Plus className="w-5 h-5" />
           Nuevo Proveedor
-        </Button>
-      </Box>
+        </button>
+      </div>
 
       {/* Search */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <TextField
-          fullWidth
-          placeholder="Buscar por nombre, email o RNC..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search size={20} />
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Paper>
+      <div className="glass-strong rounded-xl p-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por nombre, email o RNC..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input pl-10 w-full"
+          />
+        </div>
+      </div>
 
       {/* Suppliers List */}
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-        </Box>
+        <div className="glass-strong rounded-xl p-12 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="text-gray-600 dark:text-gray-400 mt-4">Cargando proveedores...</p>
+        </div>
       ) : filteredSuppliers.length === 0 ? (
-        <Paper sx={{ p: 6, textAlign: 'center' }}>
-          <Truck size={64} color="#9ca3af" style={{ margin: '0 auto', marginBottom: 16 }} />
-          <Typography variant="h6" gutterBottom>
+        <div className="glass-strong rounded-xl p-12 text-center">
+          <Truck className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             {searchTerm ? 'No se encontraron proveedores' : 'No hay proveedores registrados'}
-          </Typography>
-          <Typography color="text.secondary" sx={{ mb: 3 }}>
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             {searchTerm
               ? 'Intenta con otro término de búsqueda'
               : 'Comienza agregando tu primer proveedor'}
-          </Typography>
+          </p>
           {!searchTerm && (
-            <Button variant="contained" startIcon={<Plus />} onClick={() => setShowModal(true)}>
+            <button onClick={() => setShowModal(true)} className="btn btn-primary">
+              <Plus className="w-5 h-5 mr-2" />
               Agregar Proveedor
-            </Button>
+            </button>
           )}
-        </Paper>
+        </div>
       ) : (
-        <Grid container spacing={3}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredSuppliers.map((supplier) => (
-            <Grid item xs={12} md={6} lg={4} key={supplier._id}>
-              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar sx={{ bgcolor: 'primary.main' }}>
-                        <Truck size={24} />
-                      </Avatar>
-                      <Box>
-                        <Typography variant="h6" fontWeight="bold">
-                          {supplier.name}
-                        </Typography>
-                        {supplier.contactName && (
-                          <Typography variant="body2" color="text.secondary">
-                            {supplier.contactName}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  </Box>
-
-                  <Stack spacing={1.5}>
-                    {supplier.email && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Mail size={16} color="gray" />
-                        <Typography variant="body2" color="text.secondary" noWrap>
-                          {supplier.email}
-                        </Typography>
-                      </Box>
+            <div key={supplier._id} className="glass-strong rounded-xl p-6 hover:shadow-lg transition-shadow">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
+                    <Truck className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{supplier.name}</h3>
+                    {supplier.contactName && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{supplier.contactName}</p>
                     )}
-                    {supplier.phone && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Phone size={16} color="gray" />
-                        <Typography variant="body2" color="text.secondary">
-                          {supplier.phone}
-                        </Typography>
-                      </Box>
-                    )}
-                    {supplier.address && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <MapPin size={16} color="gray" />
-                        <Typography variant="body2" color="text.secondary" noWrap>
-                          {supplier.address}
-                        </Typography>
-                      </Box>
-                    )}
-                    {supplier.rnc && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <FileText size={16} color="gray" />
-                        <Typography variant="body2" color="text.secondary">
-                          RNC: {supplier.rnc}
-                        </Typography>
-                      </Box>
-                    )}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CreditCard size={16} color="gray" />
-                      <Typography variant="body2" fontWeight="medium">
-                        {supplier.paymentTerms}
-                      </Typography>
-                    </Box>
-                  </Stack>
-
-                  {!supplier.isActive && (
-                    <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-                      <Typography variant="caption" color="error" fontWeight="bold">
-                        Inactivo
-                      </Typography>
-                    </Box>
-                  )}
-                </CardContent>
-                <CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
-                  <IconButton
-                    size="small"
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
                     onClick={() => handleEdit(supplier)}
-                    sx={{ bgcolor: 'action.hover' }}
+                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
-                    <Edit2 size={18} />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="error"
+                    <Edit2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  </button>
+                  <button
                     onClick={() => handleDelete(supplier._id)}
-                    sx={{ bgcolor: 'error.light', color: 'error.main', '&:hover': { bgcolor: 'error.main', color: 'white' } }}
+                    className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                   >
-                    <Trash2 size={18} />
-                  </IconButton>
-                </CardActions>
-              </Card>
-            </Grid>
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {supplier.email && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Mail className="w-4 h-4" />
+                    <span className="truncate">{supplier.email}</span>
+                  </div>
+                )}
+                {supplier.phone && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <Phone className="w-4 h-4" />
+                    <span>{supplier.phone}</span>
+                  </div>
+                )}
+                {supplier.address && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <MapPin className="w-4 h-4" />
+                    <span className="line-clamp-1">{supplier.address}</span>
+                  </div>
+                )}
+                {supplier.rnc && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                    <FileText className="w-4 h-4" />
+                    <span>RNC: {supplier.rnc}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-sm">
+                  <CreditCard className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  <span className="text-gray-900 dark:text-white font-medium">
+                    {supplier.paymentTerms}
+                  </span>
+                </div>
+              </div>
+
+              {!supplier.isActive && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <span className="text-sm text-red-600 font-medium">Inactivo</span>
+                </div>
+              )}
+            </div>
           ))}
-        </Grid>
+        </div>
       )}
 
       {/* Paginación */}
       {!isLoading && pagination.pages > 1 && (
-        <Paper sx={{ p: 2, mt: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="body2" color="text.secondary">
+        <div className="glass-strong rounded-xl">
+          <div className="flex items-center justify-between px-6 py-4">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               Mostrando {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} - {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} proveedores
-            </Typography>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Button
-                startIcon={<ChevronLeft />}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                 disabled={!pagination.hasPrevPage}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  pagination.hasPrevPage
+                    ? 'bg-primary-600 text-white hover:bg-primary-700'
+                    : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
+                }`}
               >
                 Anterior
-              </Button>
-              <Typography variant="body2">
+              </button>
+              <span className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
                 Página {pagination.page} de {pagination.pages}
-              </Typography>
-              <Button
-                endIcon={<ChevronRight />}
+              </span>
+              <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                 disabled={!pagination.hasNextPage}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  pagination.hasNextPage
+                    ? 'bg-primary-600 text-white hover:bg-primary-700'
+                    : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
+                }`}
               >
                 Siguiente
-              </Button>
-            </Stack>
-          </Box>
-        </Paper>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal */}
-      <Dialog
-        open={showModal}
-        onClose={handleCloseModal}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          {editingSupplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}
-        </DialogTitle>
-        <DialogContent dividers>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Nombre del Proveedor"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                placeholder="Ej: Repuestos del Caribe"
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Persona de Contacto"
-                name="contactName"
-                value={formData.contactName}
-                onChange={handleChange}
-                placeholder="Ej: Juan Pérez"
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="RNC"
-                name="rnc"
-                value={formData.rnc}
-                onChange={handleChange}
-                placeholder="Ej: 123456789"
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="contacto@proveedor.com"
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Teléfono"
-                name="phone"
-                value={formData.phone}
-                onChange={handlePhoneChange}
-                placeholder="809-555-5555"
-                inputProps={{ maxLength: 12 }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Dirección"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                placeholder="Calle, Número, Sector, Ciudad"
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Términos de Pago</InputLabel>
-                <Select
-                  name="paymentTerms"
-                  value={formData.paymentTerms}
-                  onChange={handleChange}
-                  label="Términos de Pago"
-                >
-                  <MenuItem value="Contado">Contado</MenuItem>
-                  <MenuItem value="15 días">15 días</MenuItem>
-                  <MenuItem value="30 días">30 días</MenuItem>
-                  <MenuItem value="45 días">45 días</MenuItem>
-                  <MenuItem value="60 días">60 días</MenuItem>
-                  <MenuItem value="90 días">90 días</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Notas"
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                multiline
-                rows={3}
-                placeholder="Información adicional sobre el proveedor..."
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal} color="inherit">
-            Cancelar
-          </Button>
-          <Button onClick={handleSubmit} variant="contained" startIcon={<Save />}>
-            {editingSupplier ? 'Actualizar' : 'Guardar'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {showModal && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 100000 }}>
+          <div className="glass-strong rounded-2xl max-w-2xl w-full max-h-[90vh] min-h-[400px] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {editingSupplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}
+              </h2>
+              <button
+                onClick={handleCloseModal}
+                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="p-6 pb-4 space-y-4 overflow-y-auto flex-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Nombre del Proveedor *
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="input w-full"
+                    placeholder="Ej: Repuestos del Caribe"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Persona de Contacto
+                  </label>
+                  <input
+                    type="text"
+                    name="contactName"
+                    value={formData.contactName}
+                    onChange={handleChange}
+                    className="input w-full"
+                    placeholder="Ej: Juan Pérez"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    RNC
+                  </label>
+                  <input
+                    type="text"
+                    name="rnc"
+                    value={formData.rnc}
+                    onChange={handleChange}
+                    className="input w-full"
+                    placeholder="Ej: 123456789"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="input w-full"
+                    placeholder="contacto@proveedor.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Teléfono
+                  </label>
+                  <input
+                    type="text"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handlePhoneChange}
+                    className="input w-full"
+                    placeholder="809-555-5555"
+                    maxLength="12"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Dirección
+                  </label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    className="input w-full"
+                    placeholder="Calle, Número, Sector, Ciudad"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Términos de Pago
+                  </label>
+                  <select
+                    name="paymentTerms"
+                    value={formData.paymentTerms}
+                    onChange={handleChange}
+                    className="input w-full"
+                  >
+                    <option value="Contado">Contado</option>
+                    <option value="15 días">15 días</option>
+                    <option value="30 días">30 días</option>
+                    <option value="45 días">45 días</option>
+                    <option value="60 días">60 días</option>
+                    <option value="90 días">90 días</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Notas
+                  </label>
+                  <textarea
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleChange}
+                    className="input w-full"
+                    rows="3"
+                    placeholder="Información adicional sobre el proveedor..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer with Actions */}
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex gap-3 flex-shrink-0 shadow-lg">
+              <button 
+                onClick={handleSubmit}
+                className="btn btn-primary flex-1 flex items-center justify-center gap-2"
+              >
+                <Save className="w-5 h-5" />
+                {editingSupplier ? 'Actualizar' : 'Guardar'}
+              </button>
+              <button
+                type="button"
+                onClick={handleCloseModal}
+                className="btn btn-secondary flex-1"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

@@ -52,42 +52,8 @@
  */
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router-dom';
-import {
-  Box,
-  Typography,
-  Button,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
-  TextField,
-  InputAdornment,
-  IconButton,
-  Chip,
-  Stack,
-  Divider,
-  useTheme,
-  Tooltip,
-  Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Avatar,
-  Alert,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Checkbox
-} from '@mui/material';
 import {
   getPurchaseOrders,
   createPurchaseOrder,
@@ -107,7 +73,9 @@ import { useProductStore } from '../store/productStore';
 import {
   ClipboardList,
   Plus,
+  Minus,
   Search,
+  Filter,
   Eye,
   Check,
   X,
@@ -123,33 +91,7 @@ import {
   Info,
   Send,
   Mail,
-  ChevronLeft,
-  ChevronRight
 } from 'lucide-react';
-
-// StatCard Component
-const StatCard = ({ title, value, icon: Icon, color, subValue }) => (
-  <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-    <CardContent>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography color="text.secondary" variant="subtitle2" fontWeight="medium">
-          {title}
-        </Typography>
-        <Avatar sx={{ bgcolor: `${color}.light`, color: `${color}.main` }}>
-          <Icon size={20} />
-        </Avatar>
-      </Box>
-      <Typography variant="h4" fontWeight="bold" sx={{ mb: 1 }}>
-        {value}
-      </Typography>
-      {subValue && (
-        <Typography variant="body2" color="text.secondary">
-          {subValue}
-        </Typography>
-      )}
-    </CardContent>
-  </Card>
-);
 
 const PurchaseOrders = () => {
   const location = useLocation();
@@ -172,7 +114,7 @@ const PurchaseOrders = () => {
   const [receivingOrder, setReceivingOrder] = useState(null);
   const requireReception = globalSettings.requireOrderReception !== false;
   const emailFeatureEnabled = settings?.smtp?.enabled ?? globalSettings?.smtp?.enabled ?? true;
-
+  
   // Estados para modales de confirmación
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -181,7 +123,7 @@ const PurchaseOrders = () => {
 
   useEffect(() => {
     fetchData();
-
+    
     // Check if auto=true in URL y si la función está habilitada
     const params = new URLSearchParams(location.search);
     if (params.get('auto') === 'true' && globalSettings.autoCreatePurchaseOrders) {
@@ -218,7 +160,7 @@ const PurchaseOrders = () => {
         if (selectedOrder) setSelectedOrder(null);
       }
     };
-
+    
     if (showAutoModal || showCreateModal || showEditModal || showReceiveModal || selectedOrder) {
       window.addEventListener('keydown', handleEscape);
       return () => window.removeEventListener('keydown', handleEscape);
@@ -234,11 +176,11 @@ const PurchaseOrders = () => {
         getProducts({ limit: 1000 }),
         getSettings(),
       ]);
-
+      
       const ordersData = ordersRes?.data || [];
       const suppliersData = suppliersRes?.data?.suppliers || suppliersRes?.data || [];
       const productsData = productsRes?.data?.products || productsRes?.data || [];
-
+      
       setOrders(Array.isArray(ordersData) ? ordersData : []);
       setSettings(settingsRes?.data || settingsRes);
       setSuppliers(Array.isArray(suppliersData) ? suppliersData.filter(s => s.isActive) : []);
@@ -273,17 +215,15 @@ const PurchaseOrders = () => {
     setFilteredOrders(filtered);
   };
 
-  const theme = useTheme();
-
   const getStatusColor = (status) => {
     const colors = {
-      Pendiente: 'warning',
-      Enviada: 'info',
-      'Recibida Parcial': 'secondary',
-      Recibida: 'success',
-      Cancelada: 'error',
+      Pendiente: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+      Enviada: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+      'Recibida Parcial': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+      Recibida: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+      Cancelada: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
     };
-    return colors[status] || 'default';
+    return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
   const handleGenerateAuto = async (config) => {
@@ -316,11 +256,11 @@ const PurchaseOrders = () => {
         status: newStatus,
         receivedDate: null,
       });
-
+      
       if (newStatus === 'Recibida') {
         invalidateCache();
       }
-
+      
       toast.success('Estado actualizado correctamente');
       fetchData();
     } catch (error) {
@@ -344,7 +284,7 @@ const PurchaseOrders = () => {
         const itemId = item._id || item.product?._id;
         const receivedQty = receivedQuantities[itemId] || 0;
         const orderedQty = item.quantity;
-
+        
         if (receivedQty !== orderedQty) {
           discrepancies.push({
             product: item.product?.name || 'Producto',
@@ -370,10 +310,10 @@ const PurchaseOrders = () => {
         receivedQuantities,
         receiveNotes: finalNotes,
       });
-
+      
       // Invalidar caché de productos para que el inventario se actualice
       invalidateCache();
-
+      
       if (discrepancies.length > 0) {
         toast.success(`Orden recibida con ${discrepancies.length} discrepancia(s) registrada(s)`, {
           duration: 4000,
@@ -381,7 +321,7 @@ const PurchaseOrders = () => {
       } else {
         toast.success('Orden recibida correctamente - Todas las cantidades coinciden');
       }
-
+      
       setShowReceiveModal(false);
       setReceivingOrder(null);
       fetchData();
@@ -460,7 +400,7 @@ const PurchaseOrders = () => {
     const printWindow = window.open('', '_blank');
     const companyName = settings?.businessName || globalSettings?.businessName || 'MECANET';
     const logoUrl = settings?.businessLogoUrl || globalSettings?.businessLogoUrl || '';
-
+    
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -563,428 +503,423 @@ const PurchaseOrders = () => {
   }
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1600, mx: 'auto' }}>
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Box>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Órdenes de Compra
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Órdenes de Compra</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             Gestiona las órdenes de compra a proveedores
-          </Typography>
-        </Box>
-        <Stack direction="row" spacing={2}>
+          </p>
+        </div>
+        <div className="flex gap-3">
           {globalSettings.autoCreatePurchaseOrders && (
-            <Button
-              variant="outlined"
-              color="secondary"
-              startIcon={<Zap />}
+            <button
               onClick={() => setShowAutoModal(true)}
+              className="btn btn-secondary flex items-center justify-center gap-2"
             >
+              <Zap className="w-5 h-5" />
               Generar Automática
-            </Button>
+            </button>
           )}
-          <Button
-            variant="contained"
-            startIcon={<Plus />}
+          <button
             onClick={() => setShowCreateModal(true)}
+            className="btn btn-primary flex items-center justify-center gap-2"
           >
+            <Plus className="w-5 h-5" />
             Nueva Orden
-          </Button>
-        </Stack>
-      </Box>
+          </button>
+        </div>
+      </div>
 
-      {!emailFeatureEnabled && (
-        <Alert severity="warning" sx={{ mb: 3 }}>
-          El envío de emails está desactivado. Activa el SMTP en Configuración &gt; Negocio para poder enviar órdenes a los proveedores.
-        </Alert>
-      )}
+        {!emailFeatureEnabled && (
+          <div className="card-glass border border-amber-200 dark:border-amber-500/40 p-4 flex items-start gap-3 text-amber-800 dark:text-amber-200">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-sm">El envío de emails está desactivado.</p>
+              <p className="text-xs">Activa el SMTP en Configuración &gt; Negocio para poder enviar órdenes a los proveedores.</p>
+            </div>
+          </div>
+        )}
 
-      {!requireReception && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          Recepción manual desactivada. Las órdenes pueden marcarse como recibidas sin capturar cantidades ni fecha de recepción.
-        </Alert>
-      )}
+        {!requireReception && (
+          <div className="card-glass border border-blue-200 dark:border-blue-500/40 p-4 flex items-start gap-3 text-blue-900 dark:text-blue-200">
+            <Info className="w-5 h-5 flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-sm">Recepción manual desactivada.</p>
+              <p className="text-xs">Las órdenes pueden marcarse como recibidas sin capturar cantidades ni fecha de recepción.</p>
+            </div>
+          </div>
+        )}
 
       {/* Stats */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Órdenes"
-            value={orders.length}
-            icon={ClipboardList}
-            color="primary"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Pendientes"
-            value={orders.filter((o) => o.status === 'Pendiente').length}
-            icon={Calendar}
-            color="warning"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Recibidas"
-            value={orders.filter((o) => o.status === 'Recibida').length}
-            icon={Check}
-            color="success"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Invertido"
-            value={`$${orders.filter(o => o.status === 'Recibida').reduce((sum, o) => sum + o.total, 0).toFixed(2)}`}
-            icon={DollarSign}
-            color="info"
-          />
-        </Grid>
-      </Grid>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="glass-strong rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Órdenes</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{orders.length}</p>
+            </div>
+            <ClipboardList className="w-8 h-8 text-primary-600" />
+          </div>
+        </div>
+
+        <div className="glass-strong rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Pendientes</p>
+              <p className="text-2xl font-bold text-yellow-600">
+                {orders.filter((o) => o.status === 'Pendiente').length}
+              </p>
+            </div>
+            <Calendar className="w-8 h-8 text-yellow-600" />
+          </div>
+        </div>
+
+        <div className="glass-strong rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Recibidas</p>
+              <p className="text-2xl font-bold text-green-600">
+                {orders.filter((o) => o.status === 'Recibida').length}
+              </p>
+            </div>
+            <Check className="w-8 h-8 text-green-600" />
+          </div>
+        </div>
+
+        <div className="glass-strong rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Invertido</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                ${orders.filter(o => o.status === 'Recibida').reduce((sum, o) => sum + o.total, 0).toFixed(2)}
+              </p>
+            </div>
+            <DollarSign className="w-8 h-8 text-green-600" />
+          </div>
+        </div>
+      </div>
 
       {/* Search and Filters */}
-      <Paper sx={{ p: 2, mb: 4 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
+      <div className="glass-strong rounded-xl p-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
               placeholder="Buscar por número de orden o proveedor..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search size={20} />
-                  </InputAdornment>
-                ),
-              }}
+              className="input pl-10 w-full"
             />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <InputLabel>Estado</InputLabel>
-              <Select
-                value={statusFilter}
-                label="Estado"
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <MenuItem value="all">Todos los estados</MenuItem>
-                <MenuItem value="Pendiente">Pendiente</MenuItem>
-                <MenuItem value="Enviada">Enviada</MenuItem>
-                <MenuItem value="Recibida Parcial">Recibida Parcial</MenuItem>
-                <MenuItem value="Recibida">Recibida</MenuItem>
-                <MenuItem value="Cancelada">Cancelada</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-        </Grid>
-      </Paper>
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="input w-full md:w-48"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Enviada">Enviada</option>
+            <option value="Recibida Parcial">Recibida Parcial</option>
+            <option value="Recibida">Recibida</option>
+            <option value="Cancelada">Cancelada</option>
+          </select>
+        </div>
+      </div>
 
       {/* Orders List */}
       {isLoading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-        </Box>
+        <div className="glass-strong rounded-xl p-12 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="text-gray-600 dark:text-gray-400 mt-4">Cargando órdenes...</p>
+        </div>
       ) : filteredOrders.length === 0 ? (
-        <Paper sx={{ p: 8, textAlign: 'center' }}>
-          <ClipboardList size={64} style={{ margin: '0 auto', marginBottom: 16, opacity: 0.5 }} />
-          <Typography variant="h6" gutterBottom>
+        <div className="glass-strong rounded-xl p-12 text-center">
+          <ClipboardList className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             {searchTerm || statusFilter !== 'all'
               ? 'No se encontraron órdenes'
               : 'No hay órdenes de compra'}
-          </Typography>
-          <Typography color="text.secondary" sx={{ mb: 3 }}>
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             {searchTerm || statusFilter !== 'all'
               ? 'Intenta con otros filtros'
               : 'Comienza creando tu primera orden o genera una automática'}
-          </Typography>
-          <Stack direction="row" spacing={2} justifyContent="center">
-            <Button
-              variant="outlined"
-              startIcon={<Zap />}
-              onClick={() => setShowAutoModal(true)}
-            >
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button onClick={() => setShowAutoModal(true)} className="btn btn-secondary flex items-center justify-center gap-2">
+              <Zap className="w-5 h-5" />
               Generar Automática
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<Plus />}
-              onClick={() => setShowCreateModal(true)}
-            >
+            </button>
+            <button onClick={() => setShowCreateModal(true)} className="btn btn-primary flex items-center justify-center gap-2">
+              <Plus className="w-5 h-5" />
               Nueva Orden
-            </Button>
-          </Stack>
-        </Paper>
+            </button>
+          </div>
+        </div>
       ) : (
-        <Stack spacing={4}>
-          {/* Active Orders */}
+        <div className="space-y-8">
+          {/* Órdenes Activas */}
           {(() => {
-            const activeOrders = filteredOrders.filter(o =>
+            const activeOrders = filteredOrders.filter(o => 
               ['Pendiente', 'Enviada', 'Recibida Parcial'].includes(o.status)
             );
             return activeOrders.length > 0 && (
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                  <Divider sx={{ flex: 1 }} />
-                  <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Package size={20} />
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary-600 to-transparent"></div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Package className="w-5 h-5 text-primary-600" />
                     Órdenes Activas ({activeOrders.length})
-                  </Typography>
-                  <Divider sx={{ flex: 1 }} />
-                </Box>
-                <Grid container spacing={3}>
+                  </h3>
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary-600 to-transparent"></div>
+                </div>
+                <div className="space-y-4">
                   {activeOrders.map((order) => (
-                    <Grid item xs={12} key={order._id}>
-                      <Card>
-                        <CardContent>
-                          <Grid container spacing={2} alignItems="center">
-                            <Grid item xs={12} md={4}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                                <Typography variant="h6" fontWeight="bold">
-                                  {order.orderNumber}
-                                </Typography>
-                                <Chip
-                                  label={order.status}
-                                  color={getStatusColor(order.status)}
-                                  size="small"
-                                />
-                              </Box>
-                              <Stack spacing={1}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-                                  <Truck size={16} />
-                                  <Typography variant="body2">
-                                    {order.supplier?.name || order.genericSupplierName || 'Proveedor Genérico'}
-                                  </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-                                  <Calendar size={16} />
-                                  <Typography variant="body2">
-                                    {new Date(order.orderDate).toLocaleDateString()}
-                                  </Typography>
-                                </Box>
-                              </Stack>
-                            </Grid>
-                            <Grid item xs={12} md={4}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <Package size={16} />
-                                <Typography variant="body2" fontWeight="medium">
-                                  {order.items.length} producto(s)
-                                </Typography>
-                              </Box>
-                              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
-                                {order.items.slice(0, 3).map((item, idx) => (
-                                  <Chip
-                                    key={idx}
-                                    label={`${item.quantity}x ${item.product?.name || 'Producto'}`}
-                                    size="small"
-                                    variant="outlined"
-                                  />
-                                ))}
-                                {order.items.length > 3 && (
-                                  <Chip label={`+${order.items.length - 3} más`} size="small" variant="outlined" />
-                                )}
-                              </Stack>
-                            </Grid>
-                            <Grid item xs={12} md={4} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
-                              <Typography variant="h5" fontWeight="bold" color="primary.main" sx={{ mb: 2 }}>
-                                ${order.total.toFixed(2)}
-                              </Typography>
-                              <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
-                                {order.status === 'Pendiente' && requireReception && (
-                                  <>
-                                    <Tooltip title="Marcar orden como enviada al proveedor">
-                                      <Button
-                                        size="small"
-                                        variant="outlined"
-                                        color="info"
-                                        startIcon={<Send size={16} />}
-                                        onClick={() => handleUpdateStatus(order._id, 'Enviada')}
-                                      >
-                                        Enviar
-                                      </Button>
-                                    </Tooltip>
-                                    <Tooltip title="Marcar como recibida">
-                                      <Button
-                                        size="small"
-                                        variant="contained"
-                                        color="success"
-                                        startIcon={<Package size={16} />}
-                                        onClick={() => handleUpdateStatus(order._id, 'Recibida')}
-                                      >
-                                        Recibir
-                                      </Button>
-                                    </Tooltip>
-                                  </>
-                                )}
-                                {order.status === 'Pendiente' && !requireReception && (
-                                  <Tooltip title="Finalizar orden">
-                                    <Button
-                                      size="small"
-                                      variant="contained"
-                                      color="success"
-                                      startIcon={<Package size={16} />}
-                                      onClick={() => handleUpdateStatus(order._id, 'Recibida')}
-                                    >
-                                      Finalizar
-                                    </Button>
-                                  </Tooltip>
-                                )}
-                                {order.status === 'Enviada' && (
-                                  <Tooltip title={requireReception ? "Marcar como recibida" : "Finalizar orden"}>
-                                    <Button
-                                      size="small"
-                                      variant="contained"
-                                      color="success"
-                                      startIcon={<Package size={16} />}
-                                      onClick={() => handleUpdateStatus(order._id, 'Recibida')}
-                                    >
-                                      {requireReception ? 'Marcar Recibida' : 'Finalizar'}
-                                    </Button>
-                                  </Tooltip>
-                                )}
+            <div key={order._id} className="glass-strong rounded-xl p-6 hover:shadow-lg transition-shadow">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-4 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {order.orderNumber}
+                    </h3>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                      {order.status}
+                    </span>
+                  </div>
 
-                                <Tooltip title="Imprimir">
-                                  <IconButton size="small" onClick={() => handlePrint(order)}>
-                                    <Printer size={18} />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title={order.emailSent ? "Reenviar Email" : "Enviar Email"}>
-                                  <IconButton
-                                    size="small"
-                                    color={order.emailSent ? "success" : "default"}
-                                    onClick={() => handleSendEmail(order)}
-                                    disabled={!order.supplier?.email || !emailFeatureEnabled}
-                                  >
-                                    <Mail size={18} />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Ver detalles">
-                                  <IconButton size="small" onClick={() => setSelectedOrder(order)}>
-                                    <Eye size={18} />
-                                  </IconButton>
-                                </Tooltip>
-                                {order.status === 'Pendiente' && (
-                                  <>
-                                    <Tooltip title="Editar">
-                                      <IconButton size="small" onClick={() => handleEditOrder(order)}>
-                                        <Edit size={18} />
-                                      </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title="Eliminar">
-                                      <IconButton size="small" color="error" onClick={() => handleDeleteOrder(order)}>
-                                        <Trash2 size={18} />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </>
-                                )}
-                              </Stack>
-                            </Grid>
-                          </Grid>
-                        </CardContent>
-                      </Card>
-                    </Grid>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <Truck className="w-4 h-4" />
+                      <span>{order.supplier?.name || order.genericSupplierName || 'Proveedor Genérico'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <Package className="w-4 h-4" />
+                      <span>{order.items.length} producto(s)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <Calendar className="w-4 h-4" />
+                      <span>{new Date(order.orderDate).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-900 dark:text-white font-semibold">
+                      <DollarSign className="w-4 h-4" />
+                      <span>${order.total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  {order.status === 'Pendiente' && requireReception && (
+                    <>
+                      <button
+                        onClick={() => handleUpdateStatus(order._id, 'Enviada')}
+                        className="btn btn-sm btn-secondary flex items-center gap-1.5"
+                        title="Marcar orden como enviada al proveedor. La orden está en camino."
+                      >
+                        <Send className="w-4 h-4" />
+                        Enviar
+                      </button>
+                      <button
+                        onClick={() => handleUpdateStatus(order._id, 'Recibida')}
+                        className="btn btn-sm btn-primary flex items-center gap-1.5"
+                        title="Marcar como recibida. Los productos llegarán al inventario."
+                      >
+                        <Package className="w-4 h-4" />
+                        Recibir
+                      </button>
+                    </>
+                  )}
+                  {order.status === 'Pendiente' && !requireReception && (
+                    <button
+                      onClick={() => handleUpdateStatus(order._id, 'Recibida')}
+                      className="btn btn-sm btn-primary flex items-center gap-1.5"
+                      title="Completar la orden sin registrar recepción."
+                    >
+                      <Package className="w-4 h-4" />
+                      Finalizar
+                    </button>
+                  )}
+                  {order.status === 'Enviada' && requireReception && (
+                    <button
+                      onClick={() => handleUpdateStatus(order._id, 'Recibida')}
+                      className="btn btn-sm btn-primary flex items-center gap-1.5"
+                      title="Marcar como recibida. Los productos se agregarán al inventario automáticamente."
+                    >
+                      <Package className="w-4 h-4" />
+                      Marcar Recibida
+                    </button>
+                  )}
+                  {order.status === 'Enviada' && !requireReception && (
+                    <button
+                      onClick={() => handleUpdateStatus(order._id, 'Recibida')}
+                      className="btn btn-sm btn-primary flex items-center gap-1.5"
+                      title="Completar la orden sin registrar recepción."
+                    >
+                      <Package className="w-4 h-4" />
+                      Finalizar
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handlePrint(order)}
+                    className="btn btn-sm btn-secondary"
+                    title="Imprimir orden"
+                  >
+                    <Printer className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleSendEmail(order)}
+                    className={`btn btn-sm ${order.emailSent ? 'btn-success' : 'btn-primary'} flex items-center gap-1.5 ${(!order.supplier?.email || !emailFeatureEnabled) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                    title={!emailFeatureEnabled
+                      ? 'El envío de correos está desactivado'
+                      : order.emailSent
+                        ? `Email enviado el ${new Date(order.emailSentDate).toLocaleDateString()}`
+                        : 'Enviar orden por email al proveedor'}
+                    disabled={!order.supplier?.email || !emailFeatureEnabled}
+                  >
+                    <Mail className="w-4 h-4" />
+                    {order.emailSent ? 'Reenviar' : 'Enviar Email'}
+                  </button>
+                  <button
+                    onClick={() => setSelectedOrder(order)}
+                    className="btn btn-sm btn-secondary"
+                    title="Ver detalles"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  {order.status === 'Pendiente' && (
+                    <>
+                      <button
+                        onClick={() => handleEditOrder(order)}
+                        className="btn btn-sm btn-secondary"
+                        title="Editar orden"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteOrder(order)}
+                        className="btn btn-sm bg-red-600 hover:bg-red-700 text-white"
+                        title="Eliminar orden"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Items preview */}
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                  {order.items.slice(0, 3).map((item, idx) => (
+                    <div key={idx}>
+                      • {item.product?.name || 'Producto eliminado'} x{item.quantity}
+                    </div>
                   ))}
-                </Grid>
-              </Box>
+                  {order.items.length > 3 && (
+                    <div className="text-gray-500">
+                      +{order.items.length - 3} producto(s) más
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+                </div>
+              </div>
             );
           })()}
 
-          {/* Completed Orders */}
+          {/* Órdenes Completadas/Canceladas */}
           {(() => {
-            const completedOrders = filteredOrders.filter(o =>
+            const completedOrders = filteredOrders.filter(o => 
               ['Recibida', 'Cancelada'].includes(o.status)
             );
             return completedOrders.length > 0 && (
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                  <Divider sx={{ flex: 1 }} />
-                  <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-                    <Check size={20} />
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-400 to-transparent"></div>
+                  <h3 className="text-lg font-bold text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                    <Check className="w-5 h-5" />
                     Órdenes Completadas ({completedOrders.length})
-                  </Typography>
-                  <Divider sx={{ flex: 1 }} />
-                </Box>
-                <Grid container spacing={3} sx={{ opacity: 0.8 }}>
+                  </h3>
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-400 to-transparent"></div>
+                </div>
+                <div className="space-y-4 opacity-75">
                   {completedOrders.map((order) => (
-                    <Grid item xs={12} key={order._id}>
-                      <Card>
-                        <CardContent>
-                          <Grid container spacing={2} alignItems="center">
-                            <Grid item xs={12} md={4}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                                <Typography variant="h6" fontWeight="bold">
-                                  {order.orderNumber}
-                                </Typography>
-                                <Chip
-                                  label={order.status}
-                                  color={getStatusColor(order.status)}
-                                  size="small"
-                                />
-                              </Box>
-                              <Stack spacing={1}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-                                  <Truck size={16} />
-                                  <Typography variant="body2">
-                                    {order.supplier?.name || order.genericSupplierName || 'Proveedor Genérico'}
-                                  </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-                                  <Calendar size={16} />
-                                  <Typography variant="body2">
-                                    {new Date(order.orderDate).toLocaleDateString()}
-                                  </Typography>
-                                </Box>
-                              </Stack>
-                            </Grid>
-                            <Grid item xs={12} md={4}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <Package size={16} />
-                                <Typography variant="body2" fontWeight="medium">
-                                  {order.items.length} producto(s)
-                                </Typography>
-                              </Box>
-                              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
-                                {order.items.slice(0, 3).map((item, idx) => (
-                                  <Chip
-                                    key={idx}
-                                    label={`${item.quantity}x ${item.product?.name || 'Producto'}`}
-                                    size="small"
-                                    variant="outlined"
-                                  />
-                                ))}
-                                {order.items.length > 3 && (
-                                  <Chip label={`+${order.items.length - 3} más`} size="small" variant="outlined" />
-                                )}
-                              </Stack>
-                            </Grid>
-                            <Grid item xs={12} md={4} sx={{ textAlign: { xs: 'left', md: 'right' } }}>
-                              <Typography variant="h5" fontWeight="bold" color="text.primary" sx={{ mb: 2 }}>
-                                ${order.total.toFixed(2)}
-                              </Typography>
-                              <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
-                                <Tooltip title="Imprimir">
-                                  <IconButton size="small" onClick={() => handlePrint(order)}>
-                                    <Printer size={18} />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Ver detalles">
-                                  <IconButton size="small" onClick={() => setSelectedOrder(order)}>
-                                    <Eye size={18} />
-                                  </IconButton>
-                                </Tooltip>
-                              </Stack>
-                            </Grid>
-                          </Grid>
-                        </CardContent>
-                      </Card>
-                    </Grid>
+                    <div key={order._id} className="glass-strong rounded-xl p-6 hover:shadow-lg transition-shadow">
+                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {order.orderNumber}
+                            </h3>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                              {order.status}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                              <Truck className="w-4 h-4" />
+                              <span>{order.supplier?.name || order.genericSupplierName || 'Proveedor Genérico'}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                              <Package className="w-4 h-4" />
+                              <span>{order.items.length} producto(s)</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                              <Calendar className="w-4 h-4" />
+                              <span>{new Date(order.orderDate).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-gray-900 dark:text-white font-semibold">
+                              <DollarSign className="w-4 h-4" />
+                              <span>${order.total.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handlePrint(order)}
+                            className="btn btn-sm btn-secondary"
+                            title="Imprimir orden"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setSelectedOrder(order)}
+                            className="btn btn-sm btn-secondary"
+                            title="Ver detalles"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Items preview */}
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                          {order.items.slice(0, 3).map((item, idx) => (
+                            <div key={idx}>
+                              • {item.product?.name || 'Producto eliminado'} x{item.quantity}
+                            </div>
+                          ))}
+                          {order.items.length > 3 && (
+                            <div className="text-gray-500">
+                              +{order.items.length - 3} producto(s) más
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                </Grid>
-              </Box>
+                </div>
+              </div>
             );
           })()}
-        </Stack>
+        </div>
       )}
 
       {/* Auto Order Modal - Lo crearemos después */}
@@ -1049,91 +984,173 @@ const PurchaseOrders = () => {
       )}
 
       {/* Delete Confirmation Modal */}
-
-
-      {/* Modals */}
-      {showAutoModal && (
-        <AutoOrderModal
-          suppliers={suppliers}
-          products={products}
-          onClose={() => setShowAutoModal(false)}
-          onGenerate={handleGenerateAuto}
-        />
-      )}
-
-      {showCreateModal && (
-        <CreateOrderModal
-          suppliers={suppliers}
-          products={products}
-          onClose={() => setShowCreateModal(false)}
-          onSave={() => {
-            setShowCreateModal(false);
-            fetchData();
-          }}
-        />
-      )}
-
-      {showEditModal && editingOrder && (
-        <CreateOrderModal
-          suppliers={suppliers}
-          products={products}
-          editingOrder={editingOrder}
-          onClose={() => {
-            setShowEditModal(false);
-            setEditingOrder(null);
-          }}
-          onSave={() => {
-            setShowEditModal(false);
-            setEditingOrder(null);
-            fetchData();
-          }}
-        />
-      )}
-
-      {showDetailModal && selectedOrder && (
-        <OrderDetailsModal
-          order={selectedOrder}
-          onClose={() => {
-            setShowDetailModal(false);
-            setSelectedOrder(null);
-          }}
-        />
-      )}
-
-      {showReceiveModal && receivingOrder && (
-        <ReceiveOrderModal
-          order={receivingOrder}
-          onClose={() => {
-            setShowReceiveModal(false);
-            setReceivingOrder(null);
-          }}
-          onConfirm={handleConfirmReceive}
-        />
-      )}
-
-      {showEmailModal && orderToEmail && (
-        <EmailOrderModal
-          order={orderToEmail}
-          emailFeatureEnabled={emailFeatureEnabled}
-          onClose={() => {
-            setShowEmailModal(false);
-            setOrderToEmail(null);
-          }}
-          onConfirm={confirmSendEmail}
-        />
-      )}
-
-      {showDeleteModal && orderToDelete && (
-        <DeleteOrderModal
-          order={orderToDelete}
-          onClose={() => {
+      {showDeleteModal && orderToDelete && createPortal(
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" 
+          style={{ zIndex: 100000 }}
+          onClick={() => {
             setShowDeleteModal(false);
             setOrderToDelete(null);
           }}
-          onConfirm={confirmDelete}
-        />
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in" 
+            style={{ backgroundColor: 'white', color: '#111827' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-red-600 dark:text-red-400" />
+              </div>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-xl font-bold text-center mb-2" style={{ color: '#111827' }}>
+              ¿Eliminar Orden de Compra?
+            </h3>
+
+            {/* Message */}
+            <div className="space-y-3 mb-6">
+              <p className="text-center" style={{ color: '#4B5563' }}>
+                Estás a punto de eliminar la orden de compra:
+              </p>
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <p className="font-semibold text-center" style={{ color: '#111827' }}>
+                  #{orderToDelete.orderNumber}
+                </p>
+                <p className="text-sm text-center mt-1" style={{ color: '#6B7280' }}>
+                  Proveedor: {orderToDelete.supplier?.name}
+                </p>
+                <p className="text-sm text-center" style={{ color: '#6B7280' }}>
+                  Total: ${orderToDelete.total?.toFixed(2)}
+                </p>
+              </div>
+              <p className="text-sm text-center font-medium" style={{ color: '#DC2626' }}>
+                ⚠️ Esta acción no se puede deshacer
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setOrderToDelete(null);
+                }}
+                className="btn btn-secondary flex-1"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="btn bg-red-600 hover:bg-red-700 text-white flex-1 flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
-    </Box>
+
+      {/* Email Confirmation Modal */}
+      {showEmailModal && orderToEmail && createPortal(
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" 
+          style={{ zIndex: 100000 }}
+          onClick={() => {
+            setShowEmailModal(false);
+            setOrderToEmail(null);
+          }}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in" 
+            style={{ backgroundColor: 'white', color: '#111827' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <Mail className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-xl font-bold text-center mb-2" style={{ color: '#111827' }}>
+              {orderToEmail.emailSent ? '¿Reenviar Orden por Email?' : '¿Enviar Orden por Email?'}
+            </h3>
+
+            {/* Message */}
+            <div className="space-y-3 mb-6">
+              <p className="text-center" style={{ color: '#4B5563' }}>
+                {orderToEmail.emailSent 
+                  ? 'Esta orden ya fue enviada anteriormente. ¿Deseas reenviarla?'
+                  : 'Se enviará la orden de compra al proveedor por email:'
+                }
+              </p>
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <p className="font-semibold text-center" style={{ color: '#111827' }}>
+                  #{orderToEmail.orderNumber}
+                </p>
+                <p className="text-sm text-center mt-2" style={{ color: '#6B7280' }}>
+                  <strong>Proveedor:</strong> {orderToEmail.supplier?.name}
+                </p>
+                <p className="text-sm text-center font-medium" style={{ color: '#2563EB' }}>
+                  📧 {orderToEmail.supplier?.email}
+                </p>
+                <p className="text-sm text-center mt-2" style={{ color: '#6B7280' }}>
+                  Total: ${orderToEmail.total?.toFixed(2)}
+                </p>
+              </div>
+              {orderToEmail.emailSent && orderToEmail.emailSentDate && (
+                <p className="text-xs text-center" style={{ color: '#9CA3AF' }}>
+                  Último envío: {new Date(orderToEmail.emailSentDate).toLocaleString('es-DO')}
+                </p>
+              )}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                <p className="text-sm text-center" style={{ color: '#1E3A8A' }}>
+                  <strong>📎 Se incluirá:</strong>
+                </p>
+                <ul className="text-xs mt-2 space-y-1" style={{ color: '#1E40AF', listStyle: 'none' }}>
+                  <li className="text-center">✓ Email HTML con tabla de productos</li>
+                  <li className="text-center">✓ PDF adjunto con la orden completa</li>
+                </ul>
+              </div>
+            </div>
+
+            {!emailFeatureEnabled && (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-center text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+                Activa el SMTP en Configuración &gt; Email para poder enviar órdenes por correo.
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowEmailModal(false);
+                  setOrderToEmail(null);
+                }}
+                className="btn btn-secondary flex-1"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmSendEmail}
+                className={`btn btn-primary flex-1 flex items-center justify-center gap-2 ${!emailFeatureEnabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+                disabled={!emailFeatureEnabled}
+              >
+                <Mail className="w-4 h-4" />
+                {orderToEmail.emailSent ? 'Reenviar' : 'Enviar Email'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
   );
 };
 
@@ -1147,15 +1164,15 @@ const AutoOrderModal = ({ suppliers, products, onClose, onGenerate }) => {
   // Filtrar productos con stock bajo (incluir los que NO tienen proveedor)
   const lowStockProducts = products.filter(p => {
     const isLowStock = p.stock <= p.lowStockThreshold;
-
+    
     if (!config.supplierId) return isLowStock; // Mostrar todos los productos con stock bajo
-
+    
     // Si hay proveedor seleccionado, filtrar por ese proveedor
     const productSupplierId = p.supplier?._id || p.supplier;
     return isLowStock && productSupplierId === config.supplierId;
   });
 
-  const productsWithoutSupplier = lowStockProducts.filter(p =>
+  const productsWithoutSupplier = lowStockProducts.filter(p => 
     !p.supplier || (!p.supplier._id && !p.supplier)
   );
 
@@ -1167,135 +1184,118 @@ const AutoOrderModal = ({ suppliers, products, onClose, onGenerate }) => {
     onGenerate(config);
   };
 
-  return (
-    <Dialog
-      open={true}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-    >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Zap size={24} color="#eab308" />
-          <Typography variant="h6" fontWeight="bold">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 100000 }}>
+      <div className="glass-strong rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Zap className="w-6 h-6 text-yellow-500" />
             Generar Orden Automática
-          </Typography>
-        </Box>
-        <IconButton onClick={onClose}>
-          <X />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent dividers>
-        <Stack spacing={3}>
-          <Alert severity="info" icon={<Info />}>
-            <Typography variant="subtitle2" fontWeight="bold">
-              Productos con stock bajo: {lowStockProducts.length}
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <p className="text-sm text-blue-800 dark:text-blue-300">
+              <strong>Productos con stock bajo: {lowStockProducts.length}</strong>
               {productsWithoutSupplier.length > 0 && (
-                <Box component="span" sx={{ color: 'warning.main', ml: 1 }}>
+                <span className="text-yellow-600 dark:text-yellow-400 ml-2">
                   ({productsWithoutSupplier.length} sin proveedor)
-                </Box>
+                </span>
               )}
-            </Typography>
-            <Typography variant="body2">
+            </p>
+            <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">
               Se generarán órdenes automáticas agrupadas por proveedor. Los productos sin proveedor se agruparán en una orden genérica.
-            </Typography>
-          </Alert>
+            </p>
+          </div>
 
           {productsWithoutSupplier.length > 0 && (
-            <Alert severity="warning">
-              <Typography variant="subtitle2" fontWeight="bold">
-                ℹ️ Nota: {productsWithoutSupplier.length} producto(s) sin proveedor asignado
-              </Typography>
-              <Typography variant="body2">
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+              <p className="text-sm text-amber-800 dark:text-amber-300">
+                <strong>ℹ️ Nota: {productsWithoutSupplier.length} producto(s) sin proveedor asignado</strong>
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
                 Estos productos se incluirán en una orden con proveedor "Genérico". Puedes asignar proveedores específicos en el inventario.
-              </Typography>
-            </Alert>
+              </p>
+            </div>
           )}
 
-          <FormControl fullWidth>
-            <InputLabel>Filtrar por Proveedor (Opcional)</InputLabel>
-            <Select
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Filtrar por Proveedor (Opcional)
+            </label>
+            <select
               value={config.supplierId}
-              label="Filtrar por Proveedor (Opcional)"
               onChange={(e) => setConfig({ ...config, supplierId: e.target.value })}
+              className="input w-full"
             >
-              <MenuItem value="">Todos los proveedores</MenuItem>
+              <option value="">Todos los proveedores</option>
               {suppliers.map((supplier) => (
-                <MenuItem key={supplier._id} value={supplier._id}>
+                <option key={supplier._id} value={supplier._id}>
                   {supplier.name}
-                </MenuItem>
+                </option>
               ))}
-            </Select>
-          </FormControl>
+            </select>
+          </div>
 
-          <Box>
-            <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+          <div>
+            <h3 className="font-medium text-gray-900 dark:text-white mb-3">
               Productos a incluir ({lowStockProducts.length})
-            </Typography>
-            <Paper variant="outlined" sx={{ maxHeight: 300, overflow: 'auto' }}>
+            </h3>
+            <div className="max-h-64 overflow-y-auto space-y-2">
               {lowStockProducts.length === 0 ? (
-                <Box sx={{ p: 4, textAlign: 'center', color: 'text.secondary' }}>
+                <p className="text-gray-600 dark:text-gray-400 text-center py-8">
                   No hay productos con stock bajo
-                </Box>
+                </p>
               ) : (
-                <Stack spacing={0}>
-                  {lowStockProducts.map((product, index) => (
-                    <Box
-                      key={product._id}
-                      sx={{
-                        p: 2,
-                        borderBottom: index < lowStockProducts.length - 1 ? 1 : 0,
-                        borderColor: 'divider',
-                        bgcolor: 'background.paper'
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                        <Box>
-                          <Typography variant="subtitle2">{product.name}</Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'primary.main', mt: 0.5 }}>
-                            <Truck size={12} />
-                            <Typography variant="caption">
-                              {product.supplier?.name || 'Sin proveedor'}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Typography variant="subtitle2" color="error.main">
-                          Pedir: {Math.max((product.lowStockThreshold * 2) - product.stock, 1)}
-                        </Typography>
-                      </Box>
-                      <Stack direction="row" spacing={2}>
-                        <Typography variant="caption" color="text.secondary">
-                          Stock: {product.stock}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Mínimo: {product.lowStockThreshold}
-                        </Typography>
-                        <Typography variant="caption" color="error.main">
-                          Déficit: {product.lowStockThreshold - product.stock}
-                        </Typography>
-                      </Stack>
-                    </Box>
-                  ))}
-                </Stack>
+                lowStockProducts.map((product) => (
+                  <div
+                    key={product._id}
+                    className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 dark:text-white">{product.name}</p>
+                        <p className="text-xs text-primary-600 dark:text-primary-400 flex items-center gap-1 mt-1">
+                          <Truck className="w-3 h-3" />
+                          {product.supplier?.name || 'Sin proveedor'}
+                        </p>
+                      </div>
+                      <div className="text-sm text-red-600 dark:text-red-400 font-medium text-right">
+                        Pedir: {Math.max((product.lowStockThreshold * 2) - product.stock, 1)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                      <span>Stock: {product.stock}</span>
+                      <span>Mínimo: {product.lowStockThreshold}</span>
+                      <span className="text-red-600 dark:text-red-400">Déficit: {product.lowStockThreshold - product.stock}</span>
+                    </div>
+                  </div>
+                ))
               )}
-            </Paper>
-          </Box>
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="inherit">
-          Cancelar
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleGenerate}
-          disabled={lowStockProducts.length === 0}
-          startIcon={<Zap />}
-        >
-          Generar Órdenes
-        </Button>
-      </DialogActions>
-    </Dialog>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              onClick={handleGenerate}
+              disabled={lowStockProducts.length === 0}
+              className="btn btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Zap className="w-5 h-5 mr-2" />
+              Generar Órdenes
+            </button>
+            <button onClick={onClose} className="btn btn-secondary flex-1">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 };
 
@@ -1313,8 +1313,8 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
   const [supplier, setSupplier] = useState(editingOrder?.supplier?._id || editingOrder?.supplier || '');
   const [genericSupplierName, setGenericSupplierName] = useState(editingOrder?.genericSupplierName || '');
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState(
-    editingOrder?.expectedDeliveryDate
-      ? new Date(editingOrder.expectedDeliveryDate).toISOString().split('T')[0]
+    editingOrder?.expectedDeliveryDate 
+      ? new Date(editingOrder.expectedDeliveryDate).toISOString().split('T')[0] 
       : ''
   );
   const [notes, setNotes] = useState(editingOrder?.notes || '');
@@ -1329,7 +1329,7 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
   const sortedAndFilteredProducts = products
     .filter(p => {
       // Filtro de búsqueda
-      const matchSearch = !searchTerm ||
+      const matchSearch = !searchTerm || 
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.brand?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -1397,7 +1397,7 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
     };
 
     setCart([...cart, newItem]);
-
+    
     // Auto-seleccionar proveedor si no hay uno seleccionado
     if (!supplier && (product.supplier?._id || product.supplier)) {
       setSupplier(product.supplier?._id || product.supplier);
@@ -1408,14 +1408,14 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
   const updateQuantity = (productId, newQuantity) => {
     // Permitir valores vacíos para que el usuario pueda borrar
     if (newQuantity === '' || newQuantity === null || newQuantity === undefined) {
-      setCart(cart.map(item =>
+      setCart(cart.map(item => 
         item.product === productId ? { ...item, quantity: '' } : item
       ));
       return;
     }
     const quantity = parseInt(newQuantity);
     if (!isNaN(quantity) && quantity >= 1) {
-      setCart(cart.map(item =>
+      setCart(cart.map(item => 
         item.product === productId ? { ...item, quantity: quantity } : item
       ));
     }
@@ -1425,14 +1425,14 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
   const updatePrice = (productId, newPrice) => {
     // Permitir valores vacíos para que el usuario pueda borrar
     if (newPrice === '' || newPrice === null || newPrice === undefined) {
-      setCart(cart.map(item =>
+      setCart(cart.map(item => 
         item.product === productId ? { ...item, unitPrice: '' } : item
       ));
       return;
     }
     const price = parseFloat(newPrice);
     if (!isNaN(price) && price >= 0) {
-      setCart(cart.map(item =>
+      setCart(cart.map(item => 
         item.product === productId ? { ...item, unitPrice: price } : item
       ));
     }
@@ -1494,426 +1494,420 @@ const CreateOrderModal = ({ suppliers, products, editingOrder, onClose, onSave }
 
   const getStockBadge = (product) => {
     if (product.stock === 0) {
-      return { text: 'Agotado', color: 'error' };
+      return { text: 'Agotado', class: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' };
     } else if (product.stock <= product.lowStockThreshold) {
-      return { text: 'Stock Bajo', color: 'warning' };
+      return { text: 'Stock Bajo', class: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' };
     } else {
-      return { text: 'Stock OK', color: 'success' };
+      return { text: 'Stock OK', class: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' };
     }
   };
 
-  return (
-    <Dialog
-      open={true}
-      onClose={onClose}
-      maxWidth="xl"
-      fullWidth
-      PaperProps={{
-        sx: { height: '90vh', display: 'flex', flexDirection: 'column' }
-      }}
-    >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Package size={24} color="#2563eb" />
-          <Typography variant="h6" fontWeight="bold">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2" style={{ zIndex: 100000 }}>
+      <div className="glass-strong rounded-2xl w-full max-w-[95vw] h-[85vh] flex flex-col my-auto" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Package className="w-6 h-6 text-primary-600" />
             {editingOrder ? 'Editar Orden de Compra' : 'Nueva Orden de Compra'}
-          </Typography>
-        </Box>
-        <IconButton onClick={onClose}>
-          <X />
-        </IconButton>
-      </DialogTitle>
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-      <DialogContent dividers sx={{ p: 0, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-          <Grid container sx={{ height: '100%' }}>
-            {/* LEFT COLUMN - Product Browser */}
-            <Grid item xs={12} md={8} sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRight: 1, borderColor: 'divider', p: 2 }}>
-              {/* Search and Filters */}
-              <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    placeholder="Buscar por nombre, SKU o marca..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Search size={20} />
-                        </InputAdornment>
-                      ),
-                    }}
-                    size="small"
-                  />
-                </Grid>
-                <Grid item xs={4}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Categoría</InputLabel>
-                    <Select
-                      value={categoryFilter}
-                      label="Categoría"
-                      onChange={(e) => setCategoryFilter(e.target.value)}
-                    >
-                      <MenuItem value="">Todas las categorías</MenuItem>
-                      {categories.sort().map(cat => (
-                        <MenuItem key={cat} value={cat}>{cat}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={4}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Marca</InputLabel>
-                    <Select
-                      value={brandFilter}
-                      label="Marca"
-                      onChange={(e) => setBrandFilter(e.target.value)}
-                    >
-                      <MenuItem value="">Todas las marcas</MenuItem>
-                      {brands.sort().map(brand => (
-                        <MenuItem key={brand} value={brand}>{brand}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={4}>
-                  <FormControl fullWidth size="small">
-                    <InputLabel>Stock</InputLabel>
-                    <Select
-                      value={stockFilter}
-                      label="Stock"
-                      onChange={(e) => setStockFilter(e.target.value)}
-                    >
-                      <MenuItem value="all">Todo el stock</MenuItem>
-                      <MenuItem value="outOfStock">Agotados</MenuItem>
-                      <MenuItem value="lowStock">Stock Bajo</MenuItem>
-                      <MenuItem value="normal">Stock Normal</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-              </Grid>
+        <form onSubmit={handleSubmit} className="flex-1 flex gap-4 p-4 overflow-hidden">
+          {/* LEFT COLUMN - Product Browser (60%) */}
+          <div className="flex-[3] flex flex-col overflow-hidden">
+            {/* Search Bar */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, SKU o marca..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="input w-full pl-10"
+                />
+              </div>
+            </div>
 
-              {/* Products Table */}
-              <TableContainer component={Paper} variant="outlined" sx={{ flex: 1, overflow: 'auto' }}>
-                <Table stickyHeader size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>SKU</TableCell>
-                      <TableCell>Producto</TableCell>
-                      <TableCell align="center">Stock Actual</TableCell>
-                      <TableCell>Estado</TableCell>
-                      <TableCell align="right">Precio</TableCell>
-                      <TableCell align="center">Acción</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {sortedAndFilteredProducts.map((product) => {
-                      const badge = getStockBadge(product);
-                      const inCart = cart.some(item => item.product === product._id);
+            {/* Filters */}
+            <div className="mb-4 grid grid-cols-3 gap-3">
+              <div>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="input w-full text-sm"
+                >
+                  <option value="">Todas las categorías</option>
+                  {[...new Set(products.map(p => p.category).filter(Boolean))].sort().map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <select
+                  value={brandFilter}
+                  onChange={(e) => setBrandFilter(e.target.value)}
+                  className="input w-full text-sm"
+                >
+                  <option value="">Todas las marcas</option>
+                  {[...new Set(products.map(p => p.brand).filter(Boolean))].sort().map(brand => (
+                    <option key={brand} value={brand}>{brand}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <select
+                  value={stockFilter}
+                  onChange={(e) => setStockFilter(e.target.value)}
+                  className="input w-full text-sm"
+                >
+                  <option value="all">Todo el stock</option>
+                  <option value="outOfStock">Agotados</option>
+                  <option value="lowStock">Stock Bajo</option>
+                  <option value="normal">Stock Normal</option>
+                </select>
+              </div>
+            </div>
 
-                      return (
-                        <TableRow key={product._id} hover>
-                          <TableCell sx={{ fontFamily: 'monospace' }}>{product.sku}</TableCell>
-                          <TableCell>
-                            <Typography variant="body2" fontWeight="medium">{product.name}</Typography>
-                            <Typography variant="caption" color="text.secondary">{product.brand}</Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Typography variant="body2" fontWeight="bold">{product.stock}</Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              / {product.reorderPoint || (product.lowStockThreshold * 2)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              label={badge.text}
-                              color={badge.color}
-                              size="small"
-                              variant="outlined"
-                            />
-                          </TableCell>
-                          <TableCell align="right">
-                            ${product.purchasePrice?.toFixed(2) || '0.00'}
-                          </TableCell>
-                          <TableCell align="center">
-                            <Button
-                              size="small"
-                              variant={inCart ? "outlined" : "contained"}
-                              color={inCart ? "inherit" : "primary"}
-                              disabled={inCart}
-                              onClick={() => addToCart(product)}
-                              startIcon={<Plus size={16} />}
-                            >
-                              {inCart ? 'Agregado' : 'Agregar'}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                    {sortedAndFilteredProducts.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                          No se encontraron productos
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Grid>
+            {/* Products Table */}
+            <div className="flex-1 overflow-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-100 dark:bg-gray-800 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600 dark:text-gray-400">SKU</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600 dark:text-gray-400">Producto</th>
+                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-600 dark:text-gray-400">Stock Actual</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-600 dark:text-gray-400">Estado</th>
+                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-600 dark:text-gray-400">Precio</th>
+                    <th className="px-3 py-2 text-center text-xs font-medium text-gray-600 dark:text-gray-400">Acción</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {sortedAndFilteredProducts.map((product) => {
+                    const badge = getStockBadge(product);
+                    const inCart = cart.some(item => item.product === product._id);
+                    
+                    return (
+                      <tr key={product._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="px-3 py-2 text-gray-900 dark:text-white font-mono text-xs">
+                          {product.sku}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="text-gray-900 dark:text-white font-medium">{product.name}</div>
+                          <div className="text-xs text-gray-500">{product.brand}</div>
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <span className="text-gray-900 dark:text-white font-semibold">
+                            {product.stock}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+                            / {product.reorderPoint || (product.lowStockThreshold * 2)}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.class}`}>
+                            {badge.text}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-right text-gray-900 dark:text-white font-medium">
+                          ${product.purchasePrice?.toFixed(2) || '0.00'}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => addToCart(product)}
+                            disabled={inCart}
+                            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1 mx-auto ${
+                              inCart
+                                ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                                : 'bg-primary-600 hover:bg-primary-700 text-white'
+                            }`}
+                          >
+                            <Plus className="w-3 h-3" />
+                            {inCart ? 'Agregado' : 'Agregar'}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {sortedAndFilteredProducts.length === 0 && (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  No se encontraron productos
+                </div>
+              )}
+            </div>
+          </div>
 
-            {/* RIGHT COLUMN - Cart & Form */}
-            <Grid item xs={12} md={4} sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.default', p: 2 }}>
-              <Box sx={{ mb: 2, pb: 1, borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Package size={20} color="#2563eb" />
-                <Typography variant="h6">Carrito ({cart.length})</Typography>
-              </Box>
+          {/* RIGHT COLUMN - Cart & Form (40%) */}
+          <div className="flex-[2] flex flex-col overflow-hidden glass-light rounded-lg p-4">
+            {/* Cart Header */}
+            <div className="mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Package className="w-5 h-5 text-primary-600" />
+                Carrito ({cart.length})
+              </h3>
+            </div>
 
-              <Box sx={{ flex: 1, overflow: 'auto', mb: 2 }}>
-                {cart.length === 0 ? (
-                  <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
-                    <Package size={48} style={{ margin: '0 auto', marginBottom: 8, opacity: 0.5 }} />
-                    <Typography variant="body2">No hay productos seleccionados</Typography>
-                  </Box>
-                ) : (
-                  <Stack spacing={2}>
-                    {cart.map((item) => (
-                      <Paper key={item.product} variant="outlined" sx={{ p: 2 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="subtitle2">{item.productData.name}</Typography>
-                            <Typography variant="caption" color="text.secondary">{item.productData.sku}</Typography>
-                          </Box>
-                          <IconButton size="small" color="error" onClick={() => removeFromCart(item.product)}>
-                            <X size={16} />
-                          </IconButton>
-                        </Box>
-                        <Grid container spacing={2}>
-                          <Grid item xs={6}>
-                            <TextField
-                              label="Cantidad"
-                              type="number"
-                              size="small"
-                              fullWidth
-                              required
-                              value={item.quantity}
-                              onChange={(e) => updateQuantity(item.product, e.target.value)}
-                              inputProps={{ min: 1 }}
-                            />
-                          </Grid>
-                          <Grid item xs={6}>
-                            <TextField
-                              label="Precio"
-                              type="number"
-                              size="small"
-                              fullWidth
-                              value={item.unitPrice}
-                              onChange={(e) => updatePrice(item.product, e.target.value)}
-                              inputProps={{ min: 0, step: 0.01 }}
-                              placeholder="0.00"
-                            />
-                          </Grid>
-                        </Grid>
-                        <Box sx={{ mt: 1, textAlign: 'right' }}>
-                          <Typography variant="body2" fontWeight="medium">
-                            Subtotal: ${((typeof item.quantity === 'number' ? item.quantity : (parseInt(item.quantity) || 0)) * (typeof item.unitPrice === 'number' ? item.unitPrice : (parseFloat(item.unitPrice) || 0))).toFixed(2)}
-                          </Typography>
-                        </Box>
-                      </Paper>
-                    ))}
-                  </Stack>
-                )}
-              </Box>
+            {/* Cart Items */}
+            <div className="flex-1 overflow-auto mb-4 space-y-2">
+              {cart.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No hay productos seleccionados</p>
+                </div>
+              ) : (
+                cart.map((item) => (
+                  <div key={item.product} className="glass-light rounded-lg p-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{item.productData.name}</p>
+                        <p className="text-xs text-gray-500">{item.productData.sku}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFromCart(item.product)}
+                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Cantidad *</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => updateQuantity(item.product, e.target.value)}
+                          className="input w-full text-sm"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Precio (opcional)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.unitPrice}
+                          onChange={(e) => updatePrice(item.product, e.target.value)}
+                          className="input w-full text-sm"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-2 text-right text-sm font-medium text-gray-900 dark:text-white">
+                      Subtotal: ${((typeof item.quantity === 'number' ? item.quantity : (parseInt(item.quantity) || 0)) * (typeof item.unitPrice === 'number' ? item.unitPrice : (parseFloat(item.unitPrice) || 0))).toFixed(2)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
 
-              <Stack spacing={2} sx={{ mt: 'auto' }}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Proveedor</InputLabel>
-                  <Select
-                    value={supplier}
-                    label="Proveedor"
-                    onChange={(e) => {
-                      setSupplier(e.target.value);
-                      if (e.target.value) setGenericSupplierName('');
-                    }}
-                  >
-                    <MenuItem value="">Proveedor Genérico / Otro</MenuItem>
-                    {suppliers.filter(s => s.isActive).map((sup) => (
-                      <MenuItem key={sup._id} value={sup._id}>
-                        {sup.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+            {/* Supplier & Details */}
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Proveedor
+                </label>
+                <select
+                  value={supplier}
+                  onChange={(e) => {
+                    setSupplier(e.target.value);
+                    if (e.target.value) setGenericSupplierName('');
+                  }}
+                  className="input w-full"
+                >
+                  <option value="">Proveedor Genérico / Otro</option>
+                  {suppliers.filter(s => s.isActive).map((sup) => (
+                    <option key={sup._id} value={sup._id}>
+                      {sup.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                {!supplier && (
-                  <TextField
-                    label="Nombre del Proveedor *"
-                    fullWidth
-                    size="small"
+              {!supplier && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Nombre del Proveedor *
+                  </label>
+                  <input
+                    type="text"
                     value={genericSupplierName}
                     onChange={(e) => setGenericSupplierName(e.target.value)}
+                    className="input w-full"
                     placeholder="Ej: Ferreteria Local, Vendedor Juan, etc."
                     required={!supplier}
                   />
-                )}
+                </div>
+              )}
 
-                <TextField
-                  label="Fecha de Entrega"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Fecha de Entrega
+                </label>
+                <input
                   type="date"
-                  fullWidth
-                  size="small"
-                  InputLabelProps={{ shrink: true }}
                   value={expectedDeliveryDate}
                   onChange={(e) => setExpectedDeliveryDate(e.target.value)}
+                  className="input w-full"
                 />
+              </div>
 
-                <TextField
-                  label="Notas"
-                  multiline
-                  rows={2}
-                  fullWidth
-                  size="small"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Notas
+                </label>
+                <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
+                  className="input w-full"
+                  rows="2"
                   placeholder="Información adicional..."
                 />
+              </div>
+            </div>
 
-                {subtotal > 0 ? (
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.paper' }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography variant="body2" color="text.secondary">Subtotal:</Typography>
-                      <Typography variant="body2" fontWeight="medium">${subtotal.toFixed(2)}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">ITBIS (18%):</Typography>
-                      <Typography variant="body2" fontWeight="medium">${tax.toFixed(2)}</Typography>
-                    </Box>
-                    <Divider sx={{ my: 1 }} />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="subtitle1" fontWeight="bold">Total:</Typography>
-                      <Typography variant="subtitle1" fontWeight="bold">${total.toFixed(2)}</Typography>
-                    </Box>
-                  </Paper>
-                ) : cart.length > 0 && (
-                  <Paper variant="outlined" sx={{ p: 2, textAlign: 'center', bgcolor: 'background.paper' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      💡 Los precios se definirán con el proveedor
-                    </Typography>
-                  </Paper>
-                )}
+            {/* Totals */}
+            {subtotal > 0 && (
+              <div className="glass-light rounded-lg p-3 mb-4">
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>Subtotal:</span>
+                    <span className="font-medium">${subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                    <span>ITBIS (18%):</span>
+                    <span className="font-medium">${tax.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-bold text-gray-900 dark:text-white pt-2 border-t border-gray-300 dark:border-gray-600">
+                    <span>Total:</span>
+                    <span>${total.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            {subtotal === 0 && cart.length > 0 && (
+              <div className="glass-light rounded-lg p-3 mb-4 text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  💡 Los precios se definirán con el proveedor
+                </p>
+              </div>
+            )}
 
-                <Stack direction="row" spacing={2}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    fullWidth
-                    disabled={cart.length === 0 || (!supplier && !genericSupplierName.trim())}
-                    startIcon={<Check />}
-                  >
-                    {editingOrder ? 'Actualizar' : 'Crear'} Orden
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="inherit"
-                    fullWidth
-                    onClick={onClose}
-                    startIcon={<X />}
-                  >
-                    Cancelar
-                  </Button>
-                </Stack>
-              </Stack>
-            </Grid>
-          </Grid>
+            {/* Actions */}
+            <div className="flex gap-2">
+              <button 
+                type="submit" 
+                disabled={cart.length === 0 || (!supplier && !genericSupplierName.trim())}
+                className="btn btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Check className="w-4 h-4" />
+                {editingOrder ? 'Actualizar' : 'Crear'} Orden
+              </button>
+              <button 
+                type="button" 
+                onClick={onClose} 
+                className="btn btn-secondary flex items-center justify-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Cancelar
+              </button>
+            </div>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>,
+    document.body
   );
 };
 
 const OrderDetailsModal = ({ order, onClose }) => {
-  return (
-    <Dialog
-      open={true}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-    >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6" fontWeight="bold">
-          Detalles de Orden {order.orderNumber}
-        </Typography>
-        <IconButton onClick={onClose}>
-          <X />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent dividers>
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={6} md={3}>
-            <Typography variant="caption" color="text.secondary">Proveedor</Typography>
-            <Typography variant="body1" fontWeight="medium">
-              {order.supplier?.name || order.genericSupplierName || 'Proveedor Genérico'}
-            </Typography>
-          </Grid>
-          <Grid item xs={6} md={3}>
-            <Typography variant="caption" color="text.secondary">Estado</Typography>
-            <Typography variant="body1" fontWeight="medium">{order.status}</Typography>
-          </Grid>
-          <Grid item xs={6} md={3}>
-            <Typography variant="caption" color="text.secondary">Fecha</Typography>
-            <Typography variant="body1" fontWeight="medium">
-              {new Date(order.orderDate).toLocaleDateString()}
-            </Typography>
-          </Grid>
-          <Grid item xs={6} md={3}>
-            <Typography variant="caption" color="text.secondary">Total</Typography>
-            <Typography variant="body1" fontWeight="medium">${order.total.toFixed(2)}</Typography>
-          </Grid>
-        </Grid>
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 100000 }}>
+      <div className="glass-strong rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Detalles de Orden {order.orderNumber}
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-        <Typography variant="h6" gutterBottom>Productos</Typography>
-        <Stack spacing={2}>
-          {order.items.map((item, idx) => (
-            <Paper key={idx} variant="outlined" sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
-                <Typography variant="subtitle1" fontWeight="medium">
-                  {item.product?.name || 'Producto eliminado'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Cantidad: {item.quantity} x ${item.unitPrice.toFixed(2)}
-                </Typography>
-              </Box>
-              <Typography variant="subtitle1" fontWeight="bold">
-                ${item.subtotal.toFixed(2)}
-              </Typography>
-            </Paper>
-          ))}
-        </Stack>
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Proveedor</p>
+              <p className="font-medium text-gray-900 dark:text-white">
+                {order.supplier?.name || order.genericSupplierName || 'Proveedor Genérico'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Estado</p>
+              <p className="font-medium text-gray-900 dark:text-white">{order.status}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Fecha</p>
+              <p className="font-medium text-gray-900 dark:text-white">
+                {new Date(order.orderDate).toLocaleDateString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total</p>
+              <p className="font-medium text-gray-900 dark:text-white">${order.total.toFixed(2)}</p>
+            </div>
+          </div>
 
-        <Box sx={{ mt: 4, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-          <Stack spacing={1}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', color: 'text.secondary' }}>
-              <Typography>Subtotal:</Typography>
-              <Typography>${order.subtotal.toFixed(2)}</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', color: 'text.secondary' }}>
-              <Typography>ITBIS (18%):</Typography>
-              <Typography>${order.tax.toFixed(2)}</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 2, borderTop: 1, borderColor: 'divider' }}>
-              <Typography variant="h6" fontWeight="bold">Total:</Typography>
-              <Typography variant="h6" fontWeight="bold">${order.total.toFixed(2)}</Typography>
-            </Box>
-          </Stack>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="primary">
-          Cerrar
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Productos</h3>
+            <div className="space-y-2">
+              {order.items.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg flex justify-between"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {item.product?.name || 'Producto eliminado'}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Cantidad: {item.quantity} x ${item.unitPrice.toFixed(2)}
+                    </p>
+                  </div>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    ${item.subtotal.toFixed(2)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
+            <div className="flex justify-between text-gray-600 dark:text-gray-400">
+              <span>Subtotal:</span>
+              <span>${order.subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-gray-600 dark:text-gray-400">
+              <span>ITBIS (18%):</span>
+              <span>${order.tax.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white pt-2 border-t border-gray-300 dark:border-gray-600">
+              <span>Total:</span>
+              <span>${order.total.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 };
 
@@ -1951,7 +1945,7 @@ const ReceiveOrderModal = ({ order, onClose, onConfirm }) => {
       [itemId]: !checkedItems[itemId],
     };
     setCheckedItems(newCheckedItems);
-
+    
     // Verificar si todos están marcados
     const allItemsChecked = order.items.every(item => newCheckedItems[item._id || item.product._id]);
     setAllChecked(allItemsChecked);
@@ -1999,284 +1993,229 @@ const ReceiveOrderModal = ({ order, onClose, onConfirm }) => {
 
   const checkedCount = Object.values(checkedItems).filter(Boolean).length;
 
-  return (
-    <Dialog
-      open={true}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-    >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box>
-          <Typography variant="h6" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Package size={24} color="#2563eb" />
-            Confirmar Recepción de Orden
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {order.orderNumber} - {order.supplier?.name || order.genericSupplierName || 'Proveedor Genérico'}
-          </Typography>
-        </Box>
-        <IconButton onClick={onClose}>
-          <X />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent dividers>
-        <Stack spacing={3}>
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ zIndex: 100000 }}>
+      <div className="glass-strong rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm z-10">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <Package className="w-6 h-6 text-primary-600" />
+              Confirmar Recepción de Orden
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {order.orderNumber} - {order.supplier?.name || order.genericSupplierName || 'Proveedor Genérico'}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
           {/* Instrucciones */}
-          <Alert severity="info" icon={<AlertTriangle />}>
-            <Typography variant="subtitle2" fontWeight="bold">
-              Lista de Verificación de Recepción
-            </Typography>
-            <Typography variant="body2">
-              Verifique que cada producto haya sido recibido en la cantidad correcta y en buen estado.
-              Marque cada ítem a medida que lo verifique.
-            </Typography>
-          </Alert>
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-1">
+                  Lista de Verificación de Recepción
+                </h3>
+                <p className="text-sm text-blue-800 dark:text-blue-400">
+                  Verifique que cada producto haya sido recibido en la cantidad correcta y en buen estado.
+                  Marque cada ítem a medida que lo verifique.
+                </p>
+              </div>
+            </div>
+          </div>
 
           {/* Progreso */}
-          <Paper variant="outlined" sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'background.default' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.main', width: 48, height: 48, fontWeight: 'bold' }}>
-                {checkedCount}/{order.items.length}
-              </Avatar>
-              <Box>
-                <Typography variant="subtitle2">Progreso de Verificación</Typography>
-                <Typography variant="caption" color="text.secondary">
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30">
+                <span className="text-lg font-bold text-primary-600 dark:text-primary-400">
+                  {checkedCount}/{order.items.length}
+                </span>
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">Progreso de Verificación</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   {checkedCount === order.items.length ? '¡Todos los productos verificados!' : `${order.items.length - checkedCount} producto(s) pendiente(s)`}
-                </Typography>
-              </Box>
-            </Box>
-            <Button size="small" onClick={handleCheckAll}>
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleCheckAll}
+              className="btn-secondary text-sm"
+            >
               {allChecked ? 'Desmarcar Todo' : 'Marcar Todo'}
-            </Button>
-          </Paper>
+            </button>
+          </div>
 
           {/* Lista de Productos */}
-          <Box>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Package size={20} />
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <Package className="w-5 h-5" />
               Productos en esta Orden
-            </Typography>
-            <Stack spacing={2}>
+            </h3>
+            <div className="space-y-2">
               {order.items.map((item, idx) => {
                 const itemId = item._id || item.product?._id || idx;
                 const isChecked = checkedItems[itemId] || false;
-                const receivedQty = receivedQuantities[itemId] !== undefined && receivedQuantities[itemId] !== ''
-                  ? receivedQuantities[itemId]
+                const receivedQty = receivedQuantities[itemId] !== undefined && receivedQuantities[itemId] !== '' 
+                  ? receivedQuantities[itemId] 
                   : item.quantity;
                 const numericReceivedQty = receivedQty === '' ? 0 : (typeof receivedQty === 'number' ? receivedQty : parseInt(receivedQty) || 0);
                 const hasDiscrepancy = numericReceivedQty !== item.quantity;
-
+                
                 return (
-                  <Paper
+                  <div
                     key={itemId}
-                    variant="outlined"
-                    sx={{
-                      p: 2,
-                      borderColor: isChecked ? 'success.main' : 'divider',
-                      bgcolor: isChecked ? 'success.lighter' : 'background.paper',
-                      transition: 'all 0.2s',
-                      borderWidth: isChecked ? 2 : 1
-                    }}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      isChecked
+                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50'
+                    }`}
                   >
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Box sx={{ pt: 0.5 }}>
-                        <Checkbox
-                          checked={isChecked}
-                          onChange={() => handleCheckItem(itemId)}
-                          color="success"
-                        />
-                      </Box>
-                      <Box sx={{ flex: 1 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                          <Box>
-                            <Typography variant="subtitle2">{item.product?.name || 'Producto eliminado'}</Typography>
-                            <Typography variant="caption" color="text.secondary">SKU: {item.product?.sku || 'N/A'}</Typography>
-                          </Box>
-                          <Box sx={{ textAlign: 'right' }}>
-                            <Typography variant="subtitle2">${item.subtotal.toFixed(2)}</Typography>
-                            <Typography variant="caption" color="text.secondary">${item.unitPrice.toFixed(2)} c/u</Typography>
-                          </Box>
-                        </Box>
-
-                        <Grid container spacing={2} alignItems="center">
-                          <Grid item xs={6}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography variant="body2" color="text.secondary">Cantidad pedida:</Typography>
-                              <Chip label={item.quantity} size="small" />
-                            </Box>
-                          </Grid>
-                          <Grid item xs={6}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography variant="body2" color="text.secondary">Cantidad recibida:</Typography>
-                              <TextField
-                                type="number"
-                                size="small"
-                                value={receivedQty}
-                                onChange={(e) => handleQuantityChange(itemId, e.target.value)}
-                                inputProps={{ min: 0, style: { textAlign: 'center', width: '60px' } }}
-                                error={hasDiscrepancy}
-                                sx={{ width: '80px' }}
-                              />
-                            </Box>
-                          </Grid>
-                        </Grid>
-                      </Box>
-                    </Box>
-                  </Paper>
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 pt-1">
+                        <div 
+                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors cursor-pointer ${
+                            isChecked
+                              ? 'border-green-500 bg-green-500'
+                              : 'border-gray-300 dark:border-gray-600 hover:border-primary-500'
+                          }`}
+                          onClick={() => handleCheckItem(itemId)}
+                        >
+                          {isChecked && <Check className="w-4 h-4 text-white" />}
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h4 className="font-medium text-gray-900 dark:text-white">
+                              {item.product?.name || 'Producto eliminado'}
+                            </h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              SKU: {item.product?.sku || 'N/A'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-gray-900 dark:text-white">
+                              ${item.subtotal.toFixed(2)}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              ${item.unitPrice.toFixed(2)} c/u
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Campo de cantidad recibida */}
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Cantidad pedida:
+                            </label>
+                            <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded text-sm font-semibold text-gray-900 dark:text-white">
+                              {item.quantity}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Cantidad recibida:
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={receivedQty}
+                              onChange={(e) => handleQuantityChange(itemId, e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              className={`input w-24 text-sm text-center ${
+                                hasDiscrepancy 
+                                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' 
+                                  : ''
+                              }`}
+                            />
+                          </div>
+                          
+                          {hasDiscrepancy && (
+                            <div className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
+                              <AlertTriangle className="w-4 h-4" />
+                              <span className="text-xs font-medium">
+                                {numericReceivedQty > item.quantity ? 'Exceso' : 'Faltante'}: {Math.abs(numericReceivedQty - item.quantity)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </Stack>
-          </Box>
+            </div>
+          </div>
 
-          <TextField
-            label="Notas de Recepción (Opcional)"
-            multiline
-            rows={3}
-            fullWidth
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Comentarios sobre la recepción, estado de los productos, etc."
-            sx={{ mt: 3 }}
-          />
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="inherit">
-          Cancelar
-        </Button>
-        <Button
-          onClick={handleConfirm}
-          variant="contained"
-          color="success"
-          disabled={!allChecked}
-          startIcon={<Check />}
-        >
-          Confirmar Recepción
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
+          {/* Notas adicionales */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Notas de Recepción (Opcional)
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="input w-full"
+              rows="3"
+              placeholder="Ej: Todos los productos en buen estado, embalaje correcto..."
+            />
+          </div>
 
-const EmailOrderModal = ({ order, emailFeatureEnabled, onClose, onConfirm }) => {
-  if (!order) return null;
+          {/* Resumen */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div className="space-y-1">
+                <p className="text-gray-600 dark:text-gray-400">Total de Productos:</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{order.items.length} ítem(s)</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-gray-600 dark:text-gray-400">Valor Total:</p>
+                <p className="font-semibold text-gray-900 dark:text-white">${order.total.toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
 
-  return (
-    <Dialog
-      open={true}
-      onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-    >
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Mail color="#2563eb" />
-        Enviar Orden por Email
-      </DialogTitle>
-      <DialogContent>
-        <Stack spacing={3} sx={{ mt: 1 }}>
-          <Alert severity="info">
-            <Typography variant="body2">
-              Se enviará un correo electrónico a <strong>{order.supplier?.email}</strong> con la orden de compra adjunta en formato PDF.
-            </Typography>
-          </Alert>
+          {/* Acciones */}
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={!allChecked}
+              className={`btn-primary flex-1 flex items-center justify-center gap-2 ${
+                !allChecked ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              <Check className="w-5 h-5" />
+              Confirmar Recepción y Actualizar Stock
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn-secondary flex-1"
+            >
+              Cancelar
+            </button>
+          </div>
 
-          <Paper variant="outlined" sx={{ p: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>Detalles del Envío:</Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={4}>
-                <Typography variant="caption" color="text.secondary">Orden #</Typography>
-                <Typography variant="body2">{order.orderNumber}</Typography>
-              </Grid>
-              <Grid item xs={4}>
-                <Typography variant="caption" color="text.secondary">Proveedor</Typography>
-                <Typography variant="body2">{order.supplier?.name}</Typography>
-              </Grid>
-              <Grid item xs={4}>
-                <Typography variant="caption" color="text.secondary">Total</Typography>
-                <Typography variant="body2">${order.total.toFixed(2)}</Typography>
-              </Grid>
-            </Grid>
-          </Paper>
-
-          {!emailFeatureEnabled && (
-            <Alert severity="warning">
-              El envío de correos está desactivado en la configuración.
-            </Alert>
+          {!allChecked && (
+            <p className="text-sm text-yellow-600 dark:text-yellow-400 text-center">
+              ⚠️ Debe verificar todos los productos antes de confirmar la recepción
+            </p>
           )}
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="inherit">
-          Cancelar
-        </Button>
-        <Button
-          onClick={onConfirm}
-          variant="contained"
-          color="primary"
-          disabled={!emailFeatureEnabled}
-          startIcon={<Send size={18} />}
-        >
-          Enviar Email
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-
-const DeleteOrderModal = ({ order, onClose, onConfirm }) => {
-  if (!order) return null;
-
-  return (
-    <Dialog
-      open={true}
-      onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-    >
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}>
-        <AlertTriangle />
-        Eliminar Orden de Compra
-      </DialogTitle>
-      <DialogContent>
-        <Stack spacing={3} sx={{ mt: 1 }}>
-          <Typography>
-            ¿Estás seguro de que deseas eliminar la orden <strong>{order.orderNumber}</strong>?
-          </Typography>
-
-          <Paper variant="outlined" sx={{ p: 2, bgcolor: 'error.lighter', borderColor: 'error.light' }}>
-            <Typography variant="subtitle2" color="error.main" gutterBottom>
-              ⚠️ Esta acción no se puede deshacer
-            </Typography>
-            <Typography variant="body2" color="error.dark">
-              La orden será eliminada permanentemente del sistema.
-            </Typography>
-          </Paper>
-
-          <Box>
-            <Typography variant="caption" color="text.secondary">Detalles:</Typography>
-            <Typography variant="body2">
-              Proveedor: {order.supplier?.name || order.genericSupplierName} <br />
-              Total: ${order.total.toFixed(2)} <br />
-              Fecha: {new Date(order.orderDate).toLocaleDateString()}
-            </Typography>
-          </Box>
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="inherit">
-          Cancelar
-        </Button>
-        <Button
-          onClick={onConfirm}
-          variant="contained"
-          color="error"
-          startIcon={<Trash2 size={18} />}
-        >
-          Eliminar
-        </Button>
-      </DialogActions>
-    </Dialog>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 };
 

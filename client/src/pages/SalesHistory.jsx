@@ -70,10 +70,7 @@ import {
   ShoppingCart,
   Copy,
   Check,
-  XCircle,
-  ArrowRight,
-  ChevronLeft,
-  ChevronRight
+  XCircle
 } from 'lucide-react';
 import JsBarcode from 'jsbarcode';
 import { toast } from 'react-hot-toast';
@@ -81,34 +78,6 @@ import { getSales, cancelSale } from '../services/api';
 import { useSettingsStore } from '../store/settingsStore';
 import { TableSkeleton } from '../components/SkeletonLoader';
 import { createPortal } from 'react-dom';
-import {
-  Box,
-  Grid,
-  Paper,
-  Typography,
-  TextField,
-  InputAdornment,
-  IconButton,
-  Button,
-  Select,
-  MenuItem,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  Tooltip,
-  FormControl,
-  InputLabel,
-  Stack,
-  Divider,
-  useTheme,
-  Avatar
-} from '@mui/material';
 
 const SalesHistory = () => {
   const { settings } = useSettingsStore();
@@ -478,286 +447,332 @@ const SalesHistory = () => {
       </div>
 
       {/* Estadísticas */}
-      {/* Estadísticas */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Total Ventas"
-            value={stats.total}
-            icon={ShoppingCart}
-            color="primary"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Monto Total"
-            value={formatCurrency(stats.totalAmount)}
-            icon={DollarSign}
-            color="success"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Completadas"
-            value={stats.completed}
-            icon={TrendingUp}
-            color="success"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Canceladas"
-            value={stats.cancelled}
-            icon={X}
-            color="error"
-          />
-        </Grid>
-      </Grid>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="card-glass p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Total Ventas
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                {stats.total}
+              </p>
+            </div>
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <ShoppingCart className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="card-glass p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Monto Total
+              </p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
+                {formatCurrency(stats.totalAmount)}
+              </p>
+            </div>
+            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="card-glass p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Completadas
+              </p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
+                {stats.completed}
+              </p>
+            </div>
+            <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="card-glass p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Canceladas
+              </p>
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
+                {stats.cancelled}
+              </p>
+            </div>
+            <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+              <X className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Filtros */}
-      {/* Filtros */}
-      <Paper sx={{ p: 3 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={3}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Buscar factura"
-              placeholder="Número de factura..."
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search size={20} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Grid>
+      <div className="card-glass p-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Buscar factura
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                placeholder="Número de factura..."
+                className="input pl-10"
+              />
+            </div>
+          </div>
 
-          <Grid item xs={12} md={2}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Estado</InputLabel>
-              <Select
-                value={filters.status}
-                label="Estado"
-                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              >
-                <MenuItem value="">Todos</MenuItem>
-                <MenuItem value="Completada">Completada</MenuItem>
-                <MenuItem value="Cancelada">Cancelada</MenuItem>
-                <MenuItem value="Devuelta">Devuelta</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Estado
+            </label>
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+              className="input"
+            >
+              <option value="">Todos</option>
+              <option value="Completada">Completada</option>
+              <option value="Cancelada">Cancelada</option>
+              <option value="Devuelta">Devuelta</option>
+            </select>
+          </div>
 
-          <Grid item xs={12} md={2}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Método de Pago</InputLabel>
-              <Select
-                value={filters.paymentMethod}
-                label="Método de Pago"
-                onChange={(e) => setFilters({ ...filters, paymentMethod: e.target.value })}
-              >
-                <MenuItem value="">Todos</MenuItem>
-                <MenuItem value="Efectivo">Efectivo</MenuItem>
-                <MenuItem value="Tarjeta">Tarjeta</MenuItem>
-                <MenuItem value="Transferencia">Transferencia</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Método de Pago
+            </label>
+            <select
+              value={filters.paymentMethod}
+              onChange={(e) => setFilters({ ...filters, paymentMethod: e.target.value })}
+              className="input"
+            >
+              <option value="">Todos</option>
+              <option value="Efectivo">Efectivo</option>
+              <option value="Tarjeta">Tarjeta</option>
+              <option value="Transferencia">Transferencia</option>
+            </select>
+          </div>
 
-          <Grid item xs={12} md={2}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Fecha inicio"
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Fecha inicio
+            </label>
+            <input
               type="date"
               value={filters.startDate}
               onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-              InputLabelProps={{ shrink: true }}
+              className="input"
             />
-          </Grid>
+          </div>
 
-          <Grid item xs={12} md={2}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Fecha fin"
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Fecha fin
+            </label>
+            <input
               type="date"
               value={filters.endDate}
               onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-              InputLabelProps={{ shrink: true }}
+              className="input"
             />
-          </Grid>
-        </Grid>
-      </Paper>
+          </div>
+        </div>
+      </div>
 
       {/* Tabla de Ventas */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Factura</TableCell>
-              <TableCell>Fecha</TableCell>
-              <TableCell>Cliente</TableCell>
-              <TableCell>Items</TableCell>
-              <TableCell>Método</TableCell>
-              <TableCell>Total</TableCell>
-              <TableCell>Estado</TableCell>
-              <TableCell>Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {Array.isArray(sales) && sales.map((sale) => (
-              <TableRow key={sale._id} hover>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <FileText size={16} color="action" />
-                    <Typography variant="body2" fontWeight="medium">
-                      {sale.invoiceNumber}
-                    </Typography>
-                    {sale.hasReturns && (
-                      <Tooltip title={`${sale.returnsCount} devolución${sale.returnsCount > 1 ? 'es' : ''} • Total: ${formatCurrency(sale.totalReturned || 0)}`}>
-                        <Chip
-                          label={sale.returnsCount}
-                          size="small"
-                          color="warning"
-                          variant="outlined"
-                          sx={{ height: 20, minWidth: 20, '& .MuiChip-label': { px: 0.5 } }}
-                        />
-                      </Tooltip>
-                    )}
-                    <Tooltip title="Copiar número de factura">
-                      <IconButton
-                        size="small"
+      <div className="card-glass overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Factura
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Fecha
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Cliente
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Items
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Método
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Total
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Estado
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {Array.isArray(sales) && sales.map((sale) => (
+                <tr
+                  key={sale._id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {sale.invoiceNumber}
+                      </span>
+                      {sale.hasReturns && (
+                        <span
+                          className="px-2 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full flex items-center gap-1"
+                          title={`${sale.returnsCount} devolución${sale.returnsCount > 1 ? 'es' : ''} • Total: ${formatCurrency(sale.totalReturned || 0)}`}
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                          </svg>
+                          {sale.returnsCount}
+                        </span>
+                      )}
+                      <button
                         onClick={() => handleCopyInvoiceNumber(sale.invoiceNumber, sale._id)}
+                        className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded transition-colors"
+                        title="Copiar número de factura"
                       >
-                        {copiedId === sale._id ? <Check size={16} color="green" /> : <Copy size={16} />}
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {formatDate(sale.createdAt)}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <User size={16} color="action" />
-                    <Typography variant="body2">
-                      {sale.customer?.fullName || 'Cliente General'}
-                    </Typography>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Package size={16} color="action" />
-                    <Typography variant="body2">
-                      {sale.items?.length || 0}
-                    </Typography>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={sale.paymentMethod}
-                    size="small"
-                    color={sale.paymentMethod === 'Efectivo' ? 'success' : 'primary'}
-                    variant="outlined"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontWeight="bold" color="success.main">
-                    {formatCurrency(sale.total)}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={sale.status}
-                    size="small"
-                    color={sale.status === 'Completada' ? 'success' : sale.status === 'Cancelada' ? 'error' : 'warning'}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <Tooltip title="Ver detalle">
-                      <IconButton
-                        size="small"
-                        color="primary"
+                        {copiedId === sale._id ? (
+                          <Check className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {formatDate(sale.createdAt)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {sale.customer?.fullName || 'Cliente General'}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <Package className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {sale.items?.length || 0}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPaymentMethodBadge(sale.paymentMethod)}`}>
+                      {sale.paymentMethod}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                      {formatCurrency(sale.total)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(sale.status)}`}>
+                      {sale.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <button
                         onClick={() => {
                           setSelectedSale(sale);
                           setShowDetailModal(true);
                         }}
+                        className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                        title="Ver detalle"
                       >
-                        <Eye size={18} />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Imprimir">
-                      <IconButton
-                        size="small"
-                        color="success"
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => handlePrintInvoice(sale)}
+                        className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                        title="Imprimir"
                       >
-                        <Printer size={18} />
-                      </IconButton>
-                    </Tooltip>
-                    {sale.status !== 'Cancelada' && (
-                      <Tooltip title="Cancelar factura">
-                        <IconButton
-                          size="small"
-                          color="error"
+                        <Printer className="w-4 h-4" />
+                      </button>
+                      {sale.status !== 'Cancelada' && (
+                        <button
                           onClick={() => handleCancelSale(sale)}
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                          title="Cancelar factura"
                         >
-                          <XCircle size={18} />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {sales.length === 0 && !isLoading && (
-          <Box sx={{ textAlign: 'center', py: 6 }}>
-            <FileText size={48} color="#9ca3af" style={{ margin: '0 auto', marginBottom: 16 }} />
-            <Typography color="text.secondary">
+          <div className="text-center py-12">
+            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-gray-400">
               No se encontraron facturas
-            </Typography>
-          </Box>
+            </p>
+          </div>
         )}
 
         {/* Paginación */}
         {!isLoading && pagination.pages > 1 && (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, borderTop: 1, borderColor: 'divider' }}>
-            <Typography variant="body2" color="text.secondary">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               Mostrando {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} - {Math.min(pagination.page * pagination.limit, pagination.total)} de {pagination.total} facturas
-            </Typography>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Button
-                startIcon={<ChevronLeft />}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
                 disabled={!pagination.hasPrevPage}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasPrevPage
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
+                  }`}
               >
                 Anterior
-              </Button>
-              <Typography variant="body2">
+              </button>
+              <span className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
                 Página {pagination.page} de {pagination.pages}
-              </Typography>
-              <Button
-                endIcon={<ChevronRight />}
+              </span>
+              <button
                 onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                 disabled={!pagination.hasNextPage}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${pagination.hasNextPage
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-600 cursor-not-allowed'
+                  }`}
               >
                 Siguiente
-              </Button>
-            </Stack>
-          </Box>
+              </button>
+            </div>
+          </div>
         )}
-      </TableContainer>
+      </div>
 
       {/* Modal de Detalle */}
       {showDetailModal && selectedSale && (
@@ -912,24 +927,6 @@ const CancelSaleModal = ({ sale, onConfirm, onClose, isLoading }) => {
   );
 };
 
-const getStatusBadge = (status) => {
-  const badges = {
-    Completada: 'success',
-    Cancelada: 'error',
-    Devuelta: 'warning',
-  };
-  return badges[status] || 'default';
-};
-
-const getPaymentMethodBadge = (method) => {
-  const badges = {
-    Efectivo: 'success',
-    Tarjeta: 'primary',
-    Transferencia: 'secondary',
-  };
-  return badges[method] || 'default';
-};
-
 // Modal de Detalle de Venta
 const SaleDetailModal = ({ sale, onClose, formatCurrency, formatDate, getStatusBadge, getPaymentMethodBadge, onPrint, onCancel }) => {
   const [copied, setCopied] = useState(false);
@@ -958,67 +955,84 @@ const SaleDetailModal = ({ sale, onClose, formatCurrency, formatDate, getStatusB
 
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" style={{ zIndex: 100000 }}>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in" onClick={e => e.stopPropagation()}>
+      <div className="glass-strong rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           {/* Header */}
-          <div className="flex justify-between items-start mb-6">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <FileText className="text-blue-600 dark:text-blue-400" />
-                Factura #{sale.invoiceNumber}
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Detalle de Factura
               </h2>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-gray-600 dark:text-gray-400">{sale.invoiceNumber}</p>
+                <button
+                  onClick={handleCopy}
+                  className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded transition-colors"
+                  title="Copiar número de factura"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onPrint(sale)}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Printer className="w-5 h-5" />
+                Imprimir
+              </button>
+              {sale.status !== 'Cancelada' && onCancel && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onCancel(sale);
+                  }}
+                  className="btn-secondary text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2"
+                >
+                  <XCircle className="w-5 h-5" />
+                  Cancelar
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+
+          {/* Info General */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="card-glass p-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Fecha</p>
+              <p className="font-medium text-gray-900 dark:text-white">
                 {formatDate(sale.createdAt)}
               </p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
-            >
-              <X size={20} className="text-gray-500" />
-            </button>
-          </div>
-
-          {/* Info Grid */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="card-glass p-4">
-              <div className="flex items-center gap-2 mb-2 text-gray-500 dark:text-gray-400 text-sm">
-                <User size={16} />
-                Cliente
-              </div>
-              <p className="font-semibold text-gray-900 dark:text-white">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Cliente</p>
+              <p className="font-medium text-gray-900 dark:text-white">
                 {sale.customer?.fullName || 'Cliente General'}
               </p>
-              {sale.customer?.cedula && (
-                <p className="text-sm text-gray-500">{sale.customer.cedula}</p>
-              )}
             </div>
             <div className="card-glass p-4">
-              <div className="flex items-center gap-2 mb-2 text-gray-500 dark:text-gray-400 text-sm">
-                <CreditCard size={16} />
-                Método de Pago
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {sale.paymentMethod}
-                </p>
-                <Chip
-                  label={sale.paymentMethod}
-                  color={getPaymentMethodBadge(sale.paymentMethod)}
-                  size="small"
-                  variant="outlined"
-                />
-              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Estado</p>
+              <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(sale.status)}`}>
+                {sale.status}
+              </span>
             </div>
-          </div>
-
-          {/* Status Badge */}
-          <div className="flex justify-end mb-4">
-            <Chip
-              label={sale.status}
-              color={getStatusBadge(sale.status)}
-              variant="filled"
-            />
+            <div className="card-glass p-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Método de Pago</p>
+              <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getPaymentMethodBadge(sale.paymentMethod)}`}>
+                {sale.paymentMethod}
+              </span>
+            </div>
           </div>
 
           {/* Items */}
@@ -1030,17 +1044,27 @@ const SaleDetailModal = ({ sale, onClose, formatCurrency, formatDate, getStatusB
               {sale.items?.map((item, index) => (
                 <div key={index} className="card-glass p-4">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {item.product?.name || 'Producto eliminado'}
+                        {item.product?.name || 'Producto'}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        {item.quantity} x {formatCurrency(item.price)}
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        SKU: {item.product?.sku || 'N/A'}
                       </p>
                     </div>
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      {formatCurrency(item.subtotal)}
-                    </p>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {item.quantity} × {formatCurrency(item.priceAtSale)}
+                      </p>
+                      {item.discountApplied > 0 && (
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          Desc: -{formatCurrency(item.discountApplied)}
+                        </p>
+                      )}
+                      <p className="font-bold text-gray-900 dark:text-white">
+                        {formatCurrency(item.subtotal)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1140,50 +1164,6 @@ const SaleDetailModal = ({ sale, onClose, formatCurrency, formatDate, getStatusB
       </div>
     </div>,
     document.body
-  );
-};
-
-const StatCard = ({ title, value, icon: Icon, color }) => {
-  const theme = useTheme();
-
-  const getColor = (colorName) => {
-    switch (colorName) {
-      case 'primary': return theme.palette.primary.main;
-      case 'success': return theme.palette.success.main;
-      case 'error': return theme.palette.error.main;
-      case 'warning': return theme.palette.warning.main;
-      default: return theme.palette.primary.main;
-    }
-  };
-
-  const mainColor = getColor(color);
-
-  return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Box>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              {title}
-            </Typography>
-            <Typography variant="h5" fontWeight="bold" sx={{ color: mainColor }}>
-              {value}
-            </Typography>
-          </Box>
-          <Avatar
-            variant="rounded"
-            sx={{
-              bgcolor: `${mainColor}20`, // 20% opacity
-              color: mainColor,
-              width: 48,
-              height: 48
-            }}
-          >
-            <Icon size={24} />
-          </Avatar>
-        </Box>
-      </CardContent>
-    </Card>
   );
 };
 

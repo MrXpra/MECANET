@@ -194,13 +194,6 @@ const settingsSchema = new mongoose.Schema({
     warning: { type: Number, default: 30 },
     error: { type: Number, default: 90 },
     critical: { type: Number, default: 180 }
-  },
-
-  // ===== DEBUG / EASTER EGGS =====
-  // Forzar modo navideño (solo desarrolladores)
-  forceChristmas: {
-    type: Boolean,
-    default: false
   }
 });
 
