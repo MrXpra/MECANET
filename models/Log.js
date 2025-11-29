@@ -47,7 +47,8 @@ const logSchema = new mongoose.Schema({
       'system',
       'dashboard',
       'logs',
-      'proxy'
+      'proxy',
+      'version'
     ]
   },
   
