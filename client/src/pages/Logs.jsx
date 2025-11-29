@@ -166,6 +166,23 @@ const Logs = () => {
     );
   };
 
+  const getStatusDescription = (code) => {
+    if (!code) return "";
+    const codes = {
+      200: "OK - La solicitud ha tenido éxito",
+      201: "Created - La solicitud ha tenido éxito y se ha creado un nuevo recurso",
+      204: "No Content - La solicitud se ha completado con éxito pero no hay contenido que devolver",
+      400: "Bad Request - El servidor no pudo interpretar la solicitud dada una sintaxis inválida",
+      401: "Unauthorized - Es necesario autenticarse para obtener la respuesta solicitada",
+      403: "Forbidden - El cliente no posee los permisos necesarios para cierto contenido",
+      404: "Not Found - El servidor no pudo encontrar el contenido solicitado",
+      500: "Internal Server Error - El servidor ha encontrado una situación que no sabe cómo manejar",
+      502: "Bad Gateway - El servidor obtuvo una respuesta inválida",
+      503: "Service Unavailable - El servidor no está listo para manejar la petición"
+    };
+    return codes[code] || "Código de estado HTTP";
+  };
+
   const handleIconHover = (log, event) => {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
@@ -398,6 +415,7 @@ const Logs = () => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-300">Acción</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-300">Usuario</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-300">Mensaje</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-300">Código</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-300">Severidad</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-300">Acciones</th>
                   </tr>
@@ -426,8 +444,8 @@ const Logs = () => {
                         <div className="flex items-center gap-2">
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${log.isSystemAction
-                                ? "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
-                                : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
+                              ? "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                              : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
                               }`}
                             title={log.isSystemAction ? "Acción del Sistema" : "Acción de Usuario"}
                           >
@@ -440,6 +458,18 @@ const Logs = () => {
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 max-w-md truncate">
                         {log.message}
+                      </td>
+                      <td className="px-4 py-3">
+                        {log.metadata?.statusCode ? (
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 cursor-help"
+                            title={getStatusDescription(log.metadata.statusCode)}
+                          >
+                            {log.metadata.statusCode}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400">-</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {getSeverityBadge(log.severity)}
