@@ -542,6 +542,7 @@ class LogService {
     endDate,
     severity,
     isSystemAction,
+    statusCode,
     limit = 100,
     skip = 0
   } = {}) {
@@ -552,6 +553,7 @@ class LogService {
       if (module) query.module = module;
       if (user) query.user = user;
       if (severity) query.severity = severity;
+      if (statusCode) query['metadata.statusCode'] = parseInt(statusCode);
       if (isSystemAction !== undefined) {
         query.isSystemAction = isSystemAction === 'true' || isSystemAction === true;
       }

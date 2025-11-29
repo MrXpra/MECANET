@@ -32,6 +32,7 @@ const Logs = () => {
     module: "",
     severity: "",
     isSystemAction: "",
+    statusCode: "",
     startDate: "",
     endDate: "",
     page: 1,
@@ -183,6 +184,16 @@ const Logs = () => {
     return codes[code] || "Código de estado HTTP";
   };
 
+  const getStatusColor = (code) => {
+    if (!code) return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+    const c = parseInt(code);
+    if (c >= 200 && c < 300) return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+    if (c >= 300 && c < 400) return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+    if (c >= 400 && c < 500) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+    if (c >= 500) return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+    return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+  };
+
   const handleIconHover = (log, event) => {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
@@ -212,6 +223,7 @@ const Logs = () => {
       module: "",
       severity: "",
       isSystemAction: "",
+      statusCode: "",
       startDate: "",
       endDate: "",
       page: 1,
@@ -366,6 +378,21 @@ const Logs = () => {
             <option value="true">⚙️ Acciones del Sistema</option>
           </select>
 
+          <select
+            value={filters.statusCode}
+            onChange={(e) => setFilters({ ...filters, statusCode: e.target.value, page: 1 })}
+            className="form-input dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:focus:border-indigo-500"
+          >
+            <option value="">Todos los códigos</option>
+            <option value="200">200 OK</option>
+            <option value="201">201 Created</option>
+            <option value="400">400 Bad Request</option>
+            <option value="401">401 Unauthorized</option>
+            <option value="403">403 Forbidden</option>
+            <option value="404">404 Not Found</option>
+            <option value="500">500 Server Error</option>
+          </select>
+
           <input
             type="date"
             value={filters.startDate}
@@ -462,7 +489,7 @@ const Logs = () => {
                       <td className="px-4 py-3">
                         {log.metadata?.statusCode ? (
                           <span
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 cursor-help"
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium cursor-help ${getStatusColor(log.metadata.statusCode)}`}
                             title={getStatusDescription(log.metadata.statusCode)}
                           >
                             {log.metadata.statusCode}

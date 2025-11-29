@@ -23,6 +23,7 @@ router.get('/', async (req, res) => {
       endDate,
       severity,
       isSystemAction,
+      statusCode,
       page = 1,
       limit = 50
     } = req.query;
@@ -37,6 +38,7 @@ router.get('/', async (req, res) => {
       endDate,
       severity,
       isSystemAction,
+      statusCode,
       limit: parseInt(limit),
       skip
     });
